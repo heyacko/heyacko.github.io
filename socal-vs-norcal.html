@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SoCal vs NorCal — Guessing Game</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --ink:#e7e9ee; --muted:#a9b0bd; --accent:#4aa8ff; --ok:#66d9a8; --warn:#ffcc66; --bad:#ff7a7a; --line:#242a35; }
+  html,body { margin:0; padding:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; }
+  .wrap { max-width:780px; margin:40px auto; padding:0 16px 64px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+  h1 { margin:0 0 8px; font-size:28px; letter-spacing:.2px; }
+  .sub { color:var(--muted); margin:0 0 16px; }
+  .progress { height:10px; border-radius:8px; background:#263142; overflow:hidden; margin:12px 0 6px; }
+  .progress>span{ display:block; height:100%; background:var(--accent); width:0%; transition:width .25s ease; }
+  .meta { display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:13px; }
+  .qbox { margin-top:16px; padding:18px; border-radius:12px; background:#11141a; border:1px solid #232a36; }
+  .qtext { font-weight:600; margin-bottom:14px; font-size:18px; }
+  .bigBtns { display:grid; gap:12px; grid-template-columns:1fr; margin-top:8px; }
+  .choiceBtn { appearance:none; border:1px solid #263142; background:#0f131a; color:var(--ink); padding:16px; border-radius:14px; font-weight:800; font-size:18px; cursor:pointer; }
+  .choiceBtn:active { transform:translateY(1px); }
+  .choiceBtn[disabled]{ opacity:.6; cursor:not-allowed; }
+  .feedback { margin-top:14px; padding:12px; border-radius:10px; font-weight:600; }
+  .good { background:rgba(102,217,168,.12); border:1px solid rgba(102,217,168,.4); color:var(--ok); }
+  .bad  { background:rgba(255,122,122,.12); border:1px solid rgba(255,122,122,.4); color:var(--bad); }
+  .muted { color:var(--muted); font-size:13px; }
+  .controls { display:flex; gap:10px; margin-top:16px; }
+  button { appearance:none; border:0; background:var(--accent); color:#031423; padding:12px 16px; border-radius:12px; font-weight:700; cursor:pointer; }
+  button:disabled { opacity:.55; cursor:not-allowed; }
+  .ghost { background:transparent; color:var(--ink); border:1px solid #2a3446; }
+  .results { display:none; margin-top:18px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; background:#0f141c; border:1px solid #2a3446; color:var(--muted); }
+  .footer { color:var(--muted); margin-top:18px; font-size:13px; }
+  @media (min-width:560px){
+    .bigBtns { grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>SoCal vs NorCal — Guessing Game</h1>
+    <p class="sub">
+      Pick which region wins each stat. We’re using a practical split: <span class="pill">SoCal = San Luis Obispo & south</span> • <span class="pill">NorCal = Monterey & north</span>.
+      <br><span class="muted">15 questions, shuffled each run. Click to guess — we’ll tell you if you’re right.</span>
+    </p>
+
+    <!-- Progress -->
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="15" aria-valuenow="0">
+      <span id="pbar"></span>
+    </div>
+    <div class="meta"><span id="pcounter">Question 1 of 15</span><span id="score" class="muted">Score: 0</span></div>
+
+    <!-- Question area -->
+    <div id="stage" class="qbox" aria-live="polite"></div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button id="backBtn" class="ghost" type="button" disabled>Back</button>
+      <button id="nextBtn" type="button" disabled>Next</button>
+      <button id="clearBtn" class="ghost" type="button">Restart</button>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="results">
+      <h2>Your Results</h2>
+      <p class="muted" id="summary"></p>
+      <div id="list" class="row" style="flex-direction:column;margin-top:12px;"></div>
+      <div class="footer">Sources planned per item. Disagree? Tap restart and try again with a friend.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======================= DATA =======================
+// IMPORTANT: Answers reflect our "surprising" set. Plug sources when finalized.
+const BANK = [
+  { q: "Which region has more wildfires per year (incidents, not acreage)?", answer: "SoCal", source: "" },
+  { q: "Which region has more farmland acreage (with Kern & SLO counted as SoCal)?", answer: "SoCal", source: "" },
+  { q: "Which region has higher electricity bills per household on average?", answer: "SoCal", source: "" },
+  { q: "Which region gets more annual sunshine hours in key population centers?", answer: "NorCal", source: "" },
+  { q: "Which region has more breweries per capita?", answer: "SoCal", source: "" },
+  { q: "Which region has more installed renewable energy capacity (solar/wind/storage)?", answer: "SoCal", source: "" },
+  { q: "Which region has the higher violent crime rate on average?", answer: "NorCal", source: "" },
+  { q: "Which region uses more water per capita?", answer: "NorCal", source: "" },
+  { q: "Which region has more electric vehicles registered in total?", answer: "SoCal", source: "" },
+  { q: "Which region has higher voter turnout in recent statewide elections?", answer: "SoCal", source: "" },
+  { q: "Which region has more active Airbnb listings?", answer: "NorCal", source: "" },
+  { q: "Which region has a higher share of renters vs homeowners?", answer: "SoCal", source: "" },
+  { q: "Which region recorded more earthquakes of magnitude ≥ 4 in the past decade?", answer: "NorCal", source: "" },
+  { q: "Which region has a higher adult obesity rate overall?", answer: "SoCal", source: "" },
+  { q: "Which region has more registered Teslas in total?", answer: "SoCal", source: "" },
+];
+
+// ======================= UTILS =======================
+function rngInt(n){
+  if (window.crypto?.getRandomValues){
+    const a = new Uint32Array(1); crypto.getRandomValues(a);
+    return a[0] % n;
+  }
+  return Math.floor(Math.random()*n);
+}
+function shuffle(arr){
+  for (let i=arr.length-1;i>0;i--){
+    const j = rngInt(i+1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ======================= STATE =======================
+let QUESTIONS = shuffle([...BANK]);      // 15 items shuffled
+let idx = 0;
+let score = 0;
+const guesses = new Array(QUESTIONS.length).fill(null);  // 'SoCal'|'NorCal'|null
+const correctness = new Array(QUESTIONS.length).fill(null); // true|false|null
+
+// ======================= DOM =======================
+const stage = document.getElementById('stage');
+const pbar = document.getElementById('pbar');
+const pcounter = document.getElementById('pcounter');
+const scoreEl = document.getElementById('score');
+const backBtn = document.getElementById('backBtn');
+const nextBtn = document.getElementById('nextBtn');
+const clearBtn = document.getElementById('clearBtn');
+const resultsEl = document.getElementById('results');
+const summaryEl = document.getElementById('summary');
+const listEl = document.getElementById('list');
+
+// ======================= RENDER =======================
+function render(){
+  const total = QUESTIONS.length;
+  const human = idx + 1;
+  pbar.style.width = ((human-1)/total*100) + '%';
+  document.querySelector('.progress').setAttribute('aria-valuenow', human-1);
+  pcounter.textContent = `Question ${human} of ${total}`;
+  scoreEl.textContent = `Score: ${score}`;
+
+  const item = QUESTIONS[idx];
+
+  stage.innerHTML = '';
+  const qtext = document.createElement('div');
+  qtext.className = 'qtext';
+  qtext.textContent = `${human}. ${item.q}`;
+  stage.appendChild(qtext);
+
+  const btns = document.createElement('div');
+  btns.className = 'bigBtns';
+  const btnSo = document.createElement('button');
+  btnSo.className = 'choiceBtn';
+  btnSo.textContent = 'Southern California';
+  const btnNo = document.createElement('button');
+  btnNo.className = 'choiceBtn';
+  btnNo.textContent = 'Northern California';
+  btns.appendChild(btnSo); btns.appendChild(btnNo);
+  stage.appendChild(btns);
+
+  const fb = document.createElement('div');
+  fb.className = 'feedback';
+  fb.style.display = 'none';
+  stage.appendChild(fb);
+
+  // Restore previous selection state if any
+  if (guesses[idx]){
+    btnSo.disabled = true; btnNo.disabled = true;
+    nextBtn.disabled = false;
+    const correct = correctness[idx];
+    fb.style.display = 'block';
+    fb.className = 'feedback ' + (correct ? 'good' : 'bad');
+    fb.innerHTML = correct ? `✅ Correct: <strong>${item.answer}</strong>` :
+                             `❌ Nope — Correct is <strong>${item.answer}</strong>`;
+    if (item.source){
+      const s = document.createElement('div');
+      s.className = 'muted'; s.style.marginTop = '6px';
+      s.innerHTML = `Source: <a href="${item.source}" target="_blank" rel="noopener">link</a>`;
+      fb.appendChild(s);
+    }
+  } else {
+    nextBtn.disabled = true;
+  }
+
+  function lockIn(choice){
+    if (guesses[idx]) return; // already answered
+    guesses[idx] = choice;
+    const correct = (choice === item.answer);
+    correctness[idx] = correct;
+    if (correct) score++;
+
+    btnSo.disabled = true; btnNo.disabled = true;
+    nextBtn.disabled = false;
+    fb.style.display = 'block';
+    fb.className = 'feedback ' + (correct ? 'good' : 'bad');
+    fb.innerHTML = correct ? `✅ Correct: <strong>${item.answer}</strong>` :
+                             `❌ Nope — Correct is <strong>${item.answer}</strong>`;
+    if (item.source){
+      const s = document.createElement('div');
+      s.className = 'muted'; s.style.marginTop = '6px';
+      s.innerHTML = `Source: <a href="${item.source}" target="_blank" rel="noopener">link</a>`;
+      fb.appendChild(s);
+    }
+  }
+
+  btnSo.addEventListener('click', ()=> lockIn('SoCal'));
+  btnNo.addEventListener('click', ()=> lockIn('NorCal'));
+
+  backBtn.disabled = idx === 0;
+  nextBtn.textContent = (idx === total-1) ? 'See Results' : 'Next';
+
+  resultsEl.style.display = 'none';
+}
+render();
+
+// ======================= NAV =======================
+backBtn.addEventListener('click', ()=>{
+  if (idx>0){ idx--; render(); }
+});
+nextBtn.addEventListener('click', ()=>{
+  if (guesses[idx] == null) return;
+  if (idx < QUESTIONS.length-1){
+    idx++; render();
+  } else {
+    showResults();
+  }
+});
+clearBtn.addEventListener('click', ()=>{
+  QUESTIONS = shuffle([...BANK]);
+  idx = 0; score = 0;
+  guesses.fill(null); correctness.fill(null);
+  render();
+});
+
+// ======================= RESULTS =======================
+function showResults(){
+  pbar.style.width = '100%';
+  document.querySelector('.progress').setAttribute('aria-valuenow', QUESTIONS.length);
+  const total = QUESTIONS.length;
+  summaryEl.textContent = `You got ${score} out of ${total} correct.`;
+
+  listEl.innerHTML = '';
+  QUESTIONS.forEach((item, i)=>{
+    const row = document.createElement('div');
+    row.style.padding = '10px 12px';
+    row.style.border = '1px solid #232a36';
+    row.style.borderRadius = '10px';
+    row.style.background = '#0f131a';
+
+    const head = document.createElement('div');
+    head.style.fontWeight = '600';
+    head.innerHTML = `${i+1}. ${item.q}`;
+
+    const det = document.createElement('div');
+    det.className = 'muted';
+    const got = guesses[i] ?? 'No guess';
+    const ok = correctness[i] === true ? '✅' : (correctness[i] === false ? '❌' : '—');
+    det.innerHTML = `${ok} You: <strong>${got}</strong> · Correct: <strong>${item.answer}</strong>` + (item.source ? ` · <a href="${item.source}" target="_blank" rel="noopener">Source</a>` : '');
+
+    row.appendChild(head); row.appendChild(det);
+    listEl.appendChild(row);
+  });
+
+  resultsEl.style.display = 'block';
+  resultsEl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ======================= HOTKEYS =======================
+document.addEventListener('keydown', (e)=>{
+  if (e.key==='ArrowLeft' && !backBtn.disabled) backBtn.click();
+  if (e.key==='ArrowRight' && !nextBtn.disabled) nextBtn.click();
+});
+</script>
+</body>
+</html>
