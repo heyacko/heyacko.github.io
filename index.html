@@ -1,1 +1,269 @@
-"Hello World" 
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Modern U.S. Politics Compass (4 Axes)</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --ink:#e7e9ee; --muted:#a9b0bd; --accent:#4aa8ff; --ok:#66d9a8; --warn:#ffcc66; --bad:#ff7a7a; }
+  html,body { margin:0; padding:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif; }
+  .wrap { max-width:980px; margin:40px auto; padding:0 16px 64px; }
+  .card { background:var(--card); border:1px solid #242a35; border-radius:16px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+  h1 { margin:0 0 8px; font-size:30px; letter-spacing:.2px; }
+  .sub { color:var(--muted); margin:0 0 16px; }
+  fieldset { border:0; margin:0 0 18px; padding:0; }
+  legend { font-weight:600; margin:0 0 10px; }
+  .q { margin:16px 0; padding:16px; border-radius:12px; background:#11141a; border:1px solid #232a36; }
+  .opts { display:grid; gap:10px; margin-top:10px; }
+  label { display:flex; gap:10px; align-items:flex-start; background:#0f131a; border:1px solid #263142; padding:10px 12px; border-radius:10px; cursor:pointer; }
+  input[type="radio"] { transform:translateY(2px); }
+  .grid { display:grid; gap:16px; }
+  .two { grid-template-columns:1fr; }
+  @media(min-width:860px){ .two { grid-template-columns:1fr 1fr; } }
+  button { appearance:none; border:0; background:var(--accent); color:#031423; padding:14px 18px; border-radius:12px; font-weight:700; cursor:pointer; }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  .results { margin-top:24px; display:none; }
+  .bar { height:10px; border-radius:8px; background:#263142; overflow:hidden; }
+  .bar > span { display:block; height:100%; background:var(--ok); }
+  .axisRow { display:grid; grid-template-columns:180px 1fr 70px; align-items:center; gap:10px; }
+  .small { color:var(--muted); font-size:13px; }
+  .pill { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; background:#0f141c; border:1px solid #2a3446; color:var(--muted); }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .tribe { font-weight:700; }
+  .footer { color:var(--muted); margin-top:18px; font-size:13px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Modern U.S. Politics Compass</h1>
+      <p class="sub">Measures four axes: <span class="pill">Collective ↔ Individual</span> <span class="pill">Institutional Trust ↔ Anti-Institutional</span> <span class="pill">Cosmopolitan ↔ Localist</span> <span class="pill">Flux ↔ Order</span></p>
+
+      <form id="quiz" class="grid two"></form>
+
+      <div class="row" style="margin-top:8px;">
+        <button id="scoreBtn" disabled>See My Results</button>
+        <button id="clearBtn" type="button" aria-label="Clear">Clear</button>
+      </div>
+
+      <div id="results" class="results">
+        <h2>Your Results</h2>
+        <p class="small">Scores range from −10 to +10 on each axis (0 = neutral). Positive values lean toward the **left label** shown; negative values lean toward the **right label**.</p>
+        <div id="axisTable" class="grid" style="margin-top:12px;"></div>
+
+        <h3 style="margin-top:22px;">Likely Cluster</h3>
+        <p><span class="tribe" id="clusterName"></span></p>
+        <p class="small" id="clusterDesc"></p>
+
+        <div class="footer">This is a directional tool, not a medical diagnosis for your Twitter persona. Share the link and compare with friends.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/** -----------------------------
+ * CONFIG
+ * ------------------------------ */
+const AXES = [
+  { key:'collective', left:'Collective', right:'Individual' },
+  { key:'trust',      left:'Institutional Trust', right:'Anti-Institutional' },
+  { key:'cosmo',      left:'Cosmopolitan', right:'Localist' },
+  { key:'flux',       left:'Flux', right:'Order' },
+];
+
+// Questions, grouped 5 per axis (Q1–5 = Collective, 6–10 = Trust, 11–15 = Cosmo, 16–20 = Flux)
+// Option mapping: A=+2, B=+1, C=−1, D=−2 toward the LEFT label of that axis.
+const QUESTIONS = [
+/* 1 */ { axis:'collective', text:'Who should take the lead in solving major social problems like housing or healthcare?',
+  opts:['Government programs','Public–private partnerships','Local charities & communities','Individuals and markets'] },
+/* 2 */ { axis:'collective', text:'When companies cause harm (pollution, misinformation, etc.), who’s responsible for fixing it?',
+  opts:['The state','Voters & regulators','Consumers','No one—markets self-correct'] },
+/* 3 */ { axis:'collective', text:'What best describes your view of taxes?',
+  opts:['A moral obligation for the common good','A necessary trade-off for services','A necessary evil','Government theft'] },
+/* 4 */ { axis:'collective', text:'If a pandemic hits, whose judgment do you most trust?',
+  opts:['Public-health authorities','Local governments','Individual doctors','Each person decides for themselves'] },
+/* 5 */ { axis:'collective', text:'Economic fairness means:',
+  opts:['Reducing inequality','Equal opportunity','Letting success follow effort','Keeping government out entirely'] },
+
+/* 6 */ { axis:'trust', text:'How do you see mainstream media like the New York Times or Fox News?',
+  opts:['Mostly reliable, sometimes biased','Often flawed but necessary','Frequently misleading','Deliberately manipulative'] },
+/* 7 */ { axis:'trust', text:'Universities today mostly:',
+  opts:['Produce valuable knowledge','Need reform but remain essential','Indoctrinate students','Are obsolete gatekeepers'] },
+/* 8 */ { axis:'trust', text:'When courts rule on controversial issues, you usually feel:',
+  opts:['Confident the process is fair','Skeptical but respectful','Suspicious of hidden agendas','The system is rigged'] },
+/* 9 */ { axis:'trust', text:'Big Tech companies (Google, Meta, etc.) are:',
+  opts:['Important innovators','Problematic but fixable','Dangerous concentrations of power','Tools of control needing dismantling'] },
+/* 10 */ { axis:'trust', text:'If evidence from official sources contradicts your experience, you:',
+  opts:['Re-examine your experience','Assume nuance is missing','Question the officials','Assume a cover-up'] },
+
+/* 11 */ { axis:'cosmo', text:'Immigration strengthens a country by bringing new ideas and energy.',
+  opts:['Strongly agree','Somewhat agree','Somewhat disagree','Strongly disagree'] },
+/* 12 */ { axis:'cosmo', text:'When thinking about national pride, you feel:',
+  opts:['Proud of global influence and diversity','Proud but cautious of nationalism','Proud of unique heritage','Defensive of traditions under attack'] },
+/* 13 */ { axis:'cosmo', text:'Global trade has mostly:',
+  opts:['Helped everyone','Helped some, hurt others','Hurt workers in my country','Undermined sovereignty'] },
+/* 14 */ { axis:'cosmo', text:'If your child married someone from a very different culture or religion, you’d feel:',
+  opts:['Excited','Curious but cautious','Uncomfortable','Deeply opposed'] },
+/* 15 */ { axis:'cosmo', text:'Protecting local culture from global trends is:',
+  opts:['Unnecessary','Sometimes worthwhile','Important','Essential'] },
+
+/* 16 */ { axis:'flux', text:'Social norms about gender and family roles should:',
+  opts:['Keep evolving','Be debated openly','Stay mostly consistent','Return to traditional values'] },
+/* 17 */ { axis:'flux', text:'Public protests that disrupt daily life are:',
+  opts:['Vital expressions of democracy','Acceptable within limits','Counterproductive','Threatening to order'] },
+/* 18 */ { axis:'flux', text:'In your ideal society, schools would focus most on:',
+  opts:['Creativity & exploration','Debate & open inquiry','Discipline & structure','Moral & civic duty'] },
+/* 19 */ { axis:'flux', text:'Rapid technological change is:',
+  opts:['Exciting and necessary','Mostly good but risky','Too fast for society','A threat to stability'] },
+/* 20 */ { axis:'flux', text:'When laws conflict with personal conscience, you should:',
+  opts:['Follow conscience','Try to change the law first','Obey unless extreme','Always obey—rules keep us safe'] },
+];
+
+// A-D to numeric score
+const CHOICE_VALUE = { A:+2, B:+1, C:-1, D:-2 };
+
+// Simple cluster labeling based on axis signs
+const CLUSTERS = [
+  {
+    name: 'Liberal Institutionalist',
+    match: s => s.collective>0 && s.trust>0 && s.cosmo>0 && s.flux>0,
+    desc: 'Pro-government problem-solving, trusts major institutions, globalist in identity, comfortable with cultural change.'
+  },
+  {
+    name: 'Progressive Populist',
+    match: s => s.collective>0 && s.trust<0 && s.cosmo>0 && s.flux>0,
+    desc: 'Collective action but low trust in current elites; globalist identity; prefers rapid change from outside institutions.'
+  },
+  {
+    name: 'National Conservative',
+    match: s => s.collective>=0 && s.trust<0 && s.cosmo<0 && s.flux<0,
+    desc: 'Community/government for cohesion, distrust of current elites, localist identity, prefers order and tradition.'
+  },
+  {
+    name: 'Traditional Conservative',
+    match: s => s.collective<0 && s.trust>0 && s.cosmo<0 && s.flux<0,
+    desc: 'Markets first, trusts legacy institutions, localist identity, values hierarchy and stable norms.'
+  },
+  {
+    name: 'Tech Libertarian',
+    match: s => s.collective<0 && s.trust<0 && s.cosmo>0 && s.flux>0,
+    desc: 'Markets and individuals over state, distrusts gatekeepers, globally oriented, change-friendly and experimental.'
+  },
+  {
+    name: 'Politically Homeless Pragmatist',
+    match: s => Math.abs(s.collective)<=2 && Math.abs(s.trust)<=2 && Math.abs(s.cosmo)<=2 && Math.abs(s.flux)<=2,
+    desc: 'Moderate across the board; case-by-case views; allergic to extremes and online tribes.'
+  },
+];
+
+// -------- Render form
+const form = document.getElementById('quiz');
+QUESTIONS.forEach((q, i) => {
+  const id = i+1;
+  const fs = document.createElement('fieldset');
+  fs.className = 'q';
+  const legend = document.createElement('legend');
+  legend.textContent = `${id}. ${q.text}`;
+  fs.appendChild(legend);
+
+  const opts = document.createElement('div'); opts.className='opts';
+  q.opts.forEach((opt, j) => {
+    const letter = String.fromCharCode(65 + j); // A-D
+    const lid = `q${id}_${letter}`;
+    const lab = document.createElement('label');
+    lab.setAttribute('for', lid);
+    lab.innerHTML = `<input type="radio" name="q${id}" id="${lid}" value="${letter}"><span>${letter}) ${opt}</span>`;
+    opts.appendChild(lab);
+  });
+  fs.appendChild(opts);
+  form.appendChild(fs);
+});
+
+const scoreBtn = document.getElementById('scoreBtn');
+const clearBtn = document.getElementById('clearBtn');
+const resultsEl = document.getElementById('results');
+const axisTable = document.getElementById('axisTable');
+const clusterName = document.getElementById('clusterName');
+const clusterDesc = document.getElementById('clusterDesc');
+
+// Enable button when all answered
+form.addEventListener('change', () => {
+  const answered = new FormData(form);
+  scoreBtn.disabled = (Array.from({length:20}).filter((_,i)=>!answered.get(`q${i+1}`)).length>0);
+});
+
+function computeScores() {
+  const fd = new FormData(form);
+  // init scores
+  const scores = { collective:0, trust:0, cosmo:0, flux:0 };
+  for (let i=1;i<=20;i++){
+    const ans = fd.get(`q${i}`);
+    if (!ans) continue;
+    const val = CHOICE_VALUE[ans];
+    const axis = QUESTIONS[i-1].axis;
+    scores[axis] += val;
+  }
+  return scores;
+}
+
+function pctFromScore(score){ // map −10..+10 to 0..100% with 50% as neutral
+  return Math.max(0, Math.min(100, 50 + score*5));
+}
+
+function barColor(score){
+  if (score >= 5) return 'var(--ok)';
+  if (score <= -5) return 'var(--bad)';
+  return 'var(--warn)';
+}
+
+function renderResults(scores){
+  axisTable.innerHTML = '';
+  AXES.forEach(ax => {
+    const row = document.createElement('div'); row.className='axisRow';
+    const label = document.createElement('div');
+    label.innerHTML = `<strong>${ax.left}</strong> <span class="small">↔</span> <strong>${ax.right}</strong>`;
+    const bar = document.createElement('div'); bar.className='bar';
+    const span = document.createElement('span');
+    span.style.width = pctFromScore(scores[ax.key]) + '%';
+    span.style.background = barColor(scores[ax.key]);
+    bar.appendChild(span);
+    const val = document.createElement('div'); val.className='small'; val.textContent = (scores[ax.key] >= 0 ? '+' : '') + scores[ax.key];
+    row.appendChild(label); row.appendChild(bar); row.appendChild(val);
+    axisTable.appendChild(row);
+  });
+
+  // cluster
+  let chosen = CLUSTERS.find(c => c.match(scores));
+  if (!chosen){
+    // fallback heuristics
+    const bits = `${scores.collective>=0?'C':'I'}${scores.trust>=0?'T':'D'}${scores.cosmo>=0?'G':'L'}${scores.flux>=0?'F':'O'}`;
+    chosen = {
+      name: 'Mixed Profile ('+bits+')',
+      desc: 'You mix positions across tribes. Read the axis scores; your nuance annoys pundits and delights dinner tables.'
+    };
+  }
+  clusterName.textContent = chosen.name;
+  clusterDesc.textContent = chosen.desc;
+
+  resultsEl.style.display = 'block';
+  resultsEl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+scoreBtn.addEventListener('click', (e)=>{
+  e.preventDefault();
+  const scores = computeScores();
+  renderResults(scores);
+});
+
+clearBtn.addEventListener('click', ()=>{
+  form.reset();
+  scoreBtn.disabled = true;
+  resultsEl.style.display = 'none';
+  axisTable.innerHTML = '';
+  clusterName.textContent = '';
+  clusterDesc.textContent = '';
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+</script>
+</body>
+</html>
