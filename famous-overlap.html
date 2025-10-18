@@ -118,60 +118,105 @@
     // ---------- Utilities ----------
     const fmtYear = y => (y === null || y === undefined) ? "—" : String(y);
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-
     function overlapYears(b1, d1, b2, d2) {
       const start = Math.max(b1, b2);
       const end = Math.min(d1, d2);
       return Math.max(0, Math.floor(end - start));
     }
 
-    // ---------- Data fetch (Wikidata -> 2 random humans with enwiki) ----------
+    // ---------- Data fetch via Wikimedia/Wikidata APIs (CORS-friendly) ----------
+    const WIKI_API = 'https://en.wikipedia.org/w/api.php?origin=*';
+    const WDATA_API = 'https://www.wikidata.org/w/api.php?origin=*';
+
+    async function getRandomPages(limit=40){
+      const url = `${WIKI_API}&action=query&list=random&rnnamespace=0&rnlimit=${limit}&format=json`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('random fetch failed');
+      const j = await r.json();
+      return j?.query?.random || [];
+    }
+
+    async function getPageProps(pageids){
+      const ids = pageids.join('|');
+      const url = `${WIKI_API}&action=query&prop=pageprops|info&inprop=url&ppprop=wikibase_item&pageids=${ids}&format=json`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('pageprops fetch failed');
+      const j = await r.json();
+      return j?.query?.pages || {};
+    }
+
+    async function getWikidataEntities(qids){
+      const ids = qids.join('|');
+      const url = `${WDATA_API}&action=wbgetentities&ids=${ids}&props=labels|claims|sitelinks&languages=en&format=json`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('wbgetentities failed');
+      const j = await r.json();
+      return j?.entities || {};
+    }
+
+    function extractDate(claim){
+      try{
+        const time = claim?.mainsnak?.datavalue?.value?.time; // "+YYYY-MM-DDT.."
+        if (!time) return null;
+        const m = time.match(/([+-]?\d{1,4})-(\d{2})-(\d{2})/);
+        if (!m) return null;
+        const y = Number(m[1]); const mo = Number(m[2]); const d = Number(m[3]);
+        return new Date(`${String(y).padStart(4,'0')}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}T00:00:00Z`);
+      }catch{ return null; }
+    }
+
+    function hasInstanceOfHuman(claims){
+      const P31 = claims?.P31 || [];
+      return P31.some(c => c?.mainsnak?.datavalue?.value?.id === 'Q5');
+    }
+
+    async function fetchTwoPeopleViaApis(attempts=4){
+      for (let i=0;i<attempts;i++){
+        const random = await getRandomPages(40);
+        const pageids = random.map(p=>p.id);
+        const pagesObj = await getPageProps(pageids);
+        const pages = Object.values(pagesObj);
+        const qids = pages.map(p=>p?.pageprops?.wikibase_item).filter(Boolean);
+        if (qids.length === 0) continue;
+        const entities = await getWikidataEntities(qids.slice(0,50));
+        const humans = [];
+        for (const qid of Object.keys(entities)){
+          const e = entities[qid];
+          if (!hasInstanceOfHuman(e.claims)) continue;
+          const dobClaim = (e.claims.P569||[])[0];
+          const dodClaim = (e.claims.P570||[])[0];
+          const dob = extractDate(dobClaim);
+          if (!dob) continue;
+          const dod = extractDate(dodClaim) || null;
+          const title = e?.sitelinks?.enwiki?.title;
+          const article = title ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g,'_'))}` : null;
+          const name = e?.labels?.en?.value || title || qid;
+          if (article) humans.push({ name, dob, dod, article });
+        }
+        if (humans.length >= 2){
+          const a = humans[Math.floor(Math.random()*humans.length)];
+          let b = humans[Math.floor(Math.random()*humans.length)];
+          let guard = 0;
+          while ((b === a) && guard++ < 10) b = humans[Math.floor(Math.random()*humans.length)];
+          return [a,b];
+        }
+      }
+      throw new Error('not enough humans after attempts');
+    }
+
     const SEED = [
       { name:"Albert Einstein", dob:new Date("1879-03-14"), dod:new Date("1955-04-18"), article:"https://en.wikipedia.org/wiki/Albert_Einstein" },
       { name:"Queen Elizabeth II", dob:new Date("1926-04-21"), dod:new Date("2022-09-08"), article:"https://en.wikipedia.org/wiki/Elizabeth_II" },
       { name:"Barack Obama", dob:new Date("1961-08-04"), dod:null, article:"https://en.wikipedia.org/wiki/Barack_Obama" },
       { name:"Frida Kahlo", dob:new Date("1907-07-06"), dod:new Date("1954-07-13"), article:"https://en.wikipedia.org/wiki/Frida_Kahlo" },
       { name:"Kurt Cobain", dob:new Date("1967-02-20"), dod:new Date("1994-04-05"), article:"https://en.wikipedia.org/wiki/Kurt_Cobain" },
-      { name:"Freddie Mercury", dob:new Date("1946-09-05"), dod:new Date("1991-11-24"), article:"https://en.wikipedia.org/wiki/Freddie_Mercury" },
+      { name:"Freddie Mercury", dob:new Date("1946-09-05"), dod:new Date("1991-11-24"), article:"https://en.wikipedia.org/wiki/Freddie_Mercury" }
     ];
 
-    async function fetchTwoPeopleLive(){
-      const endpoint = "https://query.wikidata.org/sparql";
-      const headers = { "Accept": "application/sparql-results+json" };
-      const q = `
-        SELECT ?person ?personLabel ?dob ?dod ?article WHERE {
-          ?person wdt:P31 wd:Q5;              # human
-                  wdt:P569 ?dob.             # birth
-          OPTIONAL { ?person wdt:P570 ?dod } # death
-          ?article schema:about ?person ;
-                   schema:inLanguage "en" ;
-                   schema:isPartOf <https://en.wikipedia.org/> .
-          SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-        }
-        ORDER BY RAND()
-        LIMIT 2
-      `;
-      const url = endpoint + "?query=" + encodeURIComponent(q);
-      const res = await fetch(url, { headers });
-      if (!res.ok) throw new Error("SPARQL fetch failed");
-      const json = await res.json();
-      const rows = json.results.bindings.map(b => ({
-        name: b.personLabel.value,
-        dob: new Date(b.dob.value),
-        dod: b.dod ? new Date(b.dod.value) : null,
-        article: b.article.value
-      }));
-      if (rows.length < 2) throw new Error("Not enough people returned");
-      return rows;
-    }
-
     async function fetchTwoPeople(){
-      try {
-        const rows = await fetchTwoPeopleLive();
-        return rows;
-      } catch (e) {
-        console.warn("Live fetch failed, using seed.", e);
-        // pick two distinct seeds
+      try{ return await fetchTwoPeopleViaApis(); }
+      catch(e){
+        console.warn('API pipeline failed, using seed.', e);
         const a = SEED[Math.floor(Math.random()*SEED.length)];
         let b = SEED[Math.floor(Math.random()*SEED.length)];
         while (b === a) b = SEED[Math.floor(Math.random()*SEED.length)];
@@ -185,212 +230,119 @@
     let loading = false; let revealed = false;
 
     // ---------- DOM ----------
-    const peopleEl = document.getElementById("people");
-    const scaleEl = document.getElementById("scale");
-    const startSlider = document.getElementById("startSlider");
-    const endSlider   = document.getElementById("endSlider");
-    const startVal = document.getElementById("startVal");
-    const endVal = document.getElementById("endVal");
-    const submitBtn = document.getElementById("submit");
-    const againBtn = document.getElementById("again");
-    const resultEl = document.getElementById("result");
-    const statusEl = document.getElementById("status");
+    const peopleEl = document.getElementById('people');
+    const scaleEl = document.getElementById('scale');
+    const startSlider = document.getElementById('startSlider');
+    const endSlider   = document.getElementById('endSlider');
+    const startVal = document.getElementById('startVal');
+    const endVal = document.getElementById('endVal');
+    const submitBtn = document.getElementById('submit');
+    const againBtn = document.getElementById('again');
+    const resultEl = document.getElementById('result');
+    const statusEl = document.getElementById('status');
 
     const canvas = document.getElementById('viz');
     const ctx = canvas.getContext('2d');
 
-    function setStatus(msg, isErr=false){
-      statusEl.textContent = msg || "";
-      statusEl.className = isErr ? "sub err" : "sub";
-    }
+    function setStatus(msg, isErr=false){ statusEl.textContent = msg || ''; statusEl.className = isErr ? 'sub err' : 'sub'; }
 
     function renderPeople(){
       const rows = [P1,P2].map((p,i)=>`
         <div class="person">
-          <div class="name">${i===0?"A":"B"}. <a href="${p.article}" target="_blank" rel="noopener">${p.name}</a></div>
-          <div class="years">${fmtYear(p.dob.getUTCFullYear())} – ${fmtYear((p.dod ? p.dod.getUTCFullYear() : null) ?? "present")}</div>
+          <div class="name">${i===0?'A':'B'}. <a href="${p.article}" target="_blank" rel="noopener">${p.name}</a></div>
+          <div class="years">${fmtYear(p.dob.getUTCFullYear())} – ${fmtYear((p.dod ? p.dod.getUTCFullYear() : null) ?? 'present')}</div>
         </div>
-      `).join("");
+      `).join('');
       peopleEl.innerHTML = rows;
     }
 
-    function renderScale(){
-      scaleEl.innerHTML = `<div>${minYear}</div><div>${maxYear}</div>`;
-    }
+    function renderScale(){ scaleEl.innerHTML = `<div>${minYear}</div><div>${maxYear}</div>`; }
 
-    // ---------- Canvas helpers ----------
     function resizeCanvas(){
       const dpr = window.devicePixelRatio || 1;
-      const cssW = canvas.clientWidth;
-      const cssH = canvas.clientHeight;
-      canvas.width = Math.floor(cssW * dpr);
-      canvas.height = Math.floor(cssH * dpr);
-      ctx.setTransform(dpr,0,0,dpr,0,0); // scale to CSS pixels
-      draw();
+      const cssW = canvas.clientWidth; const cssH = canvas.clientHeight;
+      canvas.width = Math.floor(cssW * dpr); canvas.height = Math.floor(cssH * dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0); draw();
     }
 
     function yearToX(year){
-      const pad = 16; // inner left/right padding
-      const w = canvas.clientWidth;
-      const usable = w - pad*2;
+      const pad = 16; const w = canvas.clientWidth; const usable = Math.max(1, w - pad*2);
       const t = (year - minYear) / (maxYear - minYear);
-      return pad + t * usable;
+      return pad + clamp(t,0,1) * usable;
     }
 
-    function drawBars(){
-      const h = canvas.clientHeight;
-      const railY = h/2; // center rail
-      const railH = 12;
+    function clearCanvas(){ ctx.clearRect(0,0,canvas.width,canvas.height); }
 
-      // Rail
-      ctx.fillStyle = '#0e1422';
-      ctx.fillRect(12, railY-railH/2, canvas.clientWidth-24, railH);
-      ctx.strokeStyle = '#1e2435';
-      ctx.strokeRect(12, railY-railH/2, canvas.clientWidth-24, railH);
+    function draw(){
+      clearCanvas(); if (!P1 || !P2) return;
+      const h = canvas.clientHeight; const railY = h/2; const railH = 12;
+      ctx.fillStyle = '#0e1422'; ctx.fillRect(12, railY-railH/2, canvas.clientWidth-24, railH);
+      ctx.strokeStyle = '#1e2435'; ctx.strokeRect(12, railY-railH/2, canvas.clientWidth-24, railH);
 
-      // Person A and B bars
-      const aL = yearToX(P1.dob.getUTCFullYear());
-      const aR = yearToX((P1.dod ? P1.dod.getUTCFullYear() : maxYear));
-      const bL = yearToX(P2.dob.getUTCFullYear());
-      const bR = yearToX((P2.dod ? P2.dod.getUTCFullYear() : maxYear));
+      const aL = yearToX(P1.dob.getUTCFullYear()); const aR = yearToX((P1.dod ? P1.dod.getUTCFullYear() : maxYear));
+      const bL = yearToX(P2.dob.getUTCFullYear()); const bR = yearToX((P2.dod ? P2.dod.getUTCFullYear() : maxYear));
+      ctx.fillStyle = 'rgba(94,157,200,0.75)'; ctx.fillRect(aL, railY-10, Math.max(0,aR-aL), 8);
+      ctx.fillStyle = 'rgba(53,199,109,0.75)'; ctx.fillRect(bL, railY+2, Math.max(0,bR-bL), 8);
 
-      // A
-      ctx.fillStyle = 'rgba(94,157,200,0.75)';
-      ctx.fillRect(aL, railY-10, Math.max(0,aR-aL), 8);
-      // B
-      ctx.fillStyle = 'rgba(53,199,109,0.75)';
-      ctx.fillRect(bL, railY+2, Math.max(0,bR-bL), 8);
-
-      // True overlap (only after reveal)
       if (revealed){
         const oStart = Math.max(P1.dob.getUTCFullYear(), P2.dob.getUTCFullYear());
         const oEnd   = Math.min((P1.dod ? P1.dod.getUTCFullYear() : maxYear), (P2.dod ? P2.dod.getUTCFullYear() : maxYear));
-        if (oEnd > oStart){
-          ctx.fillStyle = 'rgba(94,157,200,0.5)';
-          const x1 = yearToX(oStart); const x2 = yearToX(oEnd);
-          ctx.fillRect(x1, railY-10, Math.max(0,x2-x1), 20);
-        }
+        if (oEnd > oStart){ ctx.fillStyle = 'rgba(94,157,200,0.45)'; const x1 = yearToX(oStart); const x2 = yearToX(oEnd); ctx.fillRect(x1, railY-10, Math.max(0,x2-x1), 20); }
       }
 
-      // Guess overlap visualization (always visible)
-      const gs = +startSlider.value; const ge = +endSlider.value;
-      const gx1 = yearToX(gs); const gx2 = yearToX(ge);
-      ctx.fillStyle = 'rgba(242,184,75,0.35)';
-      ctx.fillRect(Math.min(gx1,gx2), railY-12, Math.abs(gx2-gx1), 24);
-
-      // Endcap ticks + labels for current guess
-      ctx.fillStyle = '#a6aec4';
-      ctx.fillRect(gx1-1, railY-16, 2, 32);
-      ctx.fillRect(gx2-1, railY-16, 2, 32);
-
-      ctx.font = '12px Inter, system-ui, sans-serif';
-      ctx.fillStyle = '#a6aec4';
-      ctx.textAlign = 'center';
-      ctx.fillText(String(gs), gx1, railY-22);
-      ctx.fillText(String(ge), gx2, railY-22);
+      const gs = +startSlider.value; const ge = +endSlider.value; const gx1 = yearToX(gs); const gx2 = yearToX(ge);
+      ctx.fillStyle = 'rgba(242,184,75,0.35)'; ctx.fillRect(Math.min(gx1,gx2), railY-12, Math.abs(gx2-gx1), 24);
+      ctx.fillStyle = '#a6aec4'; ctx.fillRect(gx1-1, railY-16, 2, 32); ctx.fillRect(gx2-1, railY-16, 2, 32);
+      ctx.font = '12px Inter, system-ui, sans-serif'; ctx.fillStyle = '#a6aec4'; ctx.textAlign = 'center';
+      ctx.fillText(String(gs), gx1, railY-22); ctx.fillText(String(ge), gx2, railY-22);
     }
 
-    function clearCanvas(){
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-    }
-
-    function draw(){
-      clearCanvas();
-      if (!P1 || !P2) return;
-      drawBars();
-    }
-
-    // ---------- Sliders ----------
     function setupSliders(){
       startSlider.min = endSlider.min = String(minYear);
       startSlider.max = endSlider.max = String(maxYear);
       const mid = Math.floor((minYear + maxYear)/2);
-      startSlider.value = String(mid - 5);
-      endSlider.value   = String(mid + 5);
-      updateSliderLabels();
-      draw();
-
-      startSlider.oninput = () => {
-        if (+startSlider.value > +endSlider.value) endSlider.value = startSlider.value;
-        updateSliderLabels(); draw();
-      };
-      endSlider.oninput = () => {
-        if (+endSlider.value < +startSlider.value) startSlider.value = endSlider.value;
-        updateSliderLabels(); draw();
-      };
+      startSlider.value = String(mid - 5); endSlider.value = String(mid + 5);
+      updateSliderLabels(); draw();
+      startSlider.oninput = () => { if (+startSlider.value > +endSlider.value) endSlider.value = startSlider.value; updateSliderLabels(); draw(); };
+      endSlider.oninput   = () => { if (+endSlider.value < +startSlider.value) startSlider.value = endSlider.value; updateSliderLabels(); draw(); };
     }
+    function updateSliderLabels(){ startVal.textContent = `${startSlider.value}`; endVal.textContent = `${endSlider.value}`; }
 
-    function updateSliderLabels(){
-      startVal.textContent = `${startSlider.value}`;
-      endVal.textContent = `${endSlider.value}`;
-    }
-
-    // ---------- Game mechanics ----------
     function computeAndReveal(){
       if (loading || !P1 || !P2) { setStatus('Still loading people. Try again in a moment.', true); return; }
       const gs = +startSlider.value; const ge = +endSlider.value;
-      const aB = P1.dob.getUTCFullYear();
-      const aD = (P1.dod ? P1.dod.getUTCFullYear() : maxYear);
-      const bB = P2.dob.getUTCFullYear();
-      const bD = (P2.dod ? P2.dod.getUTCFullYear() : maxYear);
-
-      const trueOverlap = overlapYears(aB, aD, bB, bD);
-      const guessOverlap = Math.max(0, ge - gs);
-      const off = Math.abs(trueOverlap - guessOverlap);
-      const score = Math.max(0, Math.round(100 - 4 * off));
-
-      const coexistText = (trueOverlap > 0)
-        ? `They overlapped for <b>${trueOverlap} year${trueOverlap===1?"":"s"}</b>.`
-        : `They did <b>not</b> overlap.`;
-
+      const aB = P1.dob.getUTCFullYear(); const aD = (P1.dod ? P1.dod.getUTCFullYear() : maxYear);
+      const bB = P2.dob.getUTCFullYear(); const bD = (P2.dod ? P2.dod.getUTCFullYear() : maxYear);
+      const trueOverlap = overlapYears(aB, aD, bB, bD); const guessOverlap = Math.max(0, ge - gs);
+      const off = Math.abs(trueOverlap - guessOverlap); const score = Math.max(0, Math.round(100 - 4 * off));
+      const coexistText = (trueOverlap > 0) ? `They overlapped for <b>${trueOverlap} year${trueOverlap===1?'':'s'}</b>.` : `They did <b>not</b> overlap.`;
       revealed = true; draw();
-
       resultEl.style.display = 'grid';
-      resultEl.innerHTML = `
-        <div class="score">Score: ${score}/100</div>
+      resultEl.innerHTML = `<div class="score">Score: ${score}/100</div>
         <div>${coexistText} Your guess was <b>${guessOverlap}</b> — off by <b>${off}</b>.</div>
-        <div class="muted">
-          A: ${P1.name} (${aB}–${P1.dod ? aD : 'present'}) •
-          B: ${P2.name} (${bB}–${P2.dod ? bD : 'present'})
-        </div>`;
+        <div class="muted">A: ${P1.name} (${aB}–${P1.dod ? aD : 'present'}) • B: ${P2.name} (${bB}–${P2.dod ? bD : 'present'})</div>`;
     }
 
     async function newRound(){
       loading = true; revealed = false; submitBtn.disabled = true;
-      setStatus('Loading two random people…');
-      resultEl.style.display = 'none';
+      setStatus('Loading two random people…'); resultEl.style.display = 'none';
       try{
         const rows = await fetchTwoPeople();
         const nowYear = new Date().getUTCFullYear();
         const normalize = r => ({ name:r.name, article:r.article, dob:new Date(r.dob), dod: r.dod ? new Date(r.dod) : null });
         P1 = normalize(rows[0]); P2 = normalize(rows[1]);
-
         const allStart = Math.min(P1.dob.getUTCFullYear(), P2.dob.getUTCFullYear());
         const allEnd   = Math.max(P1.dod ? P1.dod.getUTCFullYear() : nowYear, P2.dod ? P2.dod.getUTCFullYear() : nowYear);
-        minYear = Math.max(1200, allStart - 2);
-        maxYear = Math.min(nowYear, allEnd + 2);
-
-        renderPeople();
-        renderScale();
-        setupSliders();
-        resizeCanvas();
-        setStatus('');
-        submitBtn.disabled = false;
-      }catch(e){
-        console.error(e);
-        setStatus("Couldn’t load people. Try again.", true);
-        submitBtn.disabled = true;
-      } finally {
-        loading = false;
-      }
+        minYear = Math.max(1200, allStart - 2); maxYear = Math.min(nowYear, allEnd + 2);
+        renderPeople(); renderScale(); setupSliders(); resizeCanvas(); setStatus(''); submitBtn.disabled = false;
+      }catch(e){ console.error(e); setStatus("Couldn’t load people. Try again.", true); submitBtn.disabled = true; }
+      finally { loading = false; }
     }
 
-    // ---------- Events ----------
     window.addEventListener('resize', resizeCanvas);
     document.getElementById('submit').addEventListener('click', computeAndReveal);
     document.getElementById('again').addEventListener('click', newRound);
 
-    // Kickoff
     newRound();
   </script>
 </body>
