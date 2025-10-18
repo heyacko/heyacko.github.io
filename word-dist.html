@@ -97,7 +97,7 @@
     </div>
 
     <div class="footer">
-      <div>Connect <strong>A</strong> and <strong>B</strong>. Both meters must reach the hidden threshold.</div>
+      <div>Connect <strong>A</strong> and <strong>B</strong>. Both meters must reach the hidden threshold!!</div>
       <div><span class="kbd">Enter</span> submit</div>
     </div>
   </div>
@@ -105,7 +105,14 @@
   <div class="toast" id="toast">Toast</div>
 
   <script>
-  // ===== Clean MVP with BLENDED RELATIONSHIP SCORE =====
+  // ===== UI-first client with robust LOCAL mode (guaranteed-bridge pairs) =====
+  // Add `?mode=local` to URL to use client-side logic that only serves pairs with viable bridges.
+  // Otherwise, uses a Python API if provided via ?api=<BASE> or defaults to http://localhost:8000
+
+  const qs = new URLSearchParams(location.search);
+  const LOCAL_MODE = qs.get('mode') === 'local';
+  const API_BASE = LOCAL_MODE ? null : (qs.get('api') ? decodeURIComponent(qs.get('api')) : 'http://localhost:8000');
+
   const $ = s => document.querySelector(s);
   const UI = {
     A: $('#wordA'), B: $('#wordB'), score: $('#score'), streak: $('#streak'),
@@ -113,18 +120,15 @@
     guess: $('#guess'), submit: $('#submit'), skip: $('#skip'), reset: $('#reset'), toast: $('#toast')
   };
 
-  // Simple denylist to avoid trivial glue words
   const deny = new Set(['thing','object','stuff','good','bad','nice','okay','something','everything','anything','person','entity','item']);
 
-  // Small, safe, common vocabulary for seed pairs
   const commonNouns = [
     'fire','ice','water','stone','paper','music','money','love','war','peace','game','food','animal','plant','river','mountain','beach','sand','forest','computer','phone','book','movie','city','village','school','teacher','student','doctor','hospital','car','train','airplane','coffee','tea','sugar','salt','bread','cheese','fish','bird','cat','dog','house','home','family','friend','party','work','job','art','dance','song','light','dark','shadow','mirror','glass','window','door','key','lock','map','journey','travel','flight','storm','rain','snow','wind','sun','moon','star','planet','space','time','history','science','energy','power','sport','team','ball','goal','ocean','lake','island','bridge','road','path','desert','garden','flower','tree','leaf','root','seed'
   ];
 
   const state = {
     A: 'fire', B: 'ice', score: 0, streak: 0,
-    threshold: 0.12, // base; we adapt per pair below
-    timer: null, baseTime: 12, timeLeft: 12,
+    threshold: 0.12, timer: null, baseTime: 12, timeLeft: 12,
     relAB: 0
   };
 
@@ -154,98 +158,6 @@
     },100);
   }
 
-  // ===== ConceptNet relatedness (with cache) =====
-  const relCache = new Map();
-  const relKey = (a,b) => { a=a.toLowerCase(); b=b.toLowerCase(); return a<b? a+'|'+b : b+'|'+a; };
-  const save = (k,v)=>{ try{ localStorage.setItem('rel:'+k, String(v)); }catch(_){} };
-  const load = (k)=>{ try{ const v = localStorage.getItem('rel:'+k); return v? Number(v):null;}catch(_){return null;} };
-
-  async function conceptnetRel(a,b){
-    if(!a||!b) return 0;
-    const key = relKey(a,b);
-    if(relCache.has(key)) return relCache.get(key);
-    const vStored = load(key); if(vStored!==null){ relCache.set(key,vStored); return vStored; }
-    const url = `https://api.conceptnet.io/relatedness?node1=/c/en/${encodeURIComponent(a)}&node2=/c/en/${encodeURIComponent(b)}`;
-    try{
-      const res = await fetch(url);
-      const j = await res.json();
-      const v = Number(j.value||0);
-      relCache.set(key,v); save(key,v);
-      return v;
-    }catch(_){ return 0; }
-  }
-
-  // ===== Datamuse association (meaning-like) with cache =====
-  // We fetch candidates for a term and read the optional `score` that ranks closeness.
-  const dmCache = new Map(); // term -> {top:Number, map: Map(word->score)}
-  async function datamuseProfile(term){
-    term = sanitize(term);
-    if(dmCache.has(term)) return dmCache.get(term);
-    try{
-      const url = `https://api.datamuse.com/words?ml=${encodeURIComponent(term)}&max=100`;
-      const r = await fetch(url); const arr = await r.json();
-      let top = 0; const map = new Map();
-      for(const x of arr){
-        const w = sanitize(x.word);
-        const s = Number(x.score||0);
-        if(!w) continue;
-        if(s>top) top = s;
-        if(!map.has(w) || map.get(w) < s) map.set(w, s);
-      }
-      const prof = {top: top||1, map};
-      dmCache.set(term, prof);
-      return prof;
-    }catch(_){
-      const prof = {top:1, map:new Map()};
-      dmCache.set(term, prof);
-      return prof;
-    }
-  }
-
-  async function datamuseRel(a,b){
-    a = sanitize(a); b = sanitize(b);
-    if(!a||!b) return 0;
-    const [pa, pb] = await Promise.all([datamuseProfile(a), datamuseProfile(b)]);
-    const s1 = pa.map.get(b) ? (pa.map.get(b)/pa.top) : 0; // how much b appears in ml(a)
-    const s2 = pb.map.get(a) ? (pb.map.get(a)/pb.top) : 0; // how much a appears in ml(b)
-    // symmetric score: take max to reward either direction, then sqrt to soften extremes
-    const sym = Math.max(s1, s2);
-    return Math.sqrt(sym); // keep in [0,1]
-  }
-
-  // ===== Morphological similarity (no network) =====
-  function diceCoeff(a,b){
-    a = sanitize(a); b = sanitize(b);
-    if(!a||!b) return 0;
-    if(a===b) return 1;
-    const bigrams = s => {
-      const v=[]; for(let i=0;i<s.length-1;i++) v.push(s.slice(i,i+2)); return v;
-    };
-    const A = bigrams(a), B = bigrams(b);
-    const setB = new Map(); for(const x of B) setB.set(x, (setB.get(x)||0)+1);
-    let overlap=0; for(const x of A){ const c=setB.get(x)||0; if(c>0){ overlap++; setB.set(x,c-1);} }
-    return (2*overlap) / (A.length + B.length);
-  }
-
-  // ===== Blended relatedness =====
-  async function blendedRel(a,b){
-    const [cnet, dm] = await Promise.all([
-      conceptnetRel(a,b),
-      datamuseRel(a,b)
-    ]);
-    const morph = diceCoeff(a,b);
-    // Weighted blend; tweak weights if needed
-    const score = 0.55*cnet + 0.30*dm + 0.15*morph;
-    return Math.max(0, Math.min(1, score));
-  }
-
-  // Bridge score (harmonic mean) — encourages balanced bridges
-  function bridgeScore(r1,r2){
-    if(r1<=0 || r2<=0) return 0;
-    return (2*r1*r2)/(r1+r2);
-  }
-
-  // UI meters — color by individual strength; acceptance uses bridge score
   function setMeters(r1,r2){
     UI.r1.style.width = Math.max(0,Math.min(1,r1))*100+'%';
     UI.r2.style.width = Math.max(0,Math.min(1,r2))*100+'%';
@@ -255,72 +167,203 @@
     UI.r2.style.background = r2 >= state.threshold ? 'linear-gradient(90deg,var(--good),#55d98c)' : 'linear-gradient(90deg,var(--bad),#ff8a8a)';
   }
 
-  function adaptDifficultyForPair(){
-    // Pair-aware threshold: tougher if A~B already close, easier if far
-    const bump = Math.floor(state.streak/5);
-    const base = 0.10 + 0.40*state.relAB; // 0.10..0.30 depending on pair difficulty
-    state.threshold = Math.max(0.08, Math.min(0.25, base + bump*0.01));
-    state.baseTime = Math.max(6, 12 - bump);
+  // ===== Server API wrappers (optional) =====
+  async function apiJSON(path, opts={}){
+    const r = await fetch(API_BASE + path, Object.assign({ headers: {'Content-Type':'application/json'} }, opts));
+    if(!r.ok) throw new Error('API '+r.status);
+    return r.json();
+  }
+  const apiPickPair = () => apiJSON('/pair');
+  const apiBridge = (a,b,c,streak=state.streak) => apiJSON('/bridge', { method:'POST', body: JSON.stringify({a,b,c,streak}) });
+
+  // ===== LOCAL semantic functions (for LOCAL_MODE) =====
+  // ConceptNet relatedness (cached)
+  const relCache = new Map();
+  const relKey = (a,b)=>{ a=sanitize(a); b=sanitize(b); return a<b? a+'|'+b : b+'|'+a; };
+  async function conceptnetRel(a,b){
+    if(!a||!b) return 0;
+    const key = relKey(a,b);
+    if(relCache.has(key)) return relCache.get(key);
+    try{
+      const url = `https://api.conceptnet.io/relatedness?node1=/c/en/${encodeURIComponent(a)}&node2=/c/en/${encodeURIComponent(b)}`;
+      const res = await fetch(url); const j = await res.json();
+      const v = Number(j.value||0); relCache.set(key,v); return v;
+    }catch(_){ return 0; }
   }
 
-  async function pickSeedPair(){
-    for(let tries=0; tries<50; tries++){
-      const a = commonNouns[Math.floor(Math.random()*commonNouns.length)];
-      const b = commonNouns[Math.floor(Math.random()*commonNouns.length)];
-      if(a===b) continue;
-      const relAB = await blendedRel(a,b);
-      if(relAB>=0.05 && relAB<=0.30) return {a,b,relAB};
+  // Datamuse meaning-like profile (cached)
+  const dmCache = new Map(); // term -> {top, map}
+  async function datamuseProfile(term){
+    term = sanitize(term);
+    if(dmCache.has(term)) return dmCache.get(term);
+    try{
+      const url = `https://api.datamuse.com/words?ml=${encodeURIComponent(term)}&max=100`;
+      const r = await fetch(url); const arr = await r.json();
+      let top = 1; const map = new Map();
+      for(const x of arr){ const w=sanitize(x.word); const s=Number(x.score||0); if(!w) continue; if(s>top) top=s; if(!map.has(w)||map.get(w)<s) map.set(w,s); }
+      const prof = {top, map}; dmCache.set(term, prof); return prof;
+    }catch(_){ const prof = {top:1, map:new Map()}; dmCache.set(term, prof); return prof; }
+  }
+  async function datamuseRel(a,b){
+    const [pa,pb] = await Promise.all([datamuseProfile(a), datamuseProfile(b)]);
+    const s1 = pa.map.get(sanitize(b)) ? (pa.map.get(sanitize(b))/pa.top) : 0;
+    const s2 = pb.map.get(sanitize(a)) ? (pb.map.get(sanitize(a))/pb.top) : 0;
+    const sym = Math.max(s1,s2);
+    return Math.sqrt(sym);
+  }
+
+  function diceCoeff(a,b){
+    a=sanitize(a); b=sanitize(b); if(!a||!b) return 0; if(a===b) return 1;
+    const grams = s=>{ const v=[]; for(let i=0;i<s.length-1;i++) v.push(s.slice(i,i+2)); return v; };
+    const A=grams(a), B=grams(b); const cnt=new Map(); for(const x of B) cnt.set(x,(cnt.get(x)||0)+1);
+    let overlap=0; for(const x of A){ const c=cnt.get(x)||0; if(c>0){overlap++; cnt.set(x,c-1);} }
+    return (2*overlap)/(A.length+B.length);
+  }
+
+  async function blendedRel(a,b){
+    const [cnet, dm] = await Promise.all([conceptnetRel(a,b), datamuseRel(a,b)]);
+    const mor = diceCoeff(a,b);
+    return Math.max(0, Math.min(1, 0.55*cnet + 0.30*dm + 0.15*mor));
+  }
+
+  function bridgeScore(r1,r2){ if(r1<=0||r2<=0) return 0; return (2*r1*r2)/(r1+r2); }
+
+  function adaptiveThreshold(relAB, streak){
+    const base = 0.10 + 0.40*relAB; // 0.10..0.30 depending on pair closeness
+    const bump = Math.min(Math.floor(streak/5),6)*0.01;
+    return Math.max(0.08, Math.min(0.25, base + bump));
+  }
+
+  // Build candidate bridges via Datamuse intersections and score with blendedRel
+  async function bridgeCandidates(a,b,{maxIntersect=80,maxScored=40}={}){
+    const [pa, pb] = await Promise.all([datamuseProfile(a), datamuseProfile(b)]);
+    const setA = new Set([...pa.map.keys()]);
+    const inter = [...pb.map.keys()]
+      .filter(w=>setA.has(w))
+      .map(w=>sanitize(w))
+      .filter(w=>w && !deny.has(w) && w!==a && w!==b);
+    const unique = [...new Set(inter)].slice(0,maxIntersect);
+    const scored = [];
+    for(const w of unique.slice(0,maxScored)){
+      const [r1,r2] = await Promise.all([blendedRel(a,w), blendedRel(w,b)]);
+      const s = (r1>0 && r2>0) ? (2*r1*r2)/(r1+r2) : 0;
+      scored.push({w,r1,r2,s});
     }
-    return {a:'fire', b:'ice', relAB: await blendedRel('fire','ice')};
+    scored.sort((x,y)=>y.s-x.s);
+    return scored;
   }
 
-  async function setPair(a,b){
-    state.A=a; state.B=b;
+  // Local pair picker: only accept pairs with ≥ MIN_CANDIDATES good bridges
+  async function pickSeedPairLocal(){
+    const MIN_CANDIDATES = 3;
+    const MIN_BRIDGE_SCORE = 0.12;
+    const MAX_TRIES = 80;
+
+    for(let tries=0; tries<MAX_TRIES; tries++){
+      const a = commonNouns[Math.floor(Math.random()*commonNouns.length)];
+
+      // pick b from ml(a), prefer nouns in our list, avoid near-duplicates
+      const profA = await datamuseProfile(a);
+      const mlA = [...profA.map.entries()].map(([w,score])=>({w,score}))
+        .filter(({w})=> w!==a && !deny.has(w))
+        .sort((x,y)=>y.score-x.score);
+
+      let b = null;
+      for(const cand of mlA.slice(0,40)){
+        const w = cand.w;
+        if(!commonNouns.includes(w)) continue; // prefer curated nouns
+        if(diceCoeff(a,w) > 0.6) continue;     // too morphologically close
+        b = w; break;
+      }
+      if(!b && mlA.length) b = mlA[0].w;
+      if(!b || b===a) continue;
+
+      const relAB = await blendedRel(a,b);
+      if(relAB > 0.40) continue; // too trivial
+      if(relAB < 0.03) continue; // probably impossible
+
+      const bridges = await bridgeCandidates(a,b);
+      const good = bridges.filter(x=>x.s >= MIN_BRIDGE_SCORE);
+      if(good.length >= MIN_CANDIDATES){
+        return {a,b,relAB,bridges:bridges.slice(0,8)};
+      }
+    }
+    const relAB = await blendedRel('fire','ice');
+    return {a:'fire', b:'ice', relAB, bridges:[]};
+  }
+
+  // ===== Game flow =====
+  async function setPair(a,b, relAB, threshold, baseTime){
+    state.A=a; state.B=b; state.relAB = relAB||0;
+    state.threshold = threshold ?? adaptiveThreshold(state.relAB, state.streak);
+    state.baseTime = baseTime ?? 12;
     UI.A.textContent = a; UI.B.textContent = b;
-    state.relAB = await blendedRel(a,b);
-    adaptDifficultyForPair();
     setMeters(0,0); UI.guess.value=''; UI.guess.focus();
     startTimer();
   }
 
   async function startGame(){
-    state.score=0; state.streak=0; state.threshold=0.12; state.baseTime=12; updateHUD();
-    const {a,b} = await pickSeedPair();
-    await setPair(a,b);
-  }
-
-  async function onSubmit(){
-    let c = sanitize(UI.guess.value);
-    if(!c){ toast('Enter a word'); return; }
-    if(deny.has(c)){ toast('Too generic'); return; }
-    if(c===state.A || c===state.B){ toast('Must differ from A and B'); return; }
-
-    UI.submit.disabled = true;
-    const [r1, r2] = await Promise.all([
-      blendedRel(state.A, c),
-      blendedRel(c, state.B)
-    ]);
-    setMeters(r1,r2);
-    const bridge = bridgeScore(r1,r2);
-    const ok = bridge >= state.threshold;
-
-    if(ok){
-      state.score += 100; state.streak += 1; updateHUD(); toast('+100');
-      const {a,b} = await pickSeedPair(); await setPair(a,b);
+    state.score=0; state.streak=0; updateHUD();
+    if(API_BASE){
+      try{ const p = await apiPickPair(); await setPair(p.a,p.b,p.relAB,p.threshold,p.baseTime); }
+      catch(e){ console.error(e); toast('API error: /pair'); }
     } else {
-      onFail('Bridge rejected');
+      const p = await pickSeedPairLocal(); await setPair(p.a,p.b,p.relAB);
     }
-    UI.submit.disabled = false;
   }
+
+async function onSubmit() {
+  const c = sanitize(UI.guess.value);
+  if (!c) { toast('Enter a word'); return; }
+  if (deny.has(c)) { toast('Too generic'); return; }
+  if (c === state.A || c === state.B) { toast('Must differ from A and B'); return; }
+
+  stopTimer(); // <-- stops timer while evaluating the guess
+
+  UI.submit.disabled = true;
+  try {
+    if (API_BASE) {
+      const res = await apiBridge(state.A, state.B, c, state.streak);
+      state.threshold = res.threshold ?? state.threshold;
+      setMeters(res.r1, res.r2);
+      if (res.ok) {
+        state.score += 100; state.streak += 1; updateHUD(); toast('+100');
+        const p = await apiPickPair(); await setPair(p.a, p.b, p.relAB, p.threshold, p.baseTime);
+      } else {
+        onFail('Bridge rejected');
+      }
+    } else {
+      const [r1, r2] = await Promise.all([blendedRel(state.A, c), blendedRel(c, state.B)]);
+      setMeters(r1, r2);
+      const bridge = (r1 > 0 && r2 > 0) ? (2 * r1 * r2) / (r1 + r2) : 0;
+      const th = adaptiveThreshold(state.relAB, state.streak);
+      state.threshold = th;
+      if (bridge >= th) {
+        state.score += 100; state.streak += 1; updateHUD(); toast('+100');
+        const p = await pickSeedPairLocal(); await setPair(p.a, p.b, p.relAB);
+      } else {
+        onFail('Bridge rejected');
+      }
+    }
+  } catch (e) {
+    console.error(e); toast('Error scoring bridge');
+  }
+  UI.submit.disabled = false;
+}
 
   async function onSkip(){
     state.streak = 0; updateHUD(); toast('New pair');
-    const {a,b} = await pickSeedPair(); await setPair(a,b);
+    if(API_BASE){
+      try{ const p = await apiPickPair(); await setPair(p.a,p.b,p.relAB,p.threshold,p.baseTime); }
+      catch(e){ console.error(e); toast('API error: /pair'); }
+    } else {
+      const p = await pickSeedPairLocal(); await setPair(p.a,p.b,p.relAB);
+    }
   }
 
   function onFail(reason){ toast(`${reason} — streak ${state.streak}`); state.streak=0; updateHUD(); startTimer(); }
 
-  // Wire events
+  // Events
   UI.submit.addEventListener('click', onSubmit);
   UI.skip.addEventListener('click', onSkip);
   UI.reset.addEventListener('click', startGame);
