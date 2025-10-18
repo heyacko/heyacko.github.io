@@ -356,6 +356,19 @@
     };
 
     // ===== Helpers =====
+
+    // ===== TIMEOUT HELPER =====
+    async function fetchWithTimeout(url, { timeout = 500, ...opts } = {}) {
+      const ctrl = new AbortController();
+      const id = setTimeout(() => ctrl.abort(), timeout);
+      try {
+        const res = await fetch(url, { signal: ctrl.signal, ...opts });
+        return res;
+      } finally {
+        clearTimeout(id);
+      }
+    }
+
     function sanitize(w) {
       if (!w) return '';
       w = w.toLowerCase().trim();
@@ -392,11 +405,12 @@
       const key = relKey(a, b);
       if (relCache.has(key)) return relCache.get(key);
       const vStored = load(key); if (vStored !== null) { relCache.set(key, vStored); return vStored; }
+
       const url = `https://api.conceptnet.io/relatedness?node1=/c/en/${encodeURIComponent(a)}&node2=/c/en/${encodeURIComponent(b)}`;
       try {
-        const res = await fetch(url);
+        const res = await fetchWithTimeout(url, { timeout: 500 });
         const j = await res.json();
-        const v = Number(j.value || 0);
+        const v = Number(j.value || 0) || 0;
         relCache.set(key, v); save(key, v);
         return v;
       } catch (_) { return 0; }
@@ -410,7 +424,8 @@
       if (dmCache.has(term)) return dmCache.get(term);
       try {
         const url = `https://api.datamuse.com/words?ml=${encodeURIComponent(term)}&max=100`;
-        const r = await fetch(url); const arr = await r.json();
+        const r = await fetchWithTimeout(url, { timeout: 500 });
+        const arr = await r.json();
         let top = 0; const map = new Map();
         for (const x of arr) {
           const w = sanitize(x.word);
