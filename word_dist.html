@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Word Association Tunnel — MVP</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card: #171a21;
+      --muted: #8b93a7;
+      --text: #e9ecf1;
+      --accent: #5e9dc8;
+      --good: #35c76d;
+      --bad: #ff5a5a;
+      --warn: #f2b84b;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 10% -10%, #1a1f2a 0%, var(--bg) 50%),
+                  radial-gradient(1200px 700px at 110% 110%, #141821 0%, var(--bg) 40%);
+      color: var(--text);
+      display: grid; place-items: center;
+      padding: 24px;
+    }
+    .app {
+      width: 100%; max-width: 880px; background: color-mix(in srgb, var(--card) 96%, #000 4%);
+      border: 1px solid #202530; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #232836; }
+    header h1 { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: .2px; color: #dfe6f3; }
+    .stats { display: flex; align-items: center; gap: 14px; color: var(--muted); font-weight: 600; }
+    .pill { padding: 6px 10px; border-radius: 999px; background: #202637; border: 1px solid #2a3144; color: #dbe6f6; font-size: 12px; }
+    .pill .v { color: #fff; font-weight: 700; margin-left: 6px; }
+
+    .board { padding: 28px 20px; display: grid; gap: 18px; }
+    .pair {
+      background: #121620; border: 1px solid #212735; border-radius: 14px; padding: 18px;
+      display: grid; gap: 10px;
+    }
+    .pair-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; }
+    .word {
+      font-size: clamp(22px, 5vw, 40px); font-weight: 800; letter-spacing: .5px; text-align: center;
+      padding: 8px 10px; border-radius: 12px; background: #151a25; border: 1px solid #242b3b;
+      text-shadow: 0 1px 0 rgba(0,0,0,.4);
+    }
+    .connector { color: var(--muted); font-weight: 700; }
+
+    .input-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+    input[type="text"] {
+      background: #0f1320; border: 1px solid #253048; color: var(--text); border-radius: 12px;
+      padding: 14px 16px; font-size: 18px; outline: none; transition: border .2s ease;
+    }
+    input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(94,157,200,0.18); }
+    button {
+      background: linear-gradient(180deg, #2b6e98, #255e82); border: 1px solid #2a6c95;
+      color: #fff; font-weight: 800; letter-spacing: .3px; padding: 12px 16px; border-radius: 12px; cursor: pointer;
+    }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+
+    .meters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .meter { background: #111521; border: 1px solid #222a3a; border-radius: 10px; padding: 10px 12px; }
+    .meter label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .bar { position: relative; height: 10px; background: #1b2131; border-radius: 999px; overflow: hidden; }
+    .fill { position: absolute; inset: 0 auto 0 0; width: 0%; background: linear-gradient(90deg, var(--good), #55d98c); transition: width .35s ease; }
+
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-secondary { background: #1c2333; border: 1px solid #2a3348; }
+    .btn-warn { background: #3a2b10; border: 1px solid #5a4315; }
+
+    .hintbar { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { background: #202638; border: 1px solid #2a3146; color: #dbe6f6; padding: 6px 10px; border-radius: 999px; font-size: 13px; cursor: pointer; }
+
+    .toast { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); background: #101522;
+             border: 1px solid #2a3348; color: #fff; padding: 10px 14px; border-radius: 10px; opacity: 0; transition: opacity .2s ease; }
+    .toast.show { opacity: 1; }
+
+    .footer { padding: 12px 20px; border-top: 1px solid #232836; color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .kbd { border: 1px solid #30384e; background: #1a2030; padding: 2px 6px; border-radius: 6px; color: #c6d2e8; font-weight: 700; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Word Association Tunnel</h1>
+      <div class="stats">
+        <div class="pill">Score <span class="v" id="score">0</span></div>
+        <div class="pill">Streak <span class="v" id="streak">0</span></div>
+        <div class="pill">Threshold <span class="v" id="thres">0.12</span></div>
+        <div class="pill">Time <span class="v" id="time">—</span></div>
+      </div>
+    </header>
+
+    <div class="board">
+      <div class="pair">
+        <div class="pair-row">
+          <div class="word" id="wordA">…</div>
+          <div class="connector">⟶</div>
+          <div class="word" id="wordB">…</div>
+        </div>
+        <div class="meters">
+          <div class="meter">
+            <label><span>rel(A, C)</span><span id="r1v">0.00</span></label>
+            <div class="bar"><div class="fill" id="r1"></div></div>
+          </div>
+          <div class="meter">
+            <label><span>rel(C, B)</span><span id="r2v">0.00</span></label>
+            <div class="bar"><div class="fill" id="r2"></div></div>
+          </div>
+        </div>
+        <div class="input-row">
+          <input id="guess" type="text" placeholder="Type a bridge word… (noun works best)" autocomplete="off" />
+          <button id="submit">Submit ↵</button>
+        </div>
+        <div class="controls">
+          <button id="hint" class="btn-secondary">Hints</button>
+          <button id="skip" class="btn-warn">Skip Pair</button>
+          <button id="reset" class="btn-secondary">Reset</button>
+        </div>
+        <div class="hintbar" id="hintbar"></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Find a word that relates to <strong>A</strong> and <strong>B</strong>. 
+        Acceptance requires both relatedness ≥ threshold.
+      </div>
+      <div><span class="kbd">Enter</span> submit · <span class="kbd">/</span> focus</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Toast</div>
+
+  <script>
+    // ===== Utility & State =====
+    const $ = (s) => document.querySelector(s);
+    const UI = {
+      A: $('#wordA'), B: $('#wordB'), score: $('#score'), streak: $('#streak'),
+      thres: $('#thres'), time: $('#time'), r1: $('#r1'), r2: $('#r2'), r1v: $('#r1v'), r2v: $('#r2v'),
+      guess: $('#guess'), submit: $('#submit'), hint: $('#hint'), skip: $('#skip'), reset: $('#reset'),
+      hintbar: $('#hintbar'), toast: $('#toast')
+    };
+
+    const deny = new Set([ 'thing','object','stuff','good','bad','nice','okay','something','everything','anything','person','entity','item','none','null' ]);
+
+    const commonNouns = [
+      'fire','ice','water','stone','paper','music','money','love','war','peace','game','food','animal','plant','river','mountain','beach','sand','forest','computer','phone','book','movie','city','village','school','teacher','student','doctor','hospital','car','train','airplane','coffee','tea','sugar','salt','bread','cheese','fish','bird','cat','dog','house','home','family','friend','party','work','job','art','dance','song','light','dark','shadow','mirror','glass','window','door','key','lock','map','journey','travel','flight','storm','rain','snow','wind','sun','moon','star','planet','space','time','history','science','energy','power','sport','team','ball','goal','ocean','lake','island','bridge','road','path','forest','desert','garden','flower','tree','leaf','root','seed'
+    ];
+
+    const state = {
+      A: 'fire', B: 'ice',
+      score: 0, streak: 0, threshold: 0.12,
+      used: new Set(),
+      roundTimer: null, baseTime: 12, timeLeft: 12,
+    };
+
+    // ===== Caching relatedness in-memory + localStorage =====
+    const relCache = new Map();
+    function relKey(a,b){ a=a.toLowerCase(); b=b.toLowerCase(); return a < b ? a+'|'+b : b+'|'+a; }
+    function saveCache(k,v){ try{ localStorage.setItem('rel:'+k, String(v)); }catch(e){} }
+    function loadCache(k){ try{ const v = localStorage.getItem('rel:'+k); return v ? Number(v) : null; }catch(e){ return null; } }
+
+    async function relatedness(a, b){
+      if(!a || !b) return 0;
+      const key = relKey(a,b);
+      if(relCache.has(key)) return relCache.get(key);
+      const vStored = loadCache(key);
+      if(vStored !== null){ relCache.set(key, vStored); return vStored; }
+      const url = `https://api.conceptnet.io/relatedness?node1=/c/en/${encodeURIComponent(a)}&node2=/c/en/${encodeURIComponent(b)}`;
+      try {
+        const res = await fetch(url);
+        const j = await res.json();
+        const v = Number(j.value || 0);
+        relCache.set(key, v); saveCache(key, v);
+        return v;
+      } catch (e){ return 0; }
+    }
+
+    function bridgeScore(r1, r2){
+      if(r1 <= 0 || r2 <= 0) return 0;
+      return (2 * r1 * r2) / (r1 + r2);
+    }
+
+    function sanitize(w){
+      if(!w) return '';
+      w = w.toLowerCase().trim();
+      w = w.normalize('NFKD').replace(/[\u0300-\u036f]/g,'');
+      // naive singularization for plurals
+      if(w.endsWith('ies') && w.length > 4) w = w.slice(0,-3) + 'y';
+      else if(w.endsWith('ses') || w.endsWith('xes')) w = w.slice(0,-2);
+      else if(w.endsWith('s') && !w.endsWith('ss') && w.length > 3) w = w.slice(0,-1);
+      return w.replace(/[^a-z\- ]/g,'');
+    }
+
+    function toast(msg){
+      UI.toast.textContent = msg;
+      UI.toast.classList.add('show');
+      setTimeout(()=>UI.toast.classList.remove('show'), 1400);
+    }
+
+    function setMeters(r1, r2){
+      UI.r1.style.width = Math.max(0, Math.min(1, r1)) * 100 + '%';
+      UI.r2.style.width = Math.max(0, Math.min(1, r2)) * 100 + '%';
+      UI.r1v.textContent = r1.toFixed(2);
+      UI.r2v.textContent = r2.toFixed(2);
+      UI.r1.style.background = r1 >= state.threshold ? 'linear-gradient(90deg, var(--good), #55d98c)' : 'linear-gradient(90deg, var(--bad), #ff8a8a)';
+      UI.r2.style.background = r2 >= state.threshold ? 'linear-gradient(90deg, var(--good), #55d98c)' : 'linear-gradient(90deg, var(--bad), #ff8a8a)';
+    }
+
+    function updateHeader(){
+      UI.score.textContent = state.score;
+      UI.streak.textContent = state.streak;
+      UI.thres.textContent = state.threshold.toFixed(2);
+    }
+
+    function resetMeters(){ setMeters(0,0); }
+
+    function resetUsed(){ state.used = new Set([state.A, state.B]); }
+
+    function adjustDifficulty(){
+      const bump = Math.floor(state.streak / 5);
+      state.threshold = Math.min(0.12 + bump * 0.02, 0.20);
+      state.baseTime = Math.max(6, 12 - bump);
+      updateHeader();
+    }
+
+    function stopTimer(){ if(state.roundTimer){ clearInterval(state.roundTimer); state.roundTimer = null; } }
+
+    function startTimer(){
+      stopTimer();
+      state.timeLeft = state.baseTime;
+      UI.time.textContent = state.timeLeft.toFixed(1) + 's';
+      state.roundTimer = setInterval(()=>{
+        state.timeLeft -= 0.1;
+        if(state.timeLeft <= 0){
+          stopTimer();
+          gameOver('Time up!');
+        } else UI.time.textContent = state.timeLeft.toFixed(1) + 's';
+      }, 100);
+    }
+
+    async function pickSeedPair(){
+      // Try up to N attempts to find a pair with moderate relatedness
+      for(let tries=0; tries<40; tries++){
+        const a = commonNouns[Math.floor(Math.random()*commonNouns.length)];
+        let b = commonNouns[Math.floor(Math.random()*commonNouns.length)];
+        if(a === b) continue;
+        const relAB = await relatedness(a,b);
+        if(relAB >= 0.05 && relAB <= 0.25){
+          return { a, b, relAB };
+        }
+      }
+      // Fallback
+      return { a: 'fire', b: 'ice', relAB: await relatedness('fire','ice') };
+    }
+
+    async function setPair(a,b){
+      state.A = a; state.B = b;
+      UI.A.textContent = a; UI.B.textContent = b;
+      resetUsed(); resetMeters(); UI.guess.value=''; UI.guess.focus();
+      startTimer();
+    }
+
+    async function startGame(){
+      state.score = 0; state.streak = 0; state.threshold = 0.12; updateHeader();
+      const {a,b} = await pickSeedPair();
+      await setPair(a,b);
+    }
+
+    function gameOver(reason){
+      stopTimer();
+      toast(reason + ' — Streak ended at ' + state.streak);
+      state.streak = 0; adjustDifficulty(); updateHeader();
+      // Keep current pair; let player try again or skip.
+    }
+
+    async function onSubmit(){
+      let c = sanitize(UI.guess.value);
+      if(!c){ toast('Enter a word.'); return; }
+      if(deny.has(c)){ toast('Too generic. Try a more specific noun.'); return; }
+      if(c === state.A || c === state.B){ toast('Must be different from A and B.'); return; }
+      if(state.used.has(c)){ toast('Already used this run.'); return; }
+
+      UI.submit.disabled = true;
+      const [r1, r2] = await Promise.all([
+        relatedness(state.A, c),
+        relatedness(c, state.B)
+      ]);
+      setMeters(r1, r2);
+      const S = bridgeScore(r1, r2);
+      const ok = (r1 >= state.threshold && r2 >= state.threshold);
+
+      if(ok){
+        const relAB = await relatedness(state.A, state.B);
+        let pts = Math.round(100 * S);
+        if(S > relAB) pts += 25; // bonus for improving the bridge
+        state.score += pts;
+        state.streak += 1;
+        adjustDifficulty(); updateHeader();
+        state.used.add(c);
+        toast(`✔ Bridge! +${pts} (S=${S.toFixed(2)})`);
+        await setPair(state.B, c);
+      } else {
+        gameOver('Bridge rejected');
+      }
+      UI.submit.disabled = false;
+    }
+
+    async function onSkip(){
+      stopTimer();
+      const {a,b} = await pickSeedPair();
+      state.streak = 0; adjustDifficulty(); updateHeader();
+      toast('New pair. Streak reset.');
+      await setPair(a,b);
+    }
+
+    function chip(word){
+      const el = document.createElement('span');
+      el.className = 'chip'; el.textContent = word;
+      el.onclick = () => { UI.guess.value = word; UI.guess.focus(); };
+      return el;
+    }
+
+    async function onHint(){
+      // Spend time as a cost for hint
+      state.timeLeft = Math.max(0, state.timeLeft - 5);
+      UI.time.textContent = state.timeLeft.toFixed(1) + 's';
+      UI.hintbar.innerHTML = '<span class="chip">Loading…</span>';
+      try{
+        const [ra, rb] = await Promise.all([
+          fetch(`https://api.datamuse.com/words?ml=${encodeURIComponent(state.A)}&max=40`).then(r=>r.json()),
+          fetch(`https://api.datamuse.com/words?ml=${encodeURIComponent(state.B)}&max=40`).then(r=>r.json())
+        ]);
+        const setA = new Set(ra.map(x=>sanitize(x.word)).filter(Boolean));
+        const inter = [...new Set(rb.map(x=>sanitize(x.word)).filter(w=>setA.has(w)))].filter(w=>!deny.has(w) && w!==state.A && w!==state.B);
+        // Score candidates by bridge score
+        const scored = await Promise.all(inter.slice(0,40).map(async w=>{
+          const [r1, r2] = await Promise.all([relatedness(state.A,w), relatedness(w,state.B)]);
+          return { w, s: bridgeScore(r1,r2) };
+        }));
+        scored.sort((a,b)=>b.s-a.s);
+        UI.hintbar.innerHTML = '';
+        scored.slice(0,8).forEach(({w})=> UI.hintbar.appendChild(chip(w)) );
+        if(UI.hintbar.children.length===0){ UI.hintbar.textContent = 'No good hints found. Try a different approach.'; }
+      }catch(e){ UI.hintbar.textContent = 'Hint fetch failed.'; }
+    }
+
+    // ===== Wire up events =====
+    UI.submit.addEventListener('click', onSubmit);
+    UI.skip.addEventListener('click', onSkip);
+    UI.reset.addEventListener('click', startGame);
+    UI.hint.addEventListener('click', onHint);
+    UI.guess.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') onSubmit();
+    });
+    window.addEventListener('keydown', (e)=>{
+      if(e.key === '/') { e.preventDefault(); UI.guess.focus(); }
+    });
+
+    // ===== Init =====
+    (async function(){
+      await startGame();
+    })();
+  </script>
+</body>
+</html>
