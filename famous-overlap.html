@@ -352,228 +352,268 @@
             return P31.some(c => c?.mainsnak?.datavalue?.value?.id === 'Q5');
         }
 
-        async function fetchTwoPeopleViaApis(attempts = 5, windowDays = 30) {
-            // Try stricter → looser thresholds before giving up
-            const THRESHOLDS = [100000, 50000, 20000, 5000, 0]; // views over last `windowDays`
-
-            for (let i = 0; i < attempts; i++) {
-                // Pull a bigger random batch to improve odds
-                const random = await getRandomPages(60);
-                const pageids = random.map(p => p.id);
-                const pagesObj = await getPageProps(pageids);
-                const pages = Object.values(pagesObj);
-                const qids = pages.map(p => p?.pageprops?.wikibase_item).filter(Boolean);
-                if (qids.length === 0) continue;
-
-                const entities = await getWikidataEntities(qids.slice(0, 50));
-                const humans = [];
-
-                // Build candidate list (with NaN-year filter)
-                for (const qid of Object.keys(entities)) {
-                    const e = entities[qid];
-                    if (!hasInstanceOfHuman(e.claims)) continue;
-
-                    const dobClaim = (e.claims.P569 || [])[0];
-                    const dodClaim = (e.claims.P570 || [])[0];
-
-                    const dob = extractDate(dobClaim);
-                    if (!dob) continue;
-
-                    const dod = extractDate(dodClaim) || null;
-
-                    const birthYear = dob.getUTCFullYear();
-                    if (Number.isNaN(birthYear)) continue;
-                    if (dod !== null) {
-                        const deathYear = dod.getUTCFullYear();
-                        if (Number.isNaN(deathYear)) continue;
-                    }
-
-                    const title = e?.sitelinks?.enwiki?.title;
-                    const article = title
-                        ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
-                        : null;
-                    const name = e?.labels?.en?.value || title || qid;
-                    if (article) humans.push({ name, dob, dod, article, title });
+        async function fetchTwoPeopleViaApis(attempts = 6) {
+            // --- tiny helper (scoped here so you don't have to add code elsewhere) ---
+            async function getTopViewedTitles(limit = 200) {
+                try {
+                    const now = new Date();
+                    // yesterday in UTC
+                    const y = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
+                    const yyyy = y.getUTCFullYear();
+                    const mm = String(y.getUTCMonth() + 1).padStart(2, "0");
+                    const dd = String(y.getUTCDate()).padStart(2, "0");
+                    const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/${yyyy}/${mm}/${dd}`;
+                    const r = await fetch(url);
+                    if (!r.ok) return [];
+                    const j = await r.json();
+                    const items = j?.items?.[0]?.articles || [];
+                    // filter out Main_Page and special entries, return plain titles
+                    return items
+                        .map(x => x?.article)
+                        .filter(Boolean)
+                        .filter(t => t !== "Main_Page" && !t.startsWith("Special:"))
+                        .slice(0, limit)
+                        .map(t => decodeURIComponent(t.replace(/_/g, " "))); // back to spaces for pageprops resolver
+                } catch {
+                    return [];
                 }
-
-                // Shuffle to keep variety
-                for (let j = humans.length - 1; j > 0; j--) {
-                    const k = Math.floor(Math.random() * (j + 1));
-                    [humans[j], humans[k]] = [humans[k], humans[j]];
-                }
-
-                // Popularity pass: relax thresholds until we get 2
-                const cache = new Map(); // title -> views
-                for (const threshold of THRESHOLDS) {
-                    const picks = [];
-                    for (const h of humans) {
-                        const title = h.title || h.name;
-                        let views = cache.get(title);
-                        if (views === undefined) {
-                            try {
-                                views = await getViewsLastNDays(title, windowDays);
-                            } catch {
-                                views = 0; // be forgiving
-                            }
-                            cache.set(title, views);
-                        }
-                        if (views >= threshold) {
-                            picks.push(h);
-                            if (picks.length === 2) {
-                                // strip helper field
-                                return picks.map(({ title: _t, ...rest }) => rest);
-                            }
-                        }
-                    }
-                    // If we didn't get 2, drop to the next, looser threshold
-                }
-                // Try another random batch on next attempt
             }
 
-            throw new Error('not enough humans after attempts (pageviews pipeline too noisy)');
-        }
+            // Phase 0: try to harvest humans from Top Viewed pages first (fast + famous)
+            const topTitles = await getTopViewedTitles(200);
+            if (topTitles.length) {
+                // Resolve QIDs for top titles, then filter to humans with good dates
+                try {
+                    // Batch pageprops lookups in chunks (API cap ~50 ids; we’re using titles here)
+                    async function resolveTitlesToHumans(titles) {
+                        const chunkSize = 40;
+                        const out = [];
+                        for (let i = 0; i < titles.length; i += chunkSize) {
+                            const chunk = titles.slice(i, i + chunkSize);
+                            const url = `https://en.wikipedia.org/w/api.php?origin=*&action=query&prop=pageprops|info&inprop=url&ppprop=wikibase_item&format=json&titles=${encodeURIComponent(chunk.join("|"))}`;
+                            const r = await fetch(url);
+                            if (!r.ok) continue;
+                            const j = await r.json();
+                            const pages = Object.values(j?.query?.pages || {});
+                            const qids = pages.map(p => p?.pageprops?.wikibase_item).filter(Boolean);
+                            if (!qids.length) continue;
 
+                            // fetch entities
+                            const ids = qids.join("|");
+                            const entUrl = `https://www.wikidata.org/w/api.php?origin=*&action=wbgetentities&ids=${ids}&props=labels|claims|sitelinks&languages=en&format=json`;
+                            const er = await fetch(entUrl);
+                            if (!er.ok) continue;
+                            const ej = await er.json();
+                            const entities = ej?.entities || {};
 
-        const SEED = [
-            { name: "Albert Einstein", dob: new Date("1879-03-14"), dod: new Date("1955-04-18"), article: "https://en.wikipedia.org/wiki/Albert_Einstein" },
-            { name: "Queen Elizabeth II", dob: new Date("1926-04-21"), dod: new Date("2022-09-08"), article: "https://en.wikipedia.org/wiki/Elizabeth_II" },
-            { name: "Barack Obama", dob: new Date("1961-08-04"), dod: null, article: "https://en.wikipedia.org/wiki/Barack_Obama" },
-            { name: "Frida Kahlo", dob: new Date("1907-07-06"), dod: new Date("1954-07-13"), article: "https://en.wikipedia.org/wiki/Frida_Kahlo" },
-            { name: "Kurt Cobain", dob: new Date("1967-02-20"), dod: new Date("1994-04-05"), article: "https://en.wikipedia.org/wiki/Kurt_Cobain" },
-            { name: "Freddie Mercury", dob: new Date("1946-09-05"), dod: new Date("1991-11-24"), article: "https://en.wikipedia.org/wiki/Freddie_Mercury" }
-        ];
+                            // NaN-safe date extractor
+                            const extractDate = claim => {
+                                try {
+                                    const time = claim?.mainsnak?.datavalue?.value?.time;
+                                    if (!time) return null;
+                                    const m = time.match(/([+-]?\d{1,4})-(\d{2})-(\d{2})/);
+                                    if (!m) return null;
+                                    const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+                                    const dt = new Date(`${String(y).padStart(4, '0')}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}T00:00:00Z`);
+                                    const yr = dt.getUTCFullYear();
+                                    if (Number.isNaN(yr)) return null;
+                                    return dt;
+                                } catch { return null; }
+                            };
 
-        async function fetchTwoPeople() {
-            try { return await fetchTwoPeopleViaApis(); }
-            catch (e) {
-                console.warn('API pipeline failed, using seed.', e);
-                const a = SEED[Math.floor(Math.random() * SEED.length)];
-                let b = SEED[Math.floor(Math.random() * SEED.length)];
-                while (b === a) b = SEED[Math.floor(Math.random() * SEED.length)];
-                return [a, b];
+                            const isHuman = claims => {
+                                const P31 = claims?.P31 || [];
+                                return P31.some(c => c?.mainsnak?.datavalue?.value?.id === "Q5");
+                            };
+
+                            for (const qid of Object.keys(entities)) {
+                                const e = entities[qid];
+                                if (!isHuman(e.claims)) continue;
+                                const dob = extractDate((e.claims.P569 || [])[0]);
+                                if (!dob) continue;
+                                const dodRaw = extractDate((e.claims.P570 || [])[0]);
+                                const dod = dodRaw || null;
+                                // NaN guard already applied by extractDate. If dodRaw existed but NaN, it became null.
+
+                                const title = e?.sitelinks?.enwiki?.title;
+                                if (!title) continue;
+                                const article = `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}`;
+                                const name = e?.labels?.en?.value || title || qid;
+                                out.push({ name, dob, dod, article });
+                                if (out.length >= 2) return out; // early exit when we have two
+                            }
+                        }
+                        return out;
+                    }
+
+                    const topHumans = await resolveTitlesToHumans(topTitles);
+                    if (topHumans.length >= 2) return topHumans.slice(0, 2);
+                } catch {
+                    // ignore and fall through to random pipeline
+                }
             }
-        }
 
-        // ---------- State ----------
-        let P1 = null, P2 = null;
-        let minYear = 1900, maxYear = new Date().getUTCFullYear();
-        let loading = false; let revealed = false;
+            // Phase 1+: original random pipeline, but with bigger batches & more attempts
+            for (let attempt = 0; attempt < attempts; attempt++) {
+                // Pull multiple random batches to improve odds
+                const batchSizes = [80, 80]; // total ~160 random pages per attempt
+                let pagesAll = [];
+                for (const sz of batchSizes) {
+                    const rnd = await getRandomPages(sz);
+                    pagesAll = pagesAll.concat(rnd);
+                }
 
-        // ---------- DOM ----------
-        const peopleEl = document.getElementById('people');
-        const scaleEl = document.getElementById('scale');
-        const startSlider = document.getElementById('startSlider');
-        const endSlider = document.getElementById('endSlider');
-        const startVal = document.getElementById('startVal');
-        const endVal = document.getElementById('endVal');
-        const submitBtn = document.getElementById('submit');
-        const againBtn = document.getElementById('again');
-        const resultEl = document.getElementById('result');
-        const statusEl = document.getElementById('status');
+                const pageids = pagesAll.map(p => p.id);
+                const pageChunks = [];
+                for (let i = 0; i < pageids.length; i += 50) pageChunks.push(pageids.slice(i, i + 50));
 
-        const canvas = document.getElementById('viz');
-        const ctx = canvas.getContext('2d');
+                const qids = [];
+                for (const chunk of pageChunks) {
+                    const pagesObj = await getPageProps(chunk);
+                    const pages = Objec
 
-        function setStatus(msg, isErr = false) { statusEl.textContent = msg || ''; statusEl.className = isErr ? 'sub err' : 'sub'; }
 
-        function renderPeople() {
-            const rows = [P1, P2].map((p, i) => `
+
+                    const SEED = [
+                        { name: "Albert Einstein", dob: new Date("1879-03-14"), dod: new Date("1955-04-18"), article: "https://en.wikipedia.org/wiki/Albert_Einstein" },
+                        { name: "Queen Elizabeth II", dob: new Date("1926-04-21"), dod: new Date("2022-09-08"), article: "https://en.wikipedia.org/wiki/Elizabeth_II" },
+                        { name: "Barack Obama", dob: new Date("1961-08-04"), dod: null, article: "https://en.wikipedia.org/wiki/Barack_Obama" },
+                        { name: "Frida Kahlo", dob: new Date("1907-07-06"), dod: new Date("1954-07-13"), article: "https://en.wikipedia.org/wiki/Frida_Kahlo" },
+                        { name: "Kurt Cobain", dob: new Date("1967-02-20"), dod: new Date("1994-04-05"), article: "https://en.wikipedia.org/wiki/Kurt_Cobain" },
+                        { name: "Freddie Mercury", dob: new Date("1946-09-05"), dod: new Date("1991-11-24"), article: "https://en.wikipedia.org/wiki/Freddie_Mercury" }
+                    ];
+
+                    async function fetchTwoPeople() {
+                        try { return await fetchTwoPeopleViaApis(); }
+                        catch (e) {
+                            console.warn('API pipeline failed, using seed.', e);
+                            const a = SEED[Math.floor(Math.random() * SEED.length)];
+                            let b = SEED[Math.floor(Math.random() * SEED.length)];
+                            while (b === a) b = SEED[Math.floor(Math.random() * SEED.length)];
+                            return [a, b];
+                        }
+                    }
+
+                    // ---------- State ----------
+                    let P1 = null, P2 = null;
+                    let minYear = 1900, maxYear = new Date().getUTCFullYear();
+                    let loading = false; let revealed = false;
+
+                    // ---------- DOM ----------
+                    const peopleEl = document.getElementById('people');
+                    const scaleEl = document.getElementById('scale');
+                    const startSlider = document.getElementById('startSlider');
+                    const endSlider = document.getElementById('endSlider');
+                    const startVal = document.getElementById('startVal');
+                    const endVal = document.getElementById('endVal');
+                    const submitBtn = document.getElementById('submit');
+                    const againBtn = document.getElementById('again');
+                    const resultEl = document.getElementById('result');
+                    const statusEl = document.getElementById('status');
+
+                    const canvas = document.getElementById('viz');
+                    const ctx = canvas.getContext('2d');
+
+                    function setStatus(msg, isErr = false) { statusEl.textContent = msg || ''; statusEl.className = isErr ? 'sub err' : 'sub'; }
+
+                    function renderPeople() {
+                        const rows = [P1, P2].map((p, i) => `
         <div class="person">
           <div class="name">${i === 0 ? 'A' : 'B'}. <a href="${p.article}" target="_blank" rel="noopener">${p.name}</a></div>
           <div class="years">${fmtYear(p.dob.getUTCFullYear())} – ${fmtYear((p.dod ? p.dod.getUTCFullYear() : null) ?? 'present')}</div>
         </div>
       `).join('');
-            peopleEl.innerHTML = rows;
-        }
+                        peopleEl.innerHTML = rows;
+                    }
 
-        function renderScale() { scaleEl.innerHTML = `<div>${minYear}</div><div>${maxYear}</div>`; }
+                    function renderScale() { scaleEl.innerHTML = `<div>${minYear}</div><div>${maxYear}</div>`; }
 
-        function resizeCanvas() {
-            const dpr = window.devicePixelRatio || 1;
-            const cssW = canvas.clientWidth; const cssH = canvas.clientHeight;
-            canvas.width = Math.floor(cssW * dpr); canvas.height = Math.floor(cssH * dpr);
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
-        }
+                    function resizeCanvas() {
+                        const dpr = window.devicePixelRatio || 1;
+                        const cssW = canvas.clientWidth; const cssH = canvas.clientHeight;
+                        canvas.width = Math.floor(cssW * dpr); canvas.height = Math.floor(cssH * dpr);
+                        ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
+                    }
 
-        function yearToX(year) {
-            const pad = 16; const w = canvas.clientWidth; const usable = Math.max(1, w - pad * 2);
-            const t = (year - minYear) / (maxYear - minYear);
-            return pad + clamp(t, 0, 1) * usable;
-        }
+                    function yearToX(year) {
+                        const pad = 16; const w = canvas.clientWidth; const usable = Math.max(1, w - pad * 2);
+                        const t = (year - minYear) / (maxYear - minYear);
+                        return pad + clamp(t, 0, 1) * usable;
+                    }
 
-        function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+                    function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
-        function draw() {
-            clearCanvas(); if (!P1 || !P2) return;
-            const h = canvas.clientHeight; const railY = h / 2; const railH = 12;
-            ctx.fillStyle = '#0e1422'; ctx.fillRect(12, railY - railH / 2, canvas.clientWidth - 24, railH);
-            ctx.strokeStyle = '#1e2435'; ctx.strokeRect(12, railY - railH / 2, canvas.clientWidth - 24, railH);
+                    function draw() {
+                        clearCanvas(); if (!P1 || !P2) return;
+                        const h = canvas.clientHeight; const railY = h / 2; const railH = 12;
+                        ctx.fillStyle = '#0e1422'; ctx.fillRect(12, railY - railH / 2, canvas.clientWidth - 24, railH);
+                        ctx.strokeStyle = '#1e2435'; ctx.strokeRect(12, railY - railH / 2, canvas.clientWidth - 24, railH);
 
-            const aL = yearToX(P1.dob.getUTCFullYear()); const aR = yearToX((P1.dod ? P1.dod.getUTCFullYear() : maxYear));
-            const bL = yearToX(P2.dob.getUTCFullYear()); const bR = yearToX((P2.dod ? P2.dod.getUTCFullYear() : maxYear));
-            ctx.fillStyle = 'rgba(94,157,200,0.75)'; ctx.fillRect(aL, railY - 10, Math.max(0, aR - aL), 8);
-            ctx.fillStyle = 'rgba(53,199,109,0.75)'; ctx.fillRect(bL, railY + 2, Math.max(0, bR - bL), 8);
+                        const aL = yearToX(P1.dob.getUTCFullYear()); const aR = yearToX((P1.dod ? P1.dod.getUTCFullYear() : maxYear));
+                        const bL = yearToX(P2.dob.getUTCFullYear()); const bR = yearToX((P2.dod ? P2.dod.getUTCFullYear() : maxYear));
+                        ctx.fillStyle = 'rgba(94,157,200,0.75)'; ctx.fillRect(aL, railY - 10, Math.max(0, aR - aL), 8);
+                        ctx.fillStyle = 'rgba(53,199,109,0.75)'; ctx.fillRect(bL, railY + 2, Math.max(0, bR - bL), 8);
 
-            if (revealed) {
-                const oStart = Math.max(P1.dob.getUTCFullYear(), P2.dob.getUTCFullYear());
-                const oEnd = Math.min((P1.dod ? P1.dod.getUTCFullYear() : maxYear), (P2.dod ? P2.dod.getUTCFullYear() : maxYear));
-                if (oEnd > oStart) { ctx.fillStyle = 'rgba(94,157,200,0.45)'; const x1 = yearToX(oStart); const x2 = yearToX(oEnd); ctx.fillRect(x1, railY - 10, Math.max(0, x2 - x1), 20); }
-            }
+                        if (revealed) {
+                            const oStart = Math.max(P1.dob.getUTCFullYear(), P2.dob.getUTCFullYear());
+                            const oEnd = Math.min((P1.dod ? P1.dod.getUTCFullYear() : maxYear), (P2.dod ? P2.dod.getUTCFullYear() : maxYear));
+                            if (oEnd > oStart) { ctx.fillStyle = 'rgba(94,157,200,0.45)'; const x1 = yearToX(oStart); const x2 = yearToX(oEnd); ctx.fillRect(x1, railY - 10, Math.max(0, x2 - x1), 20); }
+                        }
 
-            const gs = +startSlider.value; const ge = +endSlider.value; const gx1 = yearToX(gs); const gx2 = yearToX(ge);
-            ctx.fillStyle = 'rgba(242,184,75,0.35)'; ctx.fillRect(Math.min(gx1, gx2), railY - 12, Math.abs(gx2 - gx1), 24);
-            ctx.fillStyle = '#a6aec4'; ctx.fillRect(gx1 - 1, railY - 16, 2, 32); ctx.fillRect(gx2 - 1, railY - 16, 2, 32);
-            ctx.font = '12px Inter, system-ui, sans-serif'; ctx.fillStyle = '#a6aec4'; ctx.textAlign = 'center';
-            ctx.fillText(String(gs), gx1, railY - 22); ctx.fillText(String(ge), gx2, railY - 22);
-        }
+                        const gs = +startSlider.value; const ge = +endSlider.value; const gx1 = yearToX(gs); const gx2 = yearToX(ge);
+                        ctx.fillStyle = 'rgba(242,184,75,0.35)'; ctx.fillRect(Math.min(gx1, gx2), railY - 12, Math.abs(gx2 - gx1), 24);
+                        ctx.fillStyle = '#a6aec4'; ctx.fillRect(gx1 - 1, railY - 16, 2, 32); ctx.fillRect(gx2 - 1, railY - 16, 2, 32);
+                        ctx.font = '12px Inter, system-ui, sans-serif'; ctx.fillStyle = '#a6aec4'; ctx.textAlign = 'center';
+                        ctx.fillText(String(gs), gx1, railY - 22); ctx.fillText(String(ge), gx2, railY - 22);
+                    }
 
-        function setupSliders() {
-            startSlider.min = endSlider.min = String(minYear);
-            startSlider.max = endSlider.max = String(maxYear);
-            const mid = Math.floor((minYear + maxYear) / 2);
-            startSlider.value = String(mid - 5); endSlider.value = String(mid + 5);
-            updateSliderLabels(); draw();
-            startSlider.oninput = () => { if (+startSlider.value > +endSlider.value) endSlider.value = startSlider.value; updateSliderLabels(); draw(); };
-            endSlider.oninput = () => { if (+endSlider.value < +startSlider.value) startSlider.value = endSlider.value; updateSliderLabels(); draw(); };
-        }
-        function updateSliderLabels() { startVal.textContent = `${startSlider.value}`; endVal.textContent = `${endSlider.value}`; }
+                    function setupSliders() {
+                        startSlider.min = endSlider.min = String(minYear);
+                        startSlider.max = endSlider.max = String(maxYear);
+                        const mid = Math.floor((minYear + maxYear) / 2);
+                        startSlider.value = String(mid - 5); endSlider.value = String(mid + 5);
+                        updateSliderLabels(); draw();
+                        startSlider.oninput = () => { if (+startSlider.value > +endSlider.value) endSlider.value = startSlider.value; updateSliderLabels(); draw(); };
+                        endSlider.oninput = () => { if (+endSlider.value < +startSlider.value) startSlider.value = endSlider.value; updateSliderLabels(); draw(); };
+                    }
+                    function updateSliderLabels() { startVal.textContent = `${startSlider.value}`; endVal.textContent = `${endSlider.value}`; }
 
-        function computeAndReveal() {
-            if (loading || !P1 || !P2) { setStatus('Still loading people. Try again in a moment.', true); return; }
-            const gs = +startSlider.value; const ge = +endSlider.value;
-            const aB = P1.dob.getUTCFullYear(); const aD = (P1.dod ? P1.dod.getUTCFullYear() : maxYear);
-            const bB = P2.dob.getUTCFullYear(); const bD = (P2.dod ? P2.dod.getUTCFullYear() : maxYear);
-            const trueOverlap = overlapYears(aB, aD, bB, bD); const guessOverlap = Math.max(0, ge - gs);
-            const off = Math.abs(trueOverlap - guessOverlap); const score = Math.max(0, Math.round(100 - 4 * off));
-            const coexistText = (trueOverlap > 0) ? `They overlapped for <b>${trueOverlap} year${trueOverlap === 1 ? '' : 's'}</b>.` : `They did <b>not</b> overlap.`;
-            revealed = true; draw();
-            resultEl.style.display = 'grid';
-            resultEl.innerHTML = `<div class="score">Score: ${score}/100</div>
+                    function computeAndReveal() {
+                        if (loading || !P1 || !P2) { setStatus('Still loading people. Try again in a moment.', true); return; }
+                        const gs = +startSlider.value; const ge = +endSlider.value;
+                        const aB = P1.dob.getUTCFullYear(); const aD = (P1.dod ? P1.dod.getUTCFullYear() : maxYear);
+                        const bB = P2.dob.getUTCFullYear(); const bD = (P2.dod ? P2.dod.getUTCFullYear() : maxYear);
+                        const trueOverlap = overlapYears(aB, aD, bB, bD); const guessOverlap = Math.max(0, ge - gs);
+                        const off = Math.abs(trueOverlap - guessOverlap); const score = Math.max(0, Math.round(100 - 4 * off));
+                        const coexistText = (trueOverlap > 0) ? `They overlapped for <b>${trueOverlap} year${trueOverlap === 1 ? '' : 's'}</b>.` : `They did <b>not</b> overlap.`;
+                        revealed = true; draw();
+                        resultEl.style.display = 'grid';
+                        resultEl.innerHTML = `<div class="score">Score: ${score}/100</div>
         <div>${coexistText} Your guess was <b>${guessOverlap}</b> — off by <b>${off}</b>.</div>
         <div class="muted">A: ${P1.name} (${aB}–${P1.dod ? aD : 'present'}) • B: ${P2.name} (${bB}–${P2.dod ? bD : 'present'})</div>`;
-        }
+                    }
 
-        async function newRound() {
-            loading = true; revealed = false; submitBtn.disabled = true;
-            setStatus('Loading two random people…'); resultEl.style.display = 'none';
-            try {
-                const rows = await fetchTwoPeople();
-                const nowYear = new Date().getUTCFullYear();
-                const normalize = r => ({ name: r.name, article: r.article, dob: new Date(r.dob), dod: r.dod ? new Date(r.dod) : null });
-                P1 = normalize(rows[0]); P2 = normalize(rows[1]);
-                const allStart = Math.min(P1.dob.getUTCFullYear(), P2.dob.getUTCFullYear());
-                const allEnd = Math.max(P1.dod ? P1.dod.getUTCFullYear() : nowYear, P2.dod ? P2.dod.getUTCFullYear() : nowYear);
-                minYear = Math.max(1200, allStart - 2); maxYear = Math.min(nowYear, allEnd + 2);
-                renderPeople(); renderScale(); setupSliders(); resizeCanvas(); setStatus(''); submitBtn.disabled = false;
-            } catch (e) { console.error(e); setStatus("Couldn’t load people. Try again.", true); submitBtn.disabled = true; }
-            finally { loading = false; }
-        }
+                    async function newRound() {
+                        loading = true; revealed = false; submitBtn.disabled = true;
+                        setStatus('Loading two random people…'); resultEl.style.display = 'none';
+                        try {
+                            const rows = await fetchTwoPeople();
+                            const nowYear = new Date().getUTCFullYear();
+                            const normalize = r => ({ name: r.name, article: r.article, dob: new Date(r.dob), dod: r.dod ? new Date(r.dod) : null });
+                            P1 = normalize(rows[0]); P2 = normalize(rows[1]);
+                            const allStart = Math.min(P1.dob.getUTCFullYear(), P2.dob.getUTCFullYear());
+                            const allEnd = Math.max(P1.dod ? P1.dod.getUTCFullYear() : nowYear, P2.dod ? P2.dod.getUTCFullYear() : nowYear);
+                            minYear = Math.max(1200, allStart - 2); maxYear = Math.min(nowYear, allEnd + 2);
+                            renderPeople(); renderScale(); setupSliders(); resizeCanvas(); setStatus(''); submitBtn.disabled = false;
+                        } catch (e) { console.error(e); setStatus("Couldn’t load people. Try again.", true); submitBtn.disabled = true; }
+                        finally { loading = false; }
+                    }
 
-        window.addEventListener('resize', resizeCanvas);
-        document.getElementById('submit').addEventListener('click', computeAndReveal);
-        document.getElementById('again').addEventListener('click', newRound);
+                    window.addEventListener('resize', resizeCanvas);
+                    document.getElementById('submit').addEventListener('click', computeAndReveal);
+                    document.getElementById('again').addEventListener('click', newRound);
 
-        newRound();
+                    newRound();
     </script>
 </body>
 
