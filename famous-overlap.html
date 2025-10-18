@@ -278,6 +278,38 @@
         const WIKI_API = 'https://en.wikipedia.org/w/api.php?origin=*';
         const WDATA_API = 'https://www.wikidata.org/w/api.php?origin=*';
 
+        // --- Pageviews helpers ---
+        const PAGEVIEWS_API = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article';
+        const PAGEVIEWS_PROJECT = 'en.wikipedia.org';
+        const PAGEVIEWS_ACCESS = 'all-access';
+        const PAGEVIEWS_AGENT = 'user';
+
+        // YYYYMMDD in UTC
+        function yyyymmdd(date) {
+            const y = date.getUTCFullYear();
+            const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const d = String(date.getUTCDate()).padStart(2, '0');
+            return `${y}${m}${d}`;
+        }
+
+        // Sum views for last N days (default 60). Ends yesterday to avoid partial today.
+        async function getViewsLastNDays(title, days = 60) {
+            // Titles must use underscores in the REST API path
+            const article = encodeURIComponent(title.replace(/ /g, '_'));
+            const endDate = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() - 1));
+            const startDate = new Date(endDate);
+            startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
+
+            const url = `${PAGEVIEWS_API}/${PAGEVIEWS_PROJECT}/${PAGEVIEWS_ACCESS}/${PAGEVIEWS_AGENT}/${article}/daily/${yyyymmdd(startDate)}/${yyyymmdd(endDate)}`;
+            const r = await fetch(url);
+            if (!r.ok) return 0; // be forgiving on errors
+            const j = await r.json();
+            const items = j?.items || [];
+            let sum = 0;
+            for (const it of items) sum += (it?.views || 0);
+            return sum;
+        }
+
         async function getRandomPages(limit = 40) {
             const url = `${WIKI_API}&action=query&list=random&rnnamespace=0&rnlimit=${limit}&format=json`;
             const r = await fetch(url);
@@ -320,7 +352,7 @@
             return P31.some(c => c?.mainsnak?.datavalue?.value?.id === 'Q5');
         }
 
-        async function fetchTwoPeopleViaApis(attempts = 4) {
+        async function fetchTwoPeopleViaApis(attempts = 4, viewsThreshold = 50000, windowDays = 60) {
             for (let i = 0; i < attempts; i++) {
                 const random = await getRandomPages(40);
                 const pageids = random.map(p => p.id);
@@ -331,20 +363,17 @@
 
                 const entities = await getWikidataEntities(qids.slice(0, 50));
                 const humans = [];
-
                 for (const qid of Object.keys(entities)) {
                     const e = entities[qid];
                     if (!hasInstanceOfHuman(e.claims)) continue;
 
                     const dobClaim = (e.claims.P569 || [])[0];
                     const dodClaim = (e.claims.P570 || [])[0];
-
                     const dob = extractDate(dobClaim);
                     if (!dob) continue;
-
                     const dod = extractDate(dodClaim) || null;
 
-                    // ✅ HARD FILTER: drop anything with NaN birth or death year
+                    // filter out NaN years
                     const birthYear = dob.getUTCFullYear();
                     if (Number.isNaN(birthYear)) continue;
                     if (dod !== null) {
@@ -353,25 +382,40 @@
                     }
 
                     const title = e?.sitelinks?.enwiki?.title;
-                    const article = title
-                        ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
-                        : null;
+                    const article = title ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}` : null;
                     const name = e?.labels?.en?.value || title || qid;
-
-                    if (article) humans.push({ name, dob, dod, article });
+                    if (article) humans.push({ name, dob, dod, article, title });
                 }
 
-                if (humans.length >= 2) {
-                    const a = humans[Math.floor(Math.random() * humans.length)];
-                    let b = humans[Math.floor(Math.random() * humans.length)];
-                    let guard = 0;
-                    while (b === a && guard++ < 10) b = humans[Math.floor(Math.random() * humans.length)];
-                    return [a, b];
+                // Popularity gate: check pageviews until we find 2 that clear the bar
+                // Randomize order to keep variety
+                for (let j = humans.length - 1; j > 0; j--) {
+                    const k = Math.floor(Math.random() * (j + 1));
+                    [humans[j], humans[k]] = [humans[k], humans[j]];
                 }
+
+                const picks = [];
+                const cache = new Map(); // avoid duplicate pageview calls for same title in this loop
+
+                for (const h of humans) {
+                    const title = h.title || h.name;
+                    let views = cache.get(title);
+                    if (views === undefined) {
+                        views = await getViewsLastNDays(title, windowDays);
+                        cache.set(title, views);
+                    }
+                    if (views >= viewsThreshold) {
+                        picks.push(h);
+                        if (picks.length === 2) {
+                            // strip the helper 'title' field before returning
+                            return picks.map(({ title: _t, ...rest }) => rest);
+                        }
+                    }
+                }
+                // If not enough popular results, loop and try again
             }
-            throw new Error('not enough humans after attempts');
+            throw new Error('not enough humans after attempts (popularity filter too strict?)');
         }
-
 
         const SEED = [
             { name: "Albert Einstein", dob: new Date("1879-03-14"), dod: new Date("1955-04-18"), article: "https://en.wikipedia.org/wiki/Albert_Einstein" },
