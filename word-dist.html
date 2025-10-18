@@ -332,7 +332,6 @@
   <div class="toast" id="toast">Toast</div>
 
   <script>
-    // ===== Clean MVP with BLENDED RELATIONSHIP SCORE =====
     const $ = s => document.querySelector(s);
     const UI = {
       A: $('#wordA'), B: $('#wordB'), score: $('#score'), streak: $('#streak'),
@@ -340,33 +339,24 @@
       guess: $('#guess'), submit: $('#submit'), skip: $('#skip'), reset: $('#reset'), toast: $('#toast')
     };
 
-    // Simple denylist to avoid trivial glue words
     const deny = new Set(['thing', 'object', 'stuff', 'good', 'bad', 'nice', 'okay', 'something', 'everything', 'anything', 'person', 'entity', 'item']);
 
-    // Small, safe, common vocabulary for seed pairs
     const commonNouns = [
       'fire', 'ice', 'water', 'stone', 'paper', 'music', 'money', 'love', 'war', 'peace', 'game', 'food', 'animal', 'plant', 'river', 'mountain', 'beach', 'sand', 'forest', 'computer', 'phone', 'book', 'movie', 'city', 'village', 'school', 'teacher', 'student', 'doctor', 'hospital', 'car', 'train', 'airplane', 'coffee', 'tea', 'sugar', 'salt', 'bread', 'cheese', 'fish', 'bird', 'cat', 'dog', 'house', 'home', 'family', 'friend', 'party', 'work', 'job', 'art', 'dance', 'song', 'light', 'dark', 'shadow', 'mirror', 'glass', 'window', 'door', 'key', 'lock', 'map', 'journey', 'travel', 'flight', 'storm', 'rain', 'snow', 'wind', 'sun', 'moon', 'star', 'planet', 'space', 'time', 'history', 'science', 'energy', 'power', 'sport', 'team', 'ball', 'goal', 'ocean', 'lake', 'island', 'bridge', 'road', 'path', 'desert', 'garden', 'flower', 'tree', 'leaf', 'root', 'seed'
     ];
 
     const state = {
       A: 'fire', B: 'ice', score: 0, streak: 0,
-      threshold: 0.05, // base; we adapt per pair below
-      timer: null, baseTime: 12, timeLeft: 12,
+      threshold: 0.05, timer: null, baseTime: 12, timeLeft: 12,
       relAB: 0
     };
 
-    // ===== Helpers =====
-
-    // ===== TIMEOUT HELPER =====
+    // ==== Utility helpers ====
     async function fetchWithTimeout(url, { timeout = 500, ...opts } = {}) {
       const ctrl = new AbortController();
       const id = setTimeout(() => ctrl.abort(), timeout);
-      try {
-        const res = await fetch(url, { signal: ctrl.signal, ...opts });
-        return res;
-      } finally {
-        clearTimeout(id);
-      }
+      try { return await fetch(url, { signal: ctrl.signal, ...opts }); }
+      finally { clearTimeout(id); }
     }
 
     function sanitize(w) {
@@ -394,18 +384,17 @@
       }, 100);
     }
 
-    // ===== ConceptNet relatedness (with cache) =====
+    // ==== ConceptNet + Datamuse caches ====
     const relCache = new Map();
     const relKey = (a, b) => { a = a.toLowerCase(); b = b.toLowerCase(); return a < b ? a + '|' + b : b + '|' + a; };
-    const save = (k, v) => { try { localStorage.setItem('rel:' + k, String(v)); } catch (_) { } };
-    const load = (k) => { try { const v = localStorage.getItem('rel:' + k); return v ? Number(v) : null; } catch (_) { return null; } };
+    const save = (k, v) => { try { localStorage.setItem('rel:' + k, String(v)); } catch { } };
+    const load = (k) => { try { const v = localStorage.getItem('rel:' + k); return v ? Number(v) : null; } catch { return null; } };
 
     async function conceptnetRel(a, b) {
       if (!a || !b) return 0;
       const key = relKey(a, b);
       if (relCache.has(key)) return relCache.get(key);
       const vStored = load(key); if (vStored !== null) { relCache.set(key, vStored); return vStored; }
-
       const url = `https://api.conceptnet.io/relatedness?node1=/c/en/${encodeURIComponent(a)}&node2=/c/en/${encodeURIComponent(b)}`;
       try {
         const res = await fetchWithTimeout(url, { timeout: 500 });
@@ -413,12 +402,10 @@
         const v = Number(j.value || 0) || 0;
         relCache.set(key, v); save(key, v);
         return v;
-      } catch (_) { return 0; }
+      } catch { return 0; }
     }
 
-    // ===== Datamuse association (meaning-like) with cache =====
-    // We fetch candidates for a term and read the optional `score` that ranks closeness.
-    const dmCache = new Map(); // term -> {top:Number, map: Map(word->score)}
+    const dmCache = new Map();
     async function datamuseProfile(term) {
       term = sanitize(term);
       if (dmCache.has(term)) return dmCache.get(term);
@@ -428,8 +415,7 @@
         const arr = await r.json();
         let top = 0; const map = new Map();
         for (const x of arr) {
-          const w = sanitize(x.word);
-          const s = Number(x.score || 0);
+          const w = sanitize(x.word); const s = Number(x.score || 0);
           if (!w) continue;
           if (s > top) top = s;
           if (!map.has(w) || map.get(w) < s) map.set(w, s);
@@ -437,7 +423,7 @@
         const prof = { top: top || 1, map };
         dmCache.set(term, prof);
         return prof;
-      } catch (_) {
+      } catch {
         const prof = { top: 1, map: new Map() };
         dmCache.set(term, prof);
         return prof;
@@ -448,46 +434,41 @@
       a = sanitize(a); b = sanitize(b);
       if (!a || !b) return 0;
       const [pa, pb] = await Promise.all([datamuseProfile(a), datamuseProfile(b)]);
-      const s1 = pa.map.get(b) ? (pa.map.get(b) / pa.top) : 0; // how much b appears in ml(a)
-      const s2 = pb.map.get(a) ? (pb.map.get(a) / pb.top) : 0; // how much a appears in ml(b)
-      // symmetric score: take max to reward either direction, then sqrt to soften extremes
+      const s1 = pa.map.get(b) ? (pa.map.get(b) / pa.top) : 0;
+      const s2 = pb.map.get(a) ? (pb.map.get(a) / pb.top) : 0;
       const sym = Math.max(s1, s2);
-      return Math.sqrt(sym); // keep in [0,1]
+      return Math.sqrt(sym);
     }
 
-    // ===== Morphological similarity (no network) =====
     function diceCoeff(a, b) {
       a = sanitize(a); b = sanitize(b);
       if (!a || !b) return 0;
       if (a === b) return 1;
-      const bigrams = s => {
-        const v = []; for (let i = 0; i < s.length - 1; i++) v.push(s.slice(i, i + 2)); return v;
-      };
+      const bigrams = s => { const v = []; for (let i = 0; i < s.length - 1; i++)v.push(s.slice(i, i + 2)); return v; };
       const A = bigrams(a), B = bigrams(b);
       const setB = new Map(); for (const x of B) setB.set(x, (setB.get(x) || 0) + 1);
       let overlap = 0; for (const x of A) { const c = setB.get(x) || 0; if (c > 0) { overlap++; setB.set(x, c - 1); } }
       return (2 * overlap) / (A.length + B.length);
     }
 
-    // ===== Blended relatedness =====
+    // ==== Staged blended relatedness ====
     async function blendedRel(a, b) {
-      const [cnet, dm] = await Promise.all([
-        conceptnetRel(a, b),
-        datamuseRel(a, b)
-      ]);
       const morph = diceCoeff(a, b);
-      // Weighted blend; tweak weights if needed
-      const score = 0.55 * cnet + 0.30 * dm + 0.15 * morph;
+      const dm = await datamuseRel(a, b);
+      if (dm >= 0.35 || dm <= 0.05) {
+        const score = 0.8 * dm + 0.2 * morph;
+        return Math.max(0, Math.min(1, score));
+      }
+      const cnet = await conceptnetRel(a, b);
+      const score = 0.55 * cnet + 0.3 * dm + 0.15 * morph;
       return Math.max(0, Math.min(1, score));
     }
 
-    // Bridge score (harmonic mean) — encourages balanced bridges
     function bridgeScore(r1, r2) {
       if (r1 <= 0 || r2 <= 0) return 0;
       return (2 * r1 * r2) / (r1 + r2);
     }
 
-    // UI meters — color by individual strength; acceptance uses bridge score
     function setMeters(r1, r2) {
       UI.r1.style.width = Math.max(0, Math.min(1, r1)) * 100 + '%';
       UI.r2.style.width = Math.max(0, Math.min(1, r2)) * 100 + '%';
@@ -498,24 +479,44 @@
     }
 
     function adaptDifficultyForPair() {
-      // Pair-aware threshold: tougher if A~B already close, easier if far
       const bump = Math.floor(state.streak / 5);
-      const base = 0.10 + 0.40 * state.relAB; // 0.10..0.30 depending on pair difficulty
+      const base = 0.10 + 0.40 * state.relAB;
       state.threshold = Math.max(0.08, Math.min(0.25, base + bump * 0.01));
       state.baseTime = Math.max(6, 12 - bump);
     }
 
-    async function pickSeedPair() {
-      for (let tries = 0; tries < 50; tries++) {
+    // ==== Faster seed picking + prefetch ====
+    let nextPair = null;
+
+    async function pickSeedPairFast() {
+      for (let tries = 0; tries < 30; tries++) {
         const a = commonNouns[Math.floor(Math.random() * commonNouns.length)];
         const b = commonNouns[Math.floor(Math.random() * commonNouns.length)];
         if (a === b) continue;
+        const m = diceCoeff(a, b);
+        if (m > 0.22 || m < 0.02) continue;
         const relAB = await blendedRel(a, b);
         if (relAB >= 0.05 && relAB <= 0.30) return { a, b, relAB };
       }
       return { a: 'fire', b: 'ice', relAB: await blendedRel('fire', 'ice') };
     }
 
+    async function queueNextPair() {
+      try { nextPair = await pickSeedPairFast(); } catch { nextPair = null; }
+    }
+
+    async function advanceToNextPair() {
+      if (nextPair) {
+        const { a, b } = nextPair;
+        nextPair = null;
+        await setPair(a, b);
+      } else {
+        const { a, b } = await pickSeedPairFast();
+        await setPair(a, b);
+      }
+    }
+
+    // ==== Core game flow ====
     async function setPair(a, b) {
       state.A = a; state.B = b;
       UI.A.textContent = a; UI.B.textContent = b;
@@ -523,65 +524,62 @@
       adaptDifficultyForPair();
       setMeters(0, 0); UI.guess.value = ''; UI.guess.focus();
       startTimer();
+      queueNextPair(); // prefetch next
     }
 
     async function startGame() {
       state.score = 0; state.streak = 0; state.threshold = 0.12; state.baseTime = 12; updateHUD();
-      const { a, b } = await pickSeedPair();
+      const { a, b } = await pickSeedPairFast();
       await setPair(a, b);
     }
 
-    // 1) Stop the clock the moment a guess is made.
     async function onSubmit() {
-      stopTimer(); // ⬅️ NEW: freeze the timer after the first guess
-
+      stopTimer();
       let c = sanitize(UI.guess.value);
       if (!c) { toast('Enter a word'); return; }
       if (deny.has(c)) { toast('Too generic'); return; }
       if (c === state.A || c === state.B) { toast('Must differ from A and B'); return; }
 
       UI.submit.disabled = true;
-      const [r1, r2] = await Promise.all([
-        blendedRel(state.A, c),
-        blendedRel(c, state.B)
-      ]);
+      const [r1, r2] = await Promise.all([blendedRel(state.A, c), blendedRel(c, state.B)]);
       setMeters(r1, r2);
       const bridge = bridgeScore(r1, r2);
       const ok = bridge >= state.threshold;
 
       if (ok) {
         state.score += 100; state.streak += 1; updateHUD(); toast('+100');
-        const { a, b } = await pickSeedPair(); await setPair(a, b); // setPair() starts a fresh timer
+        await advanceToNextPair(); // instant next pair
       } else {
-        onFail('Bridge rejected'); // no timer restart here
+        onFail('Bridge rejected');
       }
       UI.submit.disabled = false;
     }
 
-
     async function onSkip() {
       state.streak = 0; updateHUD(); toast('New pair');
-      const { a, b } = await pickSeedPair(); await setPair(a, b);
+      await advanceToNextPair();
     }
 
-    // 2) Don't restart the timer on fail anymore.
     function onFail(reason) {
       toast(`${reason} — streak ${state.streak}`);
-      state.streak = 0;
-      updateHUD();
-      // (intentionally no startTimer() here)
+      state.streak = 0; updateHUD();
     }
 
+    // ==== Warm Datamuse cache (optional) ====
+    (function warmDatamuse() {
+      const seeds = commonNouns.slice(0, 20);
+      for (const w of seeds) datamuseProfile(w);
+    })();
 
-    // Wire events
+    // ==== Events + boot ====
     UI.submit.addEventListener('click', onSubmit);
     UI.skip.addEventListener('click', onSkip);
     UI.reset.addEventListener('click', startGame);
     UI.guess.addEventListener('keydown', e => { if (e.key === 'Enter') onSubmit(); });
 
-    // Init
     (async () => { await startGame(); })();
   </script>
+
 </body>
 
 </html>
