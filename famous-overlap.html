@@ -352,9 +352,13 @@
             return P31.some(c => c?.mainsnak?.datavalue?.value?.id === 'Q5');
         }
 
-        async function fetchTwoPeopleViaApis(attempts = 4, viewsThreshold = 50000, windowDays = 60) {
+        async function fetchTwoPeopleViaApis(attempts = 5, windowDays = 30) {
+            // Try stricter → looser thresholds before giving up
+            const THRESHOLDS = [100000, 50000, 20000, 5000, 0]; // views over last `windowDays`
+
             for (let i = 0; i < attempts; i++) {
-                const random = await getRandomPages(40);
+                // Pull a bigger random batch to improve odds
+                const random = await getRandomPages(60);
                 const pageids = random.map(p => p.id);
                 const pagesObj = await getPageProps(pageids);
                 const pages = Object.values(pagesObj);
@@ -363,17 +367,20 @@
 
                 const entities = await getWikidataEntities(qids.slice(0, 50));
                 const humans = [];
+
+                // Build candidate list (with NaN-year filter)
                 for (const qid of Object.keys(entities)) {
                     const e = entities[qid];
                     if (!hasInstanceOfHuman(e.claims)) continue;
 
                     const dobClaim = (e.claims.P569 || [])[0];
                     const dodClaim = (e.claims.P570 || [])[0];
+
                     const dob = extractDate(dobClaim);
                     if (!dob) continue;
+
                     const dod = extractDate(dodClaim) || null;
 
-                    // filter out NaN years
                     const birthYear = dob.getUTCFullYear();
                     if (Number.isNaN(birthYear)) continue;
                     if (dod !== null) {
@@ -382,40 +389,50 @@
                     }
 
                     const title = e?.sitelinks?.enwiki?.title;
-                    const article = title ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}` : null;
+                    const article = title
+                        ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
+                        : null;
                     const name = e?.labels?.en?.value || title || qid;
                     if (article) humans.push({ name, dob, dod, article, title });
                 }
 
-                // Popularity gate: check pageviews until we find 2 that clear the bar
-                // Randomize order to keep variety
+                // Shuffle to keep variety
                 for (let j = humans.length - 1; j > 0; j--) {
                     const k = Math.floor(Math.random() * (j + 1));
                     [humans[j], humans[k]] = [humans[k], humans[j]];
                 }
 
-                const picks = [];
-                const cache = new Map(); // avoid duplicate pageview calls for same title in this loop
-
-                for (const h of humans) {
-                    const title = h.title || h.name;
-                    let views = cache.get(title);
-                    if (views === undefined) {
-                        views = await getViewsLastNDays(title, windowDays);
-                        cache.set(title, views);
-                    }
-                    if (views >= viewsThreshold) {
-                        picks.push(h);
-                        if (picks.length === 2) {
-                            // strip the helper 'title' field before returning
-                            return picks.map(({ title: _t, ...rest }) => rest);
+                // Popularity pass: relax thresholds until we get 2
+                const cache = new Map(); // title -> views
+                for (const threshold of THRESHOLDS) {
+                    const picks = [];
+                    for (const h of humans) {
+                        const title = h.title || h.name;
+                        let views = cache.get(title);
+                        if (views === undefined) {
+                            try {
+                                views = await getViewsLastNDays(title, windowDays);
+                            } catch {
+                                views = 0; // be forgiving
+                            }
+                            cache.set(title, views);
+                        }
+                        if (views >= threshold) {
+                            picks.push(h);
+                            if (picks.length === 2) {
+                                // strip helper field
+                                return picks.map(({ title: _t, ...rest }) => rest);
+                            }
                         }
                     }
+                    // If we didn't get 2, drop to the next, looser threshold
                 }
-                // If not enough popular results, loop and try again
+                // Try another random batch on next attempt
             }
-            throw new Error('not enough humans after attempts (popularity filter too strict?)');
+
+            throw new Error('not enough humans after attempts (pageviews pipeline too noisy)');
         }
+
 
         const SEED = [
             { name: "Albert Einstein", dob: new Date("1879-03-14"), dod: new Date("1955-04-18"), article: "https://en.wikipedia.org/wiki/Albert_Einstein" },
