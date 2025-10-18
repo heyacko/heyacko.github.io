@@ -1,294 +1,71 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Word Association Tunnel — Clean MVP</title>
   <style>
     :root {
-      --bg: #0f1115;
-      --card: #151924;
-      --text: #e9ecf1;
-      --muted: #9aa4bd;
-      --accent: #5e9dc8;
-      --good: #35c76d;
-      --bad: #ff5a5a;
-      --warn: #f2b84b;
+      --bg: #0f1115; --card:#151924; --text:#e9ecf1; --muted:#9aa4bd;
+      --accent:#5e9dc8; --good:#35c76d; --bad:#ff5a5a; --warn:#f2b84b;
     }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);display:grid;place-items:center;padding:16px}
+    .app{width:100%;max-width:860px;background:var(--card);border:1px solid #23293a;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
 
-    * {
-      box-sizing: border-box
-    }
+    header{padding:14px 18px;border-bottom:1px solid #23293a}
+    header h1{margin:0;font-size:16px;letter-spacing:.2px;color:#dfe6f3}
 
-    html,
-    body {
-      height: 100%
-    }
+    .hud{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px 16px}
+    .hud-item{background:#0f1422;border:1px solid #1f2740;border-radius:14px;padding:8px 10px;text-align:center}
+    .hud-label{font-size:12px;color:var(--muted);letter-spacing:.08em}
+    .hud-value{font-size:clamp(40px,12vw,72px);font-weight:900;line-height:1.05}
 
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: grid;
-      place-items: center;
-      padding: 16px
-    }
+    .board{padding:8px 16px 16px;display:grid;gap:14px}
+    .pair{background:#0f1422;border:1px solid #1f2740;border-radius:14px;padding:14px;display:grid;gap:12px}
+    .pair-row{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+    .word{font-size:clamp(26px,8vw,44px);font-weight:800;text-align:center;padding:10px;border-radius:12px;background:#121729;border:1px solid #22304a}
+    .connector{color:var(--muted);font-weight:700}
 
-    .app {
-      width: 100%;
-      max-width: 860px;
-      background: var(--card);
-      border: 1px solid #23293a;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
-      overflow: hidden
-    }
+    .meters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .meter{background:#0e1320;border:1px solid #202a44;border-radius:10px;padding:10px 12px}
+    .meter label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px}
+    .bar{position:relative;height:12px;background:#141b2e;border-radius:999px;overflow:hidden}
+    .fill{position:absolute;inset:0 auto 0 0;width:0%;background:linear-gradient(90deg,var(--bad),#ff8a8a);transition:width .3s ease, background .2s ease}
 
-    header {
-      padding: 14px 18px;
-      border-bottom: 1px solid #23293a
-    }
+    .input-row{display:grid;grid-template-columns:1fr auto;gap:10px}
+    input[type=text]{background:#0b1020;border:1px solid #23314e;color:var(--text);border-radius:12px;padding:16px;font-size:18px;outline:none}
+    input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(94,157,200,.18)}
+    button{background:linear-gradient(180deg,#2b6e98,#255e82);border:1px solid #2a6c95;color:#fff;font-weight:800;letter-spacing:.3px;padding:14px 16px;border-radius:12px;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
 
-    header h1 {
-      margin: 0;
-      font-size: 16px;
-      letter-spacing: .2px;
-      color: #dfe6f3
-    }
+    .controls{display:flex;gap:10px;flex-wrap:wrap}
+    .btn-secondary{background:#1c2333;border:1px solid #2a3348}
+    .btn-warn{background:#3a2b10;border:1px solid #5a4315}
 
-    .hud {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      padding: 12px 16px
-    }
+    .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#101522;border:1px solid #2a3348;color:#fff;padding:10px 14px;border-radius:10px;opacity:0;transition:opacity .15s ease}
+    .toast.show{opacity:1}
 
-    .hud-item {
-      background: #0f1422;
-      border: 1px solid #1f2740;
-      border-radius: 14px;
-      padding: 8px 10px;
-      text-align: center
-    }
+    .footer{padding:10px 16px;border-top:1px solid #23293a;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;align-items:center}
+    .kbd{border:1px solid #30384e;background:#1a2030;padding:2px 6px;border-radius:6px;color:#c6d2e8;font-weight:700;font-size:12px}
 
-    .hud-label {
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: .08em
-    }
-
-    .hud-value {
-      font-size: clamp(40px, 12vw, 72px);
-      font-weight: 900;
-      line-height: 1.05
-    }
-
-    .board {
-      padding: 8px 16px 16px;
-      display: grid;
-      gap: 14px
-    }
-
-    .pair {
-      background: #0f1422;
-      border: 1px solid #1f2740;
-      border-radius: 14px;
-      padding: 14px;
-      display: grid;
-      gap: 12px
-    }
-
-    .pair-row {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 8px;
-      align-items: center
-    }
-
-    .word {
-      font-size: clamp(26px, 8vw, 44px);
-      font-weight: 800;
-      text-align: center;
-      padding: 10px;
-      border-radius: 12px;
-      background: #121729;
-      border: 1px solid #22304a
-    }
-
-    .connector {
-      color: var(--muted);
-      font-weight: 700
-    }
-
-    .meters {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px
-    }
-
-    .meter {
-      background: #0e1320;
-      border: 1px solid #202a44;
-      border-radius: 10px;
-      padding: 10px 12px
-    }
-
-    .meter label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 6px
-    }
-
-    .bar {
-      position: relative;
-      height: 12px;
-      background: #141b2e;
-      border-radius: 999px;
-      overflow: hidden
-    }
-
-    .fill {
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: 0%;
-      background: linear-gradient(90deg, var(--bad), #ff8a8a);
-      transition: width .3s ease, background .2s ease
-    }
-
-    .input-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px
-    }
-
-    input[type=text] {
-      background: #0b1020;
-      border: 1px solid #23314e;
-      color: var(--text);
-      border-radius: 12px;
-      padding: 16px;
-      font-size: 18px;
-      outline: none
-    }
-
-    input[type=text]:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(94, 157, 200, .18)
-    }
-
-    button {
-      background: linear-gradient(180deg, #2b6e98, #255e82);
-      border: 1px solid #2a6c95;
-      color: #fff;
-      font-weight: 800;
-      letter-spacing: .3px;
-      padding: 14px 16px;
-      border-radius: 12px;
-      cursor: pointer
-    }
-
-    button:disabled {
-      opacity: .6;
-      cursor: not-allowed
-    }
-
-    .controls {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap
-    }
-
-    .btn-secondary {
-      background: #1c2333;
-      border: 1px solid #2a3348
-    }
-
-    .btn-warn {
-      background: #3a2b10;
-      border: 1px solid #5a4315
-    }
-
-    .toast {
-      position: fixed;
-      top: 14px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #101522;
-      border: 1px solid #2a3348;
-      color: #fff;
-      padding: 10px 14px;
-      border-radius: 10px;
-      opacity: 0;
-      transition: opacity .15s ease
-    }
-
-    .toast.show {
-      opacity: 1
-    }
-
-    .footer {
-      padding: 10px 16px;
-      border-top: 1px solid #23293a;
-      color: var(--muted);
-      font-size: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center
-    }
-
-    .kbd {
-      border: 1px solid #30384e;
-      background: #1a2030;
-      padding: 2px 6px;
-      border-radius: 6px;
-      color: #c6d2e8;
-      font-weight: 700;
-      font-size: 12px
-    }
-
-    @media (max-width:560px) {
-      .hud {
-        grid-template-columns: 1fr
-      }
-
-      .meters {
-        grid-template-columns: 1fr
-      }
-
-      .input-row {
-        grid-template-columns: 1fr
-      }
-
-      button {
-        width: 100%
-      }
+    @media (max-width:560px){
+      .hud{grid-template-columns:1fr}
+      .meters{grid-template-columns:1fr}
+      .input-row{grid-template-columns:1fr}
+      button{width:100%}
     }
   </style>
 </head>
-
 <body>
   <div class="app">
-    <header>
-      <h1>Word Association Tunnel</h1>
-    </header>
+    <header><h1>Word Association Tunnel</h1></header>
 
     <div class="hud">
-      <div class="hud-item">
-        <div class="hud-label">TIMER</div>
-        <div class="hud-value" id="time">—</div>
-      </div>
-      <div class="hud-item">
-        <div class="hud-label">STREAK</div>
-        <div class="hud-value" id="streak">0</div>
-      </div>
-      <div class="hud-item">
-        <div class="hud-label">SCORE</div>
-        <div class="hud-value" id="score">0</div>
-      </div>
+      <div class="hud-item"><div class="hud-label">TIMER</div><div class="hud-value" id="time">—</div></div>
+      <div class="hud-item"><div class="hud-label">STREAK</div><div class="hud-value" id="streak">0</div></div>
+      <div class="hud-item"><div class="hud-label">SCORE</div><div class="hud-value" id="score">0</div></div>
     </div>
 
     <div class="board">
@@ -301,15 +78,11 @@
         <div class="meters">
           <div class="meter">
             <label><span>rel(A, C)</span><span id="r1v">0.00</span></label>
-            <div class="bar">
-              <div class="fill" id="r1"></div>
-            </div>
+            <div class="bar"><div class="fill" id="r1"></div></div>
           </div>
           <div class="meter">
             <label><span>rel(C, B)</span><span id="r2v">0.00</span></label>
-            <div class="bar">
-              <div class="fill" id="r2"></div>
-            </div>
+            <div class="bar"><div class="fill" id="r2"></div></div>
           </div>
         </div>
         <div class="input-row">
@@ -324,7 +97,7 @@
     </div>
 
     <div class="footer">
-      <div>Connect <strong>A</strong> and <strong>B</strong>. Both meters must reach the hidden threshold!!</div>
+      <div>Connect <strong>A</strong> and <strong>B</strong>. Both meters must reach the hidden threshold.</div>
       <div><span class="kbd">Enter</span> submit</div>
     </div>
   </div>
@@ -332,287 +105,229 @@
   <div class="toast" id="toast">Toast</div>
 
   <script>
-    // ===== UI-first client with robust LOCAL mode (guaranteed-bridge pairs) =====
-    // Add `?mode=local` to URL to use client-side logic that only serves pairs with viable bridges.
-    // Otherwise, uses a Python API if provided via ?api=<BASE> or defaults to http://localhost:8000
+  // ===== Clean MVP with BLENDED RELATIONSHIP SCORE =====
+  const $ = s => document.querySelector(s);
+  const UI = {
+    A: $('#wordA'), B: $('#wordB'), score: $('#score'), streak: $('#streak'),
+    time: $('#time'), r1: $('#r1'), r2: $('#r2'), r1v: $('#r1v'), r2v: $('#r2v'),
+    guess: $('#guess'), submit: $('#submit'), skip: $('#skip'), reset: $('#reset'), toast: $('#toast')
+  };
 
-    const qs = new URLSearchParams(location.search);
-    const LOCAL_MODE = qs.get('mode') === 'local';
-    const API_BASE = LOCAL_MODE ? null : (qs.get('api') ? decodeURIComponent(qs.get('api')) : 'http://localhost:8000');
+  // Simple denylist to avoid trivial glue words
+  const deny = new Set(['thing','object','stuff','good','bad','nice','okay','something','everything','anything','person','entity','item']);
 
-    const $ = s => document.querySelector(s);
-    const UI = {
-      A: $('#wordA'), B: $('#wordB'), score: $('#score'), streak: $('#streak'),
-      time: $('#time'), r1: $('#r1'), r2: $('#r2'), r1v: $('#r1v'), r2v: $('#r2v'),
-      guess: $('#guess'), submit: $('#submit'), skip: $('#skip'), reset: $('#reset'), toast: $('#toast')
+  // Small, safe, common vocabulary for seed pairs
+  const commonNouns = [
+    'fire','ice','water','stone','paper','music','money','love','war','peace','game','food','animal','plant','river','mountain','beach','sand','forest','computer','phone','book','movie','city','village','school','teacher','student','doctor','hospital','car','train','airplane','coffee','tea','sugar','salt','bread','cheese','fish','bird','cat','dog','house','home','family','friend','party','work','job','art','dance','song','light','dark','shadow','mirror','glass','window','door','key','lock','map','journey','travel','flight','storm','rain','snow','wind','sun','moon','star','planet','space','time','history','science','energy','power','sport','team','ball','goal','ocean','lake','island','bridge','road','path','desert','garden','flower','tree','leaf','root','seed'
+  ];
+
+  const state = {
+    A: 'fire', B: 'ice', score: 0, streak: 0,
+    threshold: 0.12, // base; we adapt per pair below
+    timer: null, baseTime: 12, timeLeft: 12,
+    relAB: 0
+  };
+
+  // ===== Helpers =====
+  function sanitize(w){
+    if(!w) return '';
+    w = w.toLowerCase().trim();
+    w = w.normalize('NFKD').replace(/[̀-ͯ]/g,'');
+    if(w.endsWith('ies') && w.length>4) w = w.slice(0,-3)+'y';
+    else if(w.endsWith('ses')||w.endsWith('xes')) w = w.slice(0,-2);
+    else if(w.endsWith('s') && !w.endsWith('ss') && w.length>3) w = w.slice(0,-1);
+    return w.replace(/[^a-z\- ]/g,'');
+  }
+
+  function toast(msg){ UI.toast.textContent = msg; UI.toast.classList.add('show'); setTimeout(()=>UI.toast.classList.remove('show'),1100); }
+  function updateHUD(){ UI.score.textContent = state.score; UI.streak.textContent = state.streak; }
+
+  function stopTimer(){ if(state.timer){ clearInterval(state.timer); state.timer=null; } }
+  function startTimer(){
+    stopTimer();
+    state.timeLeft = state.baseTime;
+    UI.time.textContent = state.timeLeft.toFixed(1)+'s';
+    state.timer = setInterval(()=>{
+      state.timeLeft -= 0.1;
+      if(state.timeLeft<=0){ stopTimer(); onFail('Time up!'); }
+      else UI.time.textContent = state.timeLeft.toFixed(1)+'s';
+    },100);
+  }
+
+  // ===== ConceptNet relatedness (with cache) =====
+  const relCache = new Map();
+  const relKey = (a,b) => { a=a.toLowerCase(); b=b.toLowerCase(); return a<b? a+'|'+b : b+'|'+a; };
+  const save = (k,v)=>{ try{ localStorage.setItem('rel:'+k, String(v)); }catch(_){} };
+  const load = (k)=>{ try{ const v = localStorage.getItem('rel:'+k); return v? Number(v):null;}catch(_){return null;} };
+
+  async function conceptnetRel(a,b){
+    if(!a||!b) return 0;
+    const key = relKey(a,b);
+    if(relCache.has(key)) return relCache.get(key);
+    const vStored = load(key); if(vStored!==null){ relCache.set(key,vStored); return vStored; }
+    const url = `https://api.conceptnet.io/relatedness?node1=/c/en/${encodeURIComponent(a)}&node2=/c/en/${encodeURIComponent(b)}`;
+    try{
+      const res = await fetch(url);
+      const j = await res.json();
+      const v = Number(j.value||0);
+      relCache.set(key,v); save(key,v);
+      return v;
+    }catch(_){ return 0; }
+  }
+
+  // ===== Datamuse association (meaning-like) with cache =====
+  // We fetch candidates for a term and read the optional `score` that ranks closeness.
+  const dmCache = new Map(); // term -> {top:Number, map: Map(word->score)}
+  async function datamuseProfile(term){
+    term = sanitize(term);
+    if(dmCache.has(term)) return dmCache.get(term);
+    try{
+      const url = `https://api.datamuse.com/words?ml=${encodeURIComponent(term)}&max=100`;
+      const r = await fetch(url); const arr = await r.json();
+      let top = 0; const map = new Map();
+      for(const x of arr){
+        const w = sanitize(x.word);
+        const s = Number(x.score||0);
+        if(!w) continue;
+        if(s>top) top = s;
+        if(!map.has(w) || map.get(w) < s) map.set(w, s);
+      }
+      const prof = {top: top||1, map};
+      dmCache.set(term, prof);
+      return prof;
+    }catch(_){
+      const prof = {top:1, map:new Map()};
+      dmCache.set(term, prof);
+      return prof;
+    }
+  }
+
+  async function datamuseRel(a,b){
+    a = sanitize(a); b = sanitize(b);
+    if(!a||!b) return 0;
+    const [pa, pb] = await Promise.all([datamuseProfile(a), datamuseProfile(b)]);
+    const s1 = pa.map.get(b) ? (pa.map.get(b)/pa.top) : 0; // how much b appears in ml(a)
+    const s2 = pb.map.get(a) ? (pb.map.get(a)/pb.top) : 0; // how much a appears in ml(b)
+    // symmetric score: take max to reward either direction, then sqrt to soften extremes
+    const sym = Math.max(s1, s2);
+    return Math.sqrt(sym); // keep in [0,1]
+  }
+
+  // ===== Morphological similarity (no network) =====
+  function diceCoeff(a,b){
+    a = sanitize(a); b = sanitize(b);
+    if(!a||!b) return 0;
+    if(a===b) return 1;
+    const bigrams = s => {
+      const v=[]; for(let i=0;i<s.length-1;i++) v.push(s.slice(i,i+2)); return v;
     };
+    const A = bigrams(a), B = bigrams(b);
+    const setB = new Map(); for(const x of B) setB.set(x, (setB.get(x)||0)+1);
+    let overlap=0; for(const x of A){ const c=setB.get(x)||0; if(c>0){ overlap++; setB.set(x,c-1);} }
+    return (2*overlap) / (A.length + B.length);
+  }
 
-    const deny = new Set(['thing', 'object', 'stuff', 'good', 'bad', 'nice', 'okay', 'something', 'everything', 'anything', 'person', 'entity', 'item']);
+  // ===== Blended relatedness =====
+  async function blendedRel(a,b){
+    const [cnet, dm] = await Promise.all([
+      conceptnetRel(a,b),
+      datamuseRel(a,b)
+    ]);
+    const morph = diceCoeff(a,b);
+    // Weighted blend; tweak weights if needed
+    const score = 0.55*cnet + 0.30*dm + 0.15*morph;
+    return Math.max(0, Math.min(1, score));
+  }
 
-    const commonNouns = [
-      'fire', 'ice', 'water', 'stone', 'paper', 'music', 'money', 'love', 'war', 'peace', 'game', 'food', 'animal', 'plant', 'river', 'mountain', 'beach', 'sand', 'forest', 'computer', 'phone', 'book', 'movie', 'city', 'village', 'school', 'teacher', 'student', 'doctor', 'hospital', 'car', 'train', 'airplane', 'coffee', 'tea', 'sugar', 'salt', 'bread', 'cheese', 'fish', 'bird', 'cat', 'dog', 'house', 'home', 'family', 'friend', 'party', 'work', 'job', 'art', 'dance', 'song', 'light', 'dark', 'shadow', 'mirror', 'glass', 'window', 'door', 'key', 'lock', 'map', 'journey', 'travel', 'flight', 'storm', 'rain', 'snow', 'wind', 'sun', 'moon', 'star', 'planet', 'space', 'time', 'history', 'science', 'energy', 'power', 'sport', 'team', 'ball', 'goal', 'ocean', 'lake', 'island', 'bridge', 'road', 'path', 'desert', 'garden', 'flower', 'tree', 'leaf', 'root', 'seed'
-    ];
+  // Bridge score (harmonic mean) — encourages balanced bridges
+  function bridgeScore(r1,r2){
+    if(r1<=0 || r2<=0) return 0;
+    return (2*r1*r2)/(r1+r2);
+  }
 
-    const state = {
-      A: 'fire', B: 'ice', score: 0, streak: 0,
-      threshold: 0.12, timer: null, baseTime: 12, timeLeft: 12,
-      relAB: 0
-    };
+  // UI meters — color by individual strength; acceptance uses bridge score
+  function setMeters(r1,r2){
+    UI.r1.style.width = Math.max(0,Math.min(1,r1))*100+'%';
+    UI.r2.style.width = Math.max(0,Math.min(1,r2))*100+'%';
+    UI.r1v.textContent = r1.toFixed(2);
+    UI.r2v.textContent = r2.toFixed(2);
+    UI.r1.style.background = r1 >= state.threshold ? 'linear-gradient(90deg,var(--good),#55d98c)' : 'linear-gradient(90deg,var(--bad),#ff8a8a)';
+    UI.r2.style.background = r2 >= state.threshold ? 'linear-gradient(90deg,var(--good),#55d98c)' : 'linear-gradient(90deg,var(--bad),#ff8a8a)';
+  }
 
-    // ===== Helpers =====
-    function sanitize(w) {
-      if (!w) return '';
-      w = w.toLowerCase().trim();
-      w = w.normalize('NFKD').replace(/[̀-ͯ]/g, '');
-      if (w.endsWith('ies') && w.length > 4) w = w.slice(0, -3) + 'y';
-      else if (w.endsWith('ses') || w.endsWith('xes')) w = w.slice(0, -2);
-      else if (w.endsWith('s') && !w.endsWith('ss') && w.length > 3) w = w.slice(0, -1);
-      return w.replace(/[^a-z\- ]/g, '');
+  function adaptDifficultyForPair(){
+    // Pair-aware threshold: tougher if A~B already close, easier if far
+    const bump = Math.floor(state.streak/5);
+    const base = 0.10 + 0.40*state.relAB; // 0.10..0.30 depending on pair difficulty
+    state.threshold = Math.max(0.08, Math.min(0.25, base + bump*0.01));
+    state.baseTime = Math.max(6, 12 - bump);
+  }
+
+  async function pickSeedPair(){
+    for(let tries=0; tries<50; tries++){
+      const a = commonNouns[Math.floor(Math.random()*commonNouns.length)];
+      const b = commonNouns[Math.floor(Math.random()*commonNouns.length)];
+      if(a===b) continue;
+      const relAB = await blendedRel(a,b);
+      if(relAB>=0.05 && relAB<=0.30) return {a,b,relAB};
     }
+    return {a:'fire', b:'ice', relAB: await blendedRel('fire','ice')};
+  }
 
-    function toast(msg) { UI.toast.textContent = msg; UI.toast.classList.add('show'); setTimeout(() => UI.toast.classList.remove('show'), 1100); }
-    function updateHUD() { UI.score.textContent = state.score; UI.streak.textContent = state.streak; }
+  async function setPair(a,b){
+    state.A=a; state.B=b;
+    UI.A.textContent = a; UI.B.textContent = b;
+    state.relAB = await blendedRel(a,b);
+    adaptDifficultyForPair();
+    setMeters(0,0); UI.guess.value=''; UI.guess.focus();
+    startTimer();
+  }
 
-    function stopTimer() { if (state.timer) { clearInterval(state.timer); state.timer = null; } }
-    function startTimer() {
-      stopTimer();
-      state.timeLeft = state.baseTime;
-      UI.time.textContent = state.timeLeft.toFixed(1) + 's';
-      state.timer = setInterval(() => {
-        state.timeLeft -= 0.1;
-        if (state.timeLeft <= 0) { stopTimer(); onFail('Time up!'); }
-        else UI.time.textContent = state.timeLeft.toFixed(1) + 's';
-      }, 100);
+  async function startGame(){
+    state.score=0; state.streak=0; state.threshold=0.12; state.baseTime=12; updateHUD();
+    const {a,b} = await pickSeedPair();
+    await setPair(a,b);
+  }
+
+  async function onSubmit(){
+    let c = sanitize(UI.guess.value);
+    if(!c){ toast('Enter a word'); return; }
+    if(deny.has(c)){ toast('Too generic'); return; }
+    if(c===state.A || c===state.B){ toast('Must differ from A and B'); return; }
+
+    UI.submit.disabled = true;
+    const [r1, r2] = await Promise.all([
+      blendedRel(state.A, c),
+      blendedRel(c, state.B)
+    ]);
+    setMeters(r1,r2);
+    const bridge = bridgeScore(r1,r2);
+    const ok = bridge >= state.threshold;
+
+    if(ok){
+      state.score += 100; state.streak += 1; updateHUD(); toast('+100');
+      const {a,b} = await pickSeedPair(); await setPair(a,b);
+    } else {
+      onFail('Bridge rejected');
     }
+    UI.submit.disabled = false;
+  }
 
-    function setMeters(r1, r2) {
-      UI.r1.style.width = Math.max(0, Math.min(1, r1)) * 100 + '%';
-      UI.r2.style.width = Math.max(0, Math.min(1, r2)) * 100 + '%';
-      UI.r1v.textContent = r1.toFixed(2);
-      UI.r2v.textContent = r2.toFixed(2);
-      UI.r1.style.background = r1 >= state.threshold ? 'linear-gradient(90deg,var(--good),#55d98c)' : 'linear-gradient(90deg,var(--bad),#ff8a8a)';
-      UI.r2.style.background = r2 >= state.threshold ? 'linear-gradient(90deg,var(--good),#55d98c)' : 'linear-gradient(90deg,var(--bad),#ff8a8a)';
-    }
+  async function onSkip(){
+    state.streak = 0; updateHUD(); toast('New pair');
+    const {a,b} = await pickSeedPair(); await setPair(a,b);
+  }
 
-    // ===== Server API wrappers (optional) =====
-    async function apiJSON(path, opts = {}) {
-      const r = await fetch(API_BASE + path, Object.assign({ headers: { 'Content-Type': 'application/json' } }, opts));
-      if (!r.ok) throw new Error('API ' + r.status);
-      return r.json();
-    }
-    const apiPickPair = () => apiJSON('/pair');
-    const apiBridge = (a, b, c, streak = state.streak) => apiJSON('/bridge', { method: 'POST', body: JSON.stringify({ a, b, c, streak }) });
+  function onFail(reason){ toast(`${reason} — streak ${state.streak}`); state.streak=0; updateHUD(); startTimer(); }
 
-    // ===== LOCAL semantic functions (for LOCAL_MODE) =====
-    // ConceptNet relatedness (cached)
-    const relCache = new Map();
-    const relKey = (a, b) => { a = sanitize(a); b = sanitize(b); return a < b ? a + '|' + b : b + '|' + a; };
-    async function conceptnetRel(a, b) {
-      if (!a || !b) return 0;
-      const key = relKey(a, b);
-      if (relCache.has(key)) return relCache.get(key);
-      try {
-        const url = `https://api.conceptnet.io/relatedness?node1=/c/en/${encodeURIComponent(a)}&node2=/c/en/${encodeURIComponent(b)}`;
-        const res = await fetch(url); const j = await res.json();
-        const v = Number(j.value || 0); relCache.set(key, v); return v;
-      } catch (_) { return 0; }
-    }
+  // Wire events
+  UI.submit.addEventListener('click', onSubmit);
+  UI.skip.addEventListener('click', onSkip);
+  UI.reset.addEventListener('click', startGame);
+  UI.guess.addEventListener('keydown', e=>{ if(e.key==='Enter') onSubmit(); });
 
-    // Datamuse meaning-like profile (cached)
-    const dmCache = new Map(); // term -> {top, map}
-    async function datamuseProfile(term) {
-      term = sanitize(term);
-      if (dmCache.has(term)) return dmCache.get(term);
-      try {
-        const url = `https://api.datamuse.com/words?ml=${encodeURIComponent(term)}&max=100`;
-        const r = await fetch(url); const arr = await r.json();
-        let top = 1; const map = new Map();
-        for (const x of arr) { const w = sanitize(x.word); const s = Number(x.score || 0); if (!w) continue; if (s > top) top = s; if (!map.has(w) || map.get(w) < s) map.set(w, s); }
-        const prof = { top, map }; dmCache.set(term, prof); return prof;
-      } catch (_) { const prof = { top: 1, map: new Map() }; dmCache.set(term, prof); return prof; }
-    }
-    async function datamuseRel(a, b) {
-      const [pa, pb] = await Promise.all([datamuseProfile(a), datamuseProfile(b)]);
-      const s1 = pa.map.get(sanitize(b)) ? (pa.map.get(sanitize(b)) / pa.top) : 0;
-      const s2 = pb.map.get(sanitize(a)) ? (pb.map.get(sanitize(a)) / pb.top) : 0;
-      const sym = Math.max(s1, s2);
-      return Math.sqrt(sym);
-    }
-
-    function diceCoeff(a, b) {
-      a = sanitize(a); b = sanitize(b); if (!a || !b) return 0; if (a === b) return 1;
-      const grams = s => { const v = []; for (let i = 0; i < s.length - 1; i++) v.push(s.slice(i, i + 2)); return v; };
-      const A = grams(a), B = grams(b); const cnt = new Map(); for (const x of B) cnt.set(x, (cnt.get(x) || 0) + 1);
-      let overlap = 0; for (const x of A) { const c = cnt.get(x) || 0; if (c > 0) { overlap++; cnt.set(x, c - 1); } }
-      return (2 * overlap) / (A.length + B.length);
-    }
-
-    async function blendedRel(a, b) {
-      const [cnet, dm] = await Promise.all([conceptnetRel(a, b), datamuseRel(a, b)]);
-      const mor = diceCoeff(a, b);
-      return Math.max(0, Math.min(1, 0.55 * cnet + 0.30 * dm + 0.15 * mor));
-    }
-
-    function bridgeScore(r1, r2) { if (r1 <= 0 || r2 <= 0) return 0; return (2 * r1 * r2) / (r1 + r2); }
-
-    function adaptiveThreshold(relAB, streak) {
-      const base = 0.10 + 0.40 * relAB; // 0.10..0.30 depending on pair closeness
-      const bump = Math.min(Math.floor(streak / 5), 6) * 0.01;
-      return Math.max(0.08, Math.min(0.25, base + bump));
-    }
-
-    // Build candidate bridges via Datamuse intersections and score with blendedRel
-    async function bridgeCandidates(a, b, { maxIntersect = 80, maxScored = 40 } = {}) {
-      const [pa, pb] = await Promise.all([datamuseProfile(a), datamuseProfile(b)]);
-      const setA = new Set([...pa.map.keys()]);
-      const inter = [...pb.map.keys()]
-        .filter(w => setA.has(w))
-        .map(w => sanitize(w))
-        .filter(w => w && !deny.has(w) && w !== a && w !== b);
-      const unique = [...new Set(inter)].slice(0, maxIntersect);
-      const scored = [];
-      for (const w of unique.slice(0, maxScored)) {
-        const [r1, r2] = await Promise.all([blendedRel(a, w), blendedRel(w, b)]);
-        const s = (r1 > 0 && r2 > 0) ? (2 * r1 * r2) / (r1 + r2) : 0;
-        scored.push({ w, r1, r2, s });
-      }
-      scored.sort((x, y) => y.s - x.s);
-      return scored;
-    }
-
-    // Local pair picker: only accept pairs with ≥ MIN_CANDIDATES good bridges
-    async function pickSeedPairLocal() {
-      const MIN_CANDIDATES = 3;
-      const MIN_BRIDGE_SCORE = 0.12;
-      const MAX_TRIES = 80;
-
-      for (let tries = 0; tries < MAX_TRIES; tries++) {
-        const a = commonNouns[Math.floor(Math.random() * commonNouns.length)];
-
-        // pick b from ml(a), prefer nouns in our list, avoid near-duplicates
-        const profA = await datamuseProfile(a);
-        const mlA = [...profA.map.entries()].map(([w, score]) => ({ w, score }))
-          .filter(({ w }) => w !== a && !deny.has(w))
-          .sort((x, y) => y.score - x.score);
-
-        let b = null;
-        for (const cand of mlA.slice(0, 40)) {
-          const w = cand.w;
-          if (!commonNouns.includes(w)) continue; // prefer curated nouns
-          if (diceCoeff(a, w) > 0.6) continue;     // too morphologically close
-          b = w; break;
-        }
-        if (!b && mlA.length) b = mlA[0].w;
-        if (!b || b === a) continue;
-
-        const relAB = await blendedRel(a, b);
-        if (relAB > 0.40) continue; // too trivial
-        if (relAB < 0.03) continue; // probably impossible
-
-        const bridges = await bridgeCandidates(a, b);
-        const good = bridges.filter(x => x.s >= MIN_BRIDGE_SCORE);
-        if (good.length >= MIN_CANDIDATES) {
-          return { a, b, relAB, bridges: bridges.slice(0, 8) };
-        }
-      }
-      const relAB = await blendedRel('fire', 'ice');
-      return { a: 'fire', b: 'ice', relAB, bridges: [] };
-    }
-
-    // ===== Game flow =====
-    async function setPair(a, b, relAB, threshold, baseTime) {
-      state.A = a; state.B = b; state.relAB = relAB || 0;
-      state.threshold = threshold ?? adaptiveThreshold(state.relAB, state.streak);
-      state.baseTime = baseTime ?? 12;
-      UI.A.textContent = a; UI.B.textContent = b;
-      setMeters(0, 0); UI.guess.value = ''; UI.guess.focus();
-      startTimer();
-    }
-
-    async function startGame() {
-      state.score = 0; state.streak = 0; updateHUD();
-
-      // If API looks unsafe in https context, skip it
-      if (API_BASE && !API_UNSAFE_ON_HTTPS) {
-        try {
-          const p = await apiPickPair();
-          await setPair(p.a, p.b, p.relAB, p.threshold, p.baseTime);
-          return;
-        } catch (e) {
-          console.warn('API /pair failed, falling back to LOCAL:', e);
-          toast('API unreachable — switching to local mode');
-        }
-      }
-
-      // Fallback to local
-      const p = await pickSeedPairLocal();
-      await setPair(p.a, p.b, p.relAB);
-    }
-
-
-    async function onSubmit() {
-      const c = sanitize(UI.guess.value);
-      if (!c) { toast('Enter a word'); return; }
-      if (deny.has(c)) { toast('Too generic'); return; }
-      if (c === state.A || c === state.B) { toast('Must differ from A and B'); return; }
-
-      stopTimer(); // <-- stops timer while evaluating the guess
-
-      UI.submit.disabled = true;
-      try {
-        if (API_BASE) {
-          // Treat http:// URLs as unsafe when running on https:// pages (mixed content)
-          const API_UNSAFE_ON_HTTPS = API_BASE && location.protocol === 'https:' && API_BASE.startsWith('http://');
-
-          const res = await apiBridge(state.A, state.B, c, state.streak);
-          state.threshold = res.threshold ?? state.threshold;
-          setMeters(res.r1, res.r2);
-          if (res.ok) {
-            state.score += 100; state.streak += 1; updateHUD(); toast('+100');
-            const p = await apiPickPair(); await setPair(p.a, p.b, p.relAB, p.threshold, p.baseTime);
-          } else {
-            onFail('Bridge rejected');
-          }
-        } else {
-          const [r1, r2] = await Promise.all([blendedRel(state.A, c), blendedRel(c, state.B)]);
-          setMeters(r1, r2);
-          const bridge = (r1 > 0 && r2 > 0) ? (2 * r1 * r2) / (r1 + r2) : 0;
-          const th = adaptiveThreshold(state.relAB, state.streak);
-          state.threshold = th;
-          if (bridge >= th) {
-            state.score += 100; state.streak += 1; updateHUD(); toast('+100');
-            const p = await pickSeedPairLocal(); await setPair(p.a, p.b, p.relAB);
-          } else {
-            onFail('Bridge rejected');
-          }
-        }
-      } catch (e) {
-        console.error(e); toast('Error scoring bridge');
-      }
-      UI.submit.disabled = false;
-    }
-
-    async function onSkip() {
-      state.streak = 0; updateHUD(); toast('New pair');
-      if (API_BASE) {
-        try { const p = await apiPickPair(); await setPair(p.a, p.b, p.relAB, p.threshold, p.baseTime); }
-        catch (e) { console.error(e); toast('API error: /pair'); }
-      } else {
-        const p = await pickSeedPairLocal(); await setPair(p.a, p.b, p.relAB);
-      }
-    }
-
-    function onFail(reason) { toast(`${reason} — streak ${state.streak}`); state.streak = 0; updateHUD(); startTimer(); }
-
-    // Events
-    UI.submit.addEventListener('click', onSubmit);
-    UI.skip.addEventListener('click', onSkip);
-    UI.reset.addEventListener('click', startGame);
-    UI.guess.addEventListener('keydown', e => { if (e.key === 'Enter') onSubmit(); });
-
-    // Init
-    (async () => { await startGame(); })();
-  </script>
+  // Init
+  (async()=>{ await startGame(); })();
+</script>
 </body>
-
 </html>
