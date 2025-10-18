@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Overlap Meter — Life Timeline Guess</title>
+  <style>
+    :root{
+      --bg:#0f1115; --card:#161a24; --ink:#e9ecf1; --muted:#a6aec4;
+      --accent:#5e9dc8; --good:#35c76d; --bad:#ff5a5a; --warn:#f2b84b;
+      --rail:#22283a; --rail2:#1c2130;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--ink);
+      font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      display:grid; place-items:center; padding:16px;
+    }
+    .app{
+      width:100%; max-width:880px; background:var(--card);
+      border:1px solid #242a3d; border-radius:16px;
+      box-shadow:0 20px 60px rgba(0,0,0,.35); padding:18px;
+    }
+    header{display:flex; gap:12px; align-items:center; margin-bottom:6px}
+    h1{font-size:18px; margin:0}
+    .sub{color:var(--muted); font-size:13px}
+    .row{display:grid; gap:12px}
+    .people{display:grid; gap:10px; margin:12px 0}
+    .person{
+      background:linear-gradient(180deg,var(--rail2),var(--rail));
+      border:1px solid #262d42; border-radius:12px; padding:12px;
+      display:grid; gap:6px;
+    }
+    .person .name{font-weight:600}
+    .person .years{color:var(--muted); font-size:13px}
+    .bars{position:relative; height:18px; background:#101420; border-radius:9px; overflow:hidden; border:1px solid #1e2435}
+    .bar{
+      position:absolute; top:2px; height:14px; border-radius:7px; opacity:.9;
+    }
+    .bar.a{background:rgba(94,157,200,.75)}
+    .bar.b{background:rgba(53,199,109,.75)}
+    .bar.overlap{background:linear-gradient(90deg, rgba(94,157,200,.85), rgba(53,199,109,.85)); top:2px; height:14px; border-radius:7px}
+    .years-scale{display:flex; justify-content:space-between; color:var(--muted); font-size:12px; margin-top:6px}
+    .controls{
+      display:grid; gap:10px; background:#121726; border:1px solid #262d42; border-radius:12px; padding:12px;
+    }
+    .slider-row{display:grid; gap:6px}
+    .label{display:flex; justify-content:space-between; font-size:13px; color:var(--muted)}
+    input[type="range"]{
+      -webkit-appearance:none; width:100%; height:28px; background:transparent;
+    }
+    input[type="range"]::-webkit-slider-runnable-track{
+      height:6px; background:#1a2133; border-radius:6px; border:1px solid #27304a;
+    }
+    input[type="range"]::-moz-range-track{
+      height:6px; background:#1a2133; border-radius:6px; border:1px solid #27304a;
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none; width:22px; height:22px; border-radius:50%;
+      background:var(--accent); border:2px solid #0b0f18; margin-top:-9px;
+      box-shadow:0 0 0 2px rgba(94,157,200,.2);
+    }
+    input[type="range"]::-moz-range-thumb{
+      width:22px; height:22px; border-radius:50%; background:var(--accent); border:2px solid #0b0f18;
+      box-shadow:0 0 0 2px rgba(94,157,200,.2);
+    }
+    .btns{display:flex; gap:10px; flex-wrap:wrap}
+    button{
+      background:var(--accent); color:#0b0f18; border:none; padding:10px 14px; border-radius:10px; font-weight:600;
+      cursor:pointer;
+    }
+    button.secondary{background:#21283c; color:var(--ink); border:1px solid #2b3350}
+    .result{
+      margin-top:10px; padding:12px; border:1px solid #2a3250; border-radius:12px; background:#101625;
+      display:grid; gap:6px;
+    }
+    .score{font-weight:700}
+    .muted{color:var(--muted)}
+    a{color:var(--accent); text-decoration:none}
+    .err{color:var(--bad); font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Overlap Meter</h1>
+      <div class="sub">Guess the overlap between two real people’s lives using a double slider.</div>
+    </header>
+
+    <div id="status" class="sub"></div>
+
+    <div class="people" id="people">
+      <!-- Filled by JS -->
+    </div>
+
+    <div class="bars" id="bars"></div>
+    <div class="years-scale" id="scale"></div>
+
+    <div class="controls">
+      <div class="slider-row">
+        <div class="label"><span>Overlap start (your guess)</span><span id="startVal">—</span></div>
+        <input id="startSlider" type="range" min="1900" max="2025" value="1950" step="1" />
+      </div>
+      <div class="slider-row">
+        <div class="label"><span>Overlap end (your guess)</span><span id="endVal">—</span></div>
+        <input id="endSlider" type="range" min="1900" max="2025" value="2000" step="1" />
+      </div>
+      <div class="btns">
+        <button id="submit">Check overlap</button>
+        <button id="again" class="secondary">New round</button>
+      </div>
+      <div id="result" class="result" style="display:none"></div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- Utilities ---
+    const fmtYear = y => (y === null || y === undefined) ? "—" : String(y);
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const yearDiff = (a, b) => (b - a); // whole-year granularity for game feel
+
+    // Compute overlap (in years) given [b1,d1], [b2,d2]
+    function overlapYears(b1, d1, b2, d2) {
+      const start = Math.max(b1, b2);
+      const end = Math.min(d1, d2);
+      return Math.max(0, Math.floor(end - start));
+    }
+
+    // --- Data fetch: Wikidata SPARQL for two random humans w/ enwiki sitelinks, DOB, optional DOD ---
+    async function fetchTwoPeople() {
+      const endpoint = "https://query.wikidata.org/sparql";
+      const headers = { "Accept": "application/sparql-results+json" };
+      const q = `
+        SELECT ?person ?personLabel ?dob ?dod ?article WHERE {
+          ?person wdt:P31 wd:Q5;              # instance of human
+                  wdt:P569 ?dob.             # has date of birth
+          OPTIONAL { ?person wdt:P570 ?dod } # optional date of death
+          ?article schema:about ?person ;
+                   schema:inLanguage "en" ;
+                   schema:isPartOf <https://en.wikipedia.org/> .
+          SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+        }
+        ORDER BY RAND()
+        LIMIT 2
+      `;
+      const url = endpoint + "?query=" + encodeURIComponent(q);
+      const res = await fetch(url, { headers });
+      if (!res.ok) throw new Error("SPARQL fetch failed");
+      const json = await res.json();
+      const rows = json.results.bindings.map(b => {
+        const name = b.personLabel.value;
+        const dob = new Date(b.dob.value);
+        const dod = b.dod ? new Date(b.dod.value) : null;
+        const article = b.article.value; // https URL to enwiki
+        return { name, dob, dod, article };
+      });
+      if (rows.length < 2) throw new Error("Not enough people returned");
+      return rows;
+    }
+
+    // --- State ---
+    let P1 = null, P2 = null;
+    let minYear = 1900, maxYear = new Date().getUTCFullYear();
+
+    // --- UI wiring ---
+    const peopleEl = document.getElementById("people");
+    const barsEl = document.getElementById("bars");
+    const scaleEl = document.getElementById("scale");
+    const startSlider = document.getElementById("startSlider");
+    const endSlider   = document.getElementById("endSlider");
+    const startVal = document.getElementById("startVal");
+    const endVal = document.getElementById("endVal");
+    const submitBtn = document.getElementById("submit");
+    const againBtn = document.getElementById("again");
+    const resultEl = document.getElementById("result");
+    const statusEl = document.getElementById("status");
+
+    function setStatus(msg, isErr=false){
+      statusEl.textContent = msg || "";
+      statusEl.className = isErr ? "sub err" : "sub";
+    }
+
+    function renderPeople() {
+      const rows = [P1, P2].map((p,i) => `
+        <div class="person">
+          <div class="name">${i===0?"A":"B"}. <a href="${p.article}" target="_blank" rel="noopener">${p.name}</a></div>
+          <div class="years">${fmtYear(p.dob.getUTCFullYear())} – ${fmtYear((p.dod ? p.dod.getUTCFullYear() : null) ?? "present")}</div>
+        </div>
+      `).join("");
+      peopleEl.innerHTML = rows;
+    }
+
+    function renderScale() {
+      scaleEl.innerHTML = `<div>${minYear}</div><div>${maxYear}</div>`;
+    }
+
+    function yearToPct(y) {
+      return ( (y - minYear) / (maxYear - minYear) ) * 100;
+    }
+
+    function drawBars(showOverlap=true){
+      barsEl.innerHTML = "";
+      const mk = (cls, leftPct, rightPct) => {
+        const el = document.createElement("div");
+        el.className = cls;
+        const l = Math.min(leftPct, rightPct), r = Math.max(leftPct, rightPct);
+        el.style.left = l + "%";
+        el.style.width = Math.max(0, r - l) + "%";
+        return el;
+      };
+
+      const aL = yearToPct(P1.dob.getUTCFullYear());
+      const aR = yearToPct((P1.dod ? P1.dod.getUTCFullYear() : maxYear));
+      const bL = yearToPct(P2.dob.getUTCFullYear());
+      const bR = yearToPct((P2.dod ? P2.dod.getUTCFullYear() : maxYear));
+
+      barsEl.appendChild(mk("bar a", aL, aR));
+      barsEl.appendChild(mk("bar b", bL, bR));
+
+      if (showOverlap){
+        const oStart = Math.max(P1.dob.getUTCFullYear(), P2.dob.getUTCFullYear());
+        const oEnd   = Math.min((P1.dod ? P1.dod.getUTCFullYear() : maxYear),
+                                (P2.dod ? P2.dod.getUTCFullYear() : maxYear));
+        if (oEnd > oStart){
+          barsEl.appendChild(mk("bar overlap", yearToPct(oStart), yearToPct(oEnd)));
+        }
+      }
+    }
+
+    function setupSliders(){
+      startSlider.min = endSlider.min = String(minYear);
+      startSlider.max = endSlider.max = String(maxYear);
+
+      const mid = Math.floor((minYear + maxYear)/2);
+      startSlider.value = String(mid - 5);
+      endSlider.value   = String(mid + 5);
+      updateSliderLabels();
+
+      // Ensure start <= end
+      startSlider.addEventListener("input", () => {
+        if (+startSlider.value > +endSlider.value) endSlider.value = startSlider.value;
+        updateSliderLabels();
+      });
+      endSlider.addEventListener("input", () => {
+        if (+endSlider.value < +startSlider.value) startSlider.value = endSlider.value;
+        updateSliderLabels();
+      });
+    }
+
+    function updateSliderLabels(){
+      startVal.textContent = `${startSlider.value}`;
+      endVal.textContent = `${endSlider.value}`;
+    }
+
+    function computeAndReveal(){
+      const gs = +startSlider.value;
+      const ge = +endSlider.value;
+
+      const aB = P1.dob.getUTCFullYear();
+      const aD = (P1.dod ? P1.dod.getUTCFullYear() : maxYear);
+      const bB = P2.dob.getUTCFullYear();
+      const bD = (P2.dod ? P2.dod.getUTCFullYear() : maxYear);
+
+      const trueOverlap = overlapYears(aB, aD, bB, bD);
+      const guessOverlap = Math.max(0, ge - gs);
+
+      const off = Math.abs(trueOverlap - guessOverlap);
+      // Simple score: 100 perfect; minus 4 points per year off; floor at 0
+      const score = Math.max(0, Math.round(100 - 4 * off));
+
+      const coexistText = (trueOverlap > 0)
+        ? `They overlapped for <b>${trueOverlap} year${trueOverlap===1?"":"s"}</b>.`
+        : `They did <b>not</b> overlap.`;
+
+      resultEl.style.display = "grid";
+      resultEl.innerHTML = `
+        <div class="score">Score: ${score}/100</div>
+        <div>${coexistText} Your guess was <b>${guessOverlap}</b> — off by <b>${off}</b>.</div>
+        <div class="muted">
+          A: ${P1.name} (${aB}–${P1.dod ? aD : "present"}) •
+          B: ${P2.name} (${bB}–${P2.dod ? bD : "present"})
+        </div>
+      `;
+    }
+
+    async function newRound(){
+      setStatus("Loading two random people…");
+      resultEl.style.display = "none";
+      try{
+        const rows = await fetchTwoPeople();
+
+        // Basic sanity filters: avoid both “alive & born this decade” type oddities
+        const nowYear = new Date().getUTCFullYear();
+        const normalize = r => ({
+          name: r.name,
+          article: r.article,
+          dob: new Date(r.dob),
+          dod: r.dod ? new Date(r.dod) : null
+        });
+
+        P1 = normalize(rows[0]);
+        P2 = normalize(rows[1]);
+
+        // Compute timeline bounds
+        const allStart = Math.min(P1.dob.getUTCFullYear(), P2.dob.getUTCFullYear());
+        const allEnd   = Math.max(P1.dod ? P1.dod.getUTCFullYear() : nowYear,
+                                  P2.dod ? P2.dod.getUTCFullYear() : nowYear);
+
+        // Expand a touch so sliders feel roomy
+        minYear = Math.max(1200, allStart - 2);
+        maxYear = Math.min(nowYear, allEnd + 2);
+
+        renderPeople();
+        renderScale();
+        drawBars(true);
+        setupSliders();
+        setStatus("");
+      }catch(e){
+        console.error(e);
+        setStatus("Couldn’t load people. Try again.", true);
+      }
+    }
+
+    submitBtn.addEventListener("click", computeAndReveal);
+    againBtn.addEventListener("click", newRound);
+
+    // Kickoff
+    newRound();
+  </script>
+</body>
+</html>
