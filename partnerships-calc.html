@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bodega Transit Partnership Calculator</title>
+<meta name="description" content="Simulate a New York bodega partnership program for transit card activations & reloads. Calculates payouts, budget burn, and scale/runway under a fixed budget." />
+<style>
+  :root{
+    --bg:#0f1115; --card:#151924; --muted:#9aa4bd; --text:#e9ecf1; --line:#232a36;
+    --accent:#5e9dc8; --good:#35c76d; --bad:#ff5a5a; --warn:#f2b84b; --focus:#87b7da;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f7f8fb; --card:#ffffff; --muted:#4a5568; --text:#111827; --line:#e5e7eb; --accent:#2563eb; }
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  a{color:var(--accent)}
+  .wrap{max-width:1200px;margin:0 auto;padding:24px}
+  header{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+  header h1{margin:0;font-size:clamp(1.4rem,2.5vw,2rem)}
+  header p{margin:0;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+  @media (max-width:1000px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .panel h2,.panel h3{margin:.2rem 0 .6rem 0;font-size:1rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .panel h3{margin-top:1rem}
+  .controls{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+  .field{grid-column:span 6;display:flex;flex-direction:column}
+  .field.third{grid-column:span 4}
+  .field.full{grid-column:1/-1}
+  .label-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  label{font-weight:600}
+  .help{font-size:.85rem;color:var(--muted);margin-top:4px}
+  input[type="number"],input[type="text"]{
+    width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+    background:transparent;color:var(--text);outline:none;
+  }
+  input[type="number"]:focus,input[type="text"]:focus{border-color:var(--focus);box-shadow:0 0 0 3px color-mix(in oklab, var(--focus) 30%, transparent)}
+  .seg{display:flex;gap:10px;flex-wrap:wrap}
+  .seg label{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;user-select:none}
+  .seg input{accent-color:var(--accent)}
+  .row{display:flex;flex-wrap:wrap;gap:10px}
+  .btn{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:white}
+  .btn.ghost{background:transparent}
+  .btn:focus-visible{outline:3px solid var(--focus)}
+  .stack{display:flex;gap:10px;flex-wrap:wrap}
+  .cards{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+  .card{grid-column:span 6;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .card.third{grid-column:span 4}
+  .card.full{grid-column:1/-1}
+  .kpi{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .kpi .value{font-size:1.35rem;font-weight:800}
+  .muted{color:var(--muted)}
+  .state-ok{color:var(--good)}
+  .state-bad{color:var(--bad)}
+  .state-warn{color:var(--warn)}
+  .mono{font-variant-numeric:tabular-nums}
+  .table{width:100%;border-collapse:collapse}
+  .table th,.table td{border-bottom:1px solid var(--line);padding:8px 0;text-align:left}
+  .tooltip{
+    position:relative;display:inline-flex;align-items:center;justify-content:center;
+    width:18px;height:18px;border-radius:50%;border:1px solid var(--line);color:var(--muted);
+    font-size:.8rem;cursor:help;user-select:none;
+  }
+  .tooltip:focus-visible{outline:3px solid var(--focus)}
+  .tooltip[data-tip]::after{
+    content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
+    background:#000; color:#fff; padding:8px 10px; font-size:.85rem; line-height:1.2;
+    border-radius:8px; width:min(340px,90vw); opacity:0; pointer-events:none; transition:.15s ease; box-shadow:0 6px 20px rgba(0,0,0,.35);
+    white-space:normal; z-index:5;
+  }
+  .tooltip:hover::after,.tooltip:focus::after{opacity:1}
+  .assumptions{font-size:.92rem;color:var(--muted)}
+  .sr-only{position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .footer-note{font-size:.9rem;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Bodega Transit Partnership Calculator</h1>
+      <p id="app-desc">Estimate per-bodega payouts, broker fees, and budget burn to size or time a NYC bodega transit card program.</p>
+    </header>
+
+    <div class="grid" role="region" aria-labelledby="inputs-header">
+      <!-- LEFT: Inputs -->
+      <section class="panel" aria-describedby="app-desc">
+        <h2 id="inputs-header">Inputs</h2>
+
+        <!-- Mode toggle -->
+        <div class="field full" role="group" aria-labelledby="mode-label">
+          <div class="label-row"><label id="mode-label">Mode</label></div>
+          <div class="seg" aria-label="Calculation mode">
+            <label><input type="radio" name="mode" value="A" /> Mode A: Given budget &amp; months, compute <strong>max bodegas</strong></label>
+            <label><input type="radio" name="mode" value="B" /> Mode B: Given budget &amp; bodegas, compute <strong>runway (months)</strong></label>
+          </div>
+        </div>
+
+        <h3>Budget &amp; Horizon</h3>
+        <div class="controls" id="group-budget">
+          <div class="field third">
+            <label for="budget">Total campaign budget (USD)</label>
+            <input id="budget" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="budget-help" />
+            <div id="budget-help" class="help">Funds both bodega commissions and broker fees.</div>
+          </div>
+          <div class="field third only-mode-A">
+            <label for="targetMonths">Target duration (months)</label>
+            <input id="targetMonths" type="number" step="1" min="1" inputmode="numeric" aria-describedby="tm-help" />
+            <div id="tm-help" class="help">Visible in Mode A only.</div>
+          </div>
+          <div class="field third only-mode-B">
+            <label for="numBodegas">Number of participating bodegas</label>
+            <input id="numBodegas" type="number" step="1" min="0" inputmode="numeric" aria-describedby="nb-help" />
+            <div id="nb-help" class="help">Visible in Mode B only.</div>
+          </div>
+        </div>
+
+        <h3>Broker economics</h3>
+        <div class="controls" id="group-broker">
+          <div class="field third">
+            <label for="brokerFee">Broker fee per activation (USD)</label>
+            <input id="brokerFee" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="bf-help" />
+            <div id="bf-help" class="help">Assume one broker handling all bodegas.</div>
+          </div>
+        </div>
+
+        <h3>Bodega commissions</h3>
+        <div class="controls" id="group-comm">
+          <div class="field third">
+            <label for="actPct">Commission on new activation (%)</label>
+            <input id="actPct" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="ap-help" />
+            <div id="ap-help" class="help">Percent of initial load amount.</div>
+          </div>
+          <div class="field third">
+            <label for="reloadPct">Commission on reload (%)</label>
+            <input id="reloadPct" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="rp-help" />
+            <div id="rp-help" class="help">Percent of reload amount.</div>
+          </div>
+          <div class="field third">
+            <label for="flatFee">Flat fee per transaction (USD)</label>
+            <input id="flatFee" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="ff-help" />
+            <div id="ff-help" class="help">Applies to both activations and reloads.</div>
+          </div>
+        </div>
+
+        <h3>Traffic &amp; conversion</h3>
+        <div class="controls" id="group-traffic">
+          <div class="field third">
+            <label for="newVisitors">Estimated monthly new visitors per bodega</label>
+            <input id="newVisitors" type="number" step="1" min="0" inputmode="numeric" />
+          </div>
+          <div class="field third">
+            <label for="recurringVisitors">Estimated monthly recurring visitors per bodega</label>
+            <input id="recurringVisitors" type="number" step="1" min="0" inputmode="numeric" />
+          </div>
+          <div class="field third">
+            <label for="transitPct">% of visitors who use public transit</label>
+            <input id="transitPct" type="number" step="0.01" min="0" max="100" inputmode="decimal" />
+          </div>
+          <div class="field third">
+            <label for="activationConv">% of transit-using new visitors who activate</label>
+            <input id="activationConv" type="number" step="0.01" min="0" max="100" inputmode="decimal" />
+          </div>
+          <div class="field third">
+            <label for="reloadConv">% of transit-using recurring visitors who reload (monthly)</label>
+            <input id="reloadConv" type="number" step="0.01" min="0" max="100" inputmode="decimal" />
+          </div>
+        </div>
+
+        <h3>Amounts</h3>
+        <div class="controls" id="group-amounts">
+          <div class="field third">
+            <label for="avgInitial">Average initial load per activation (USD)</label>
+            <input id="avgInitial" type="number" step="0.01" min="0" inputmode="decimal" />
+          </div>
+          <div class="field third">
+            <label for="avgReload">Average reload amount (USD)</label>
+            <input id="avgReload" type="number" step="0.01" min="0" inputmode="decimal" />
+          </div>
+        </div>
+
+        <h3>Constraints (optional)</h3>
+        <div class="controls" id="group-constraints">
+          <div class="field third">
+            <label for="maxBodegas">Max bodegas available to onboard</label>
+            <input id="maxBodegas" type="number" step="1" min="0" inputmode="numeric" aria-describedby="mb-help" />
+            <div id="mb-help" class="help">Leave blank for no cap.</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px" role="group" aria-label="Utilities">
+          <button class="btn" id="resetBtn" type="button">Reset to defaults</button>
+          <button class="btn ghost" id="copyBtn" type="button">Copy snapshot (JSON)</button>
+          <button class="btn ghost" id="shareBtn" type="button" title="Create a link with current inputs in the URL hash">Shareable link</button>
+          <span id="utilMsg" class="help" role="status" aria-live="polite"></span>
+        </div>
+      </section>
+
+      <!-- RIGHT: Outputs -->
+      <section class="panel" role="region" aria-labelledby="outputs-header">
+        <h2 id="outputs-header">Outputs</h2>
+
+        <div class="cards" aria-live="polite">
+          <div class="card full">
+            <div class="kpi">
+              <div>
+                <div class="muted">Per-bodega monthly activity</div>
+                <table class="table mono" aria-label="Per-bodega monthly activity table">
+                  <thead><tr><th>Metric</th><th>Value</th><th></th></tr></thead>
+                  <tbody>
+                    <tr>
+                      <td>Estimated activations / month</td>
+                      <td id="ob-activations">—</td>
+                      <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="activations = new_visitors × transit% × activation_conversion"></span></td>
+                    </tr>
+                    <tr>
+                      <td>Estimated reloads / month</td>
+                      <td id="ob-reloads">—</td>
+                      <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="reloads = recurring_visitors × transit% × reload_conversion"></span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card full">
+            <div class="kpi">
+              <div>
+                <div class="muted">Per-bodega monthly payout (to bodega)</div>
+                <table class="table mono" aria-label="Per-bodega payout table">
+                  <thead><tr><th>Component</th><th>USD</th><th></th></tr></thead>
+                  <tbody>
+                    <tr>
+                      <td>From activation %</td>
+                      <td id="ob-p-activation">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="activations × avg_initial_load × activation_commission%"></span></td>
+                    </tr>
+                    <tr>
+                      <td>From reload %</td>
+                      <td id="ob-p-reload">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="reloads × avg_reload_amount × reload_commission%"></span></td>
+                    </tr>
+                    <tr>
+                      <td>From flat fees</td>
+                      <td id="ob-p-flat">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="(activations + reloads) × flat_fee_per_tx"></span></td>
+                    </tr>
+                    <tr>
+                      <th>Total per-bodega payout / month</th>
+                      <th id="ob-p-total">—</th>
+                      <th><span class="tooltip" tabindex="0" data-tip="sum of activation%, reload%, and flat fee payouts"></span></th>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card third">
+            <div class="kpi">
+              <div>
+                <div class="muted">Estimated payout per bodega / month</div>
+                <div id="kpi-bodegaPayout" class="value mono">—</div>
+              </div>
+              <span class="tooltip" tabindex="0" data-tip="per-bodega payout from % on loads + flat fees"></span>
+            </div>
+          </div>
+
+          <div class="card third">
+            <div class="kpi">
+              <div>
+                <div class="muted">Estimated payout to broker / month</div>
+                <div id="kpi-brokerPayout" class="value mono">—</div>
+              </div>
+              <span class="tooltip" tabindex="0" data-tip="total_activations_all_bodegas × broker_fee"></span>
+            </div>
+          </div>
+
+          <div class="card third">
+            <div class="kpi">
+              <div>
+                <div class="muted">Total monthly program payouts</div>
+                <div id="kpi-totalPayouts" class="value mono">—</div>
+              </div>
+              <span class="tooltip" tabindex="0" data-tip="(bodegas × per-bodega payout) + broker payout"></span>
+            </div>
+          </div>
+
+          <div class="card full">
+            <div class="kpi">
+              <div>
+                <div class="muted">Program scale &amp; budget</div>
+                <table class="table mono" aria-label="Program scale and budget table">
+                  <tbody>
+                    <tr class="only-mode-A">
+                      <td>Max bodegas under budget (floored)</td>
+                      <td id="ob-max-bodegas">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="max_bodegas = floor( budget ÷ [T × (per_bodega_payout + broker_fee × activations_per_bodega)] ) with optional cap"></span></td>
+                    </tr>
+                    <tr class="only-mode-B">
+                      <td>Runway (months)</td>
+                      <td id="ob-runway">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="runway = budget ÷ monthly_burn"></span></td>
+                    </tr>
+                    <tr>
+                      <td>Estimated monthly burn</td>
+                      <td id="ob-monthly-burn">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="monthly_burn = bodegas × per_bodega_payout + broker_fee × total_activations_all_bodegas"></span></td>
+                    </tr>
+                    <tr class="only-mode-A">
+                      <td>Total cost over target months</td>
+                      <td id="ob-total-cost">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="total_cost = bodegas × T × (per_bodega_payout + broker_fee × activations_per_bodega)"></span></td>
+                    </tr>
+                    <tr class="only-mode-A">
+                      <td>Remaining budget after target months</td>
+                      <td id="ob-remaining">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="remaining = budget − total_cost"></span></td>
+                    </tr>
+                    <tr class="only-mode-B">
+                      <td>Budget exhausted in ~</td>
+                      <td id="ob-exhaust">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="approximate months until budget reaches zero at current burn"></span></td>
+                    </tr>
+                    <tr>
+                      <td>Will it exceed budget?</td>
+                      <td id="ob-exceed">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="Mode A: checks total_cost ≤ budget. Mode B: runway ≥ desired months (if any)."></span></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div id="mode-context" class="footer-note"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card full assumptions" role="note" aria-label="Assumptions">
+            <strong>Assumptions (v1 steady-state model):</strong>
+            <ul>
+              <li>Activations derive from <em>new</em> monthly foot traffic; reloads from <em>recurring</em> traffic.</li>
+              <li>Newly activated riders are <em>not</em> added to recurring pools in future months (no cohorting).</li>
+              <li>One broker handles all bodegas; broker fee accrues on each activation as it happens.</li>
+              <li>All percentages are entered as percents (e.g., 10 means 10%).</li>
+              <li>All inputs are adjustable; defaults are placeholders.</li>
+            </ul>
+            <div class="footer-note">Future versions could add: cohorting, seasonality, multi-broker splits, per-borough parameters.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+/* ---------- Utilities ---------- */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+const fmtUSD = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2});
+const fmt0 = new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
+const clampNonNeg = v => isFinite(v) ? Math.max(0, v) : 0;
+const parseNum = (el) => clampNonNeg(parseFloat(el.value));
+const parseOptionalInt = (el) => {
+  const v = el.value.trim();
+  if(v === '') return null;
+  const n = Math.floor(Number(v));
+  return isFinite(n) ? Math.max(0,n) : null;
+};
+function debounce(fn, ms=120){let t;return (...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),ms)};}
+function setVisByMode(mode){
+  const showA = mode === 'A';
+  $$('.only-mode-A').forEach(el => el.style.display = showA ? '' : 'none');
+  $$('.only-mode-B').forEach(el => el.style.display = showA ? 'none' : '');
+}
+
+/* ---------- State & Defaults ---------- */
+const DEFAULTS = {
+  mode:'B',                // default Mode B for quick sanity test
+  budget: 1_000_000,
+  targetMonths: 12,
+  numBodegas: 100,
+  brokerFee: 200,
+  actPct: 1,
+  reloadPct: 3.25,
+  flatFee: 0.25,
+  newVisitors: 800,
+  recurringVisitors: 2400,
+  transitPct: 60,
+  activationConv: 10,
+  reloadConv: 50,
+  avgInitial: 20,
+  avgReload: 25,
+  maxBodegas: null
+};
+
+let state = {...DEFAULTS};
+
+/* ---------- Compute (pure) ---------- */
+function compute(s){
+  // Convert percents to fractions
+  const transit = (s.transitPct||0)/100;
+  const actConv = (s.activationConv||0)/100;
+  const reloadConv = (s.reloadConv||0)/100;
+  const actPct = (s.actPct||0)/100;
+  const reloadPct = (s.reloadPct||0)/100;
+
+  // Per-bodega activity
+  // activations_per_bodega = new_visitors × transit% × activation_conversion
+  const perBodegaActivations = (s.newVisitors||0) * transit * actConv;
+
+  // reloads_per_bodega = recurring_visitors × transit% × reload_conversion
+  const perBodegaReloads = (s.recurringVisitors||0) * transit * reloadConv;
+
+  // Per-bodega payouts
+  // From activation %: activations × avg_initial_load × activation_commission%
+  const pAct = perBodegaActivations * (s.avgInitial||0) * actPct;
+
+  // From reload %: reloads × avg_reload_amount × reload_commission%
+  const pReload = perBodegaReloads * (s.avgReload||0) * reloadPct;
+
+  // From flat fees: (activations + reloads) × flat_fee_per_tx
+  const pFlat = (perBodegaActivations + perBodegaReloads) * (s.flatFee||0);
+
+  // Total per-bodega payout / month
+  const perBodegaPayout = pAct + pReload + pFlat;
+
+  // Per-bodega broker payout / month = activations_per_bodega × broker_fee
+  const perBodegaBroker = perBodegaActivations * (s.brokerFee||0);
+
+  // Shared terms
+  const monthlyCostPerBodega = perBodegaPayout; // (to bodega only)
+  const monthlyBrokerPerBodega = perBodegaBroker;
+  const monthlyPerBodegaAllIn = monthlyCostPerBodega + monthlyBrokerPerBodega;
+
+  let result = {
+    perBodegaActivations, perBodegaReloads,
+    pAct, pReload, pFlat, perBodegaPayout,
+    perBodegaBroker, monthlyPerBodegaAllIn
+  };
+
+  if(s.mode === 'A'){
+    const T = Math.max(1, Math.floor(s.targetMonths||0));
+    const denom = T * monthlyPerBodegaAllIn;
+
+    // Max bodegas under budget (floor), guarding denom=0
+    let maxBodegas = denom > 0 ? Math.floor((s.budget||0) / denom) : 0;
+
+    // Apply optional cap if provided
+    if (s.maxBodegas != null) maxBodegas = Math.min(maxBodegas, Math.max(0, Math.floor(s.maxBodegas)));
+
+    const totalActivationsAll = maxBodegas * perBodegaActivations;
+    const brokerPayoutMonth = totalActivationsAll * (s.brokerFee||0);
+    const totalBodegaPayoutMonth = maxBodegas * perBodegaPayout;
+
+    const monthlyBurn = totalBodegaPayoutMonth + brokerPayoutMonth;
+
+    // total_cost over T months
+    // = bodegas × T × (per_bodega_payout + broker_fee × activations_per_bodega)
+    const totalCost = maxBodegas * T * monthlyPerBodegaAllIn;
+
+    const remaining = (s.budget||0) - totalCost;
+    const exceed = totalCost > (s.budget||0);
+
+    result = {
+      ...result,
+      mode:'A',
+      bodegas:maxBodegas,
+      monthlyBurn,
+      totalCost,
+      remaining,
+      exceed,
+      brokerPayoutMonth,
+      totalBodegaPayoutMonth
+    };
+  } else { // Mode B
+    const bodegas = Math.max(0, Math.floor(s.numBodegas||0));
+
+    const totalActivationsAll = bodegas * perBodegaActivations;
+    // Broker payout/month (all bodegas) = total_activations_all × broker_fee
+    const brokerPayoutMonth = totalActivationsAll * (s.brokerFee||0);
+
+    // Total monthly bodega payouts
+    const totalBodegaPayoutMonth = bodegas * perBodegaPayout;
+
+    // Monthly burn
+    // = bodegas × per_bodega_payout + broker_fee × total_activations_all_bodegas
+    const monthlyBurn = totalBodegaPayoutMonth + brokerPayoutMonth;
+
+    // Runway months
+    const runwayExact = monthlyBurn > 0 ? (s.budget||0)/monthlyBurn : Infinity;
+    const runwayFloor = isFinite(runwayExact) ? Math.floor(runwayExact) : Infinity;
+
+    result = {
+      ...result,
+      mode:'B',
+      bodegas,
+      monthlyBurn,
+      brokerPayoutMonth,
+      totalBodegaPayoutMonth,
+      runwayExact,
+      runwayFloor,
+      exceed: false // Not binary here; we show runway instead
+    };
+  }
+  return result;
+}
+
+/* ---------- Render ---------- */
+function render(){
+  setVisByMode(state.mode);
+
+  const out = compute(state);
+
+  // Per-bodega activity
+  $('#ob-activations').textContent = fmt0.format(out.perBodegaActivations);
+  $('#ob-reloads').textContent = fmt0.format(out.perBodegaReloads);
+
+  // Per-bodega payouts
+  $('#ob-p-activation').textContent = fmtUSD.format(out.pAct);
+  $('#ob-p-reload').textContent = fmtUSD.format(out.pReload);
+  $('#ob-p-flat').textContent = fmtUSD.format(out.pFlat);
+  $('#ob-p-total').textContent = fmtUSD.format(out.perBodegaPayout);
+
+  // KPIs (monthly)
+  const brokerMonth = (out.mode==='A' ? out.brokerPayoutMonth : out.brokerPayoutMonth);
+  const totalMonthlyProgram = (out.mode==='A'
+      ? out.monthlyBurn
+      : out.monthlyBurn);
+
+  $('#kpi-bodegaPayout').textContent = fmtUSD.format(out.perBodegaPayout);
+  $('#kpi-brokerPayout').textContent = fmtUSD.format(brokerMonth);
+  $('#kpi-totalPayouts').textContent = fmtUSD.format(totalMonthlyProgram);
+
+  // Program scale & budget
+  if(out.mode === 'A'){
+    $('#ob-max-bodegas').textContent = fmt0.format(out.bodegas);
+    $('#ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
+    $('#ob-total-cost').textContent = fmtUSD.format(out.totalCost);
+    $('#ob-remaining').textContent = fmtUSD.format(out.remaining);
+    $('#ob-exceed').innerHTML = out.exceed
+      ? '<span class="state-bad">Yes</span>'
+      : '<span class="state-ok">No</span>';
+    $('#mode-context').textContent = `Mode A: With ${fmt0.format(out.bodegas)} bodegas for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
+    $('#ob-runway').textContent = '—';
+    $('#ob-exhaust').textContent = '—';
+  } else {
+    $('#ob-runway').textContent = isFinite(out.runwayExact)
+      ? `${out.runwayExact.toFixed(2)} months (floor ${fmt0.format(out.runwayFloor)})`
+      : '∞';
+    $('#ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
+    $('#ob-exceed').textContent = '—'; // not applicable as yes/no
+    $('#ob-total-cost').textContent = '—';
+    $('#ob-remaining').textContent = '—';
+    $('#ob-exhaust').textContent = isFinite(out.runwayExact)
+      ? `${out.runwayExact.toFixed(2)} months`
+      : 'Never';
+    $('#ob-max-bodegas').textContent = '—';
+    $('#mode-context').textContent = `Mode B: With ${fmt0.format(out.bodegas)} bodegas, monthly burn is ${fmtUSD.format(out.monthlyBurn)} and runway is ~${out.runwayExact.toFixed(2)} months.`;
+  }
+
+  // Sanity check message when defaults in Mode B (as per spec)
+  // (We don't force-display; the numbers should simply match.)
+}
+
+/* ---------- Bind Inputs ---------- */
+const refs = {
+  modeRadios: $$('input[name="mode"]'),
+  budget: $('#budget'),
+  targetMonths: $('#targetMonths'),
+  numBodegas: $('#numBodegas'),
+  brokerFee: $('#brokerFee'),
+  actPct: $('#actPct'),
+  reloadPct: $('#reloadPct'),
+  flatFee: $('#flatFee'),
+  newVisitors: $('#newVisitors'),
+  recurringVisitors: $('#recurringVisitors'),
+  transitPct: $('#transitPct'),
+  activationConv: $('#activationConv'),
+  reloadConv: $('#reloadConv'),
+  avgInitial: $('#avgInitial'),
+  avgReload: $('#avgReload'),
+  maxBodegas: $('#maxBodegas'),
+  resetBtn: $('#resetBtn'),
+  copyBtn: $('#copyBtn'),
+  shareBtn: $('#shareBtn'),
+  utilMsg: $('#utilMsg')
+};
+
+function syncInputsFromState(){
+  // Radios
+  refs.modeRadios.forEach(r => r.checked = (r.value === state.mode));
+  // Numbers
+  refs.budget.value = state.budget;
+  refs.targetMonths.value = state.targetMonths;
+  refs.numBodegas.value = state.numBodegas;
+  refs.brokerFee.value = state.brokerFee;
+  refs.actPct.value = state.actPct;
+  refs.reloadPct.value = state.reloadPct;
+  refs.flatFee.value = state.flatFee;
+  refs.newVisitors.value = state.newVisitors;
+  refs.recurringVisitors.value = state.recurringVisitors;
+  refs.transitPct.value = state.transitPct;
+  refs.activationConv.value = state.activationConv;
+  refs.reloadConv.value = state.reloadConv;
+  refs.avgInitial.value = state.avgInitial;
+  refs.avgReload.value = state.avgReload;
+  refs.maxBodegas.value = (state.maxBodegas == null ? '' : state.maxBodegas);
+}
+
+const onChange = debounce(() => {
+  // Mode
+  const selected = refs.modeRadios.find(r => r.checked);
+  if(selected) state.mode = selected.value;
+
+  // Numeric inputs (with validation: negatives -> 0)
+  state.budget = parseNum(refs.budget);
+  state.targetMonths = Math.max(1, Math.floor(parseNum(refs.targetMonths)||0));
+  state.numBodegas = Math.floor(parseNum(refs.numBodegas)||0);
+  state.brokerFee = parseNum(refs.brokerFee);
+  state.actPct = parseNum(refs.actPct);
+  state.reloadPct = parseNum(refs.reloadPct);
+  state.flatFee = parseNum(refs.flatFee);
+  state.newVisitors = Math.floor(parseNum(refs.newVisitors)||0);
+  state.recurringVisitors = Math.floor(parseNum(refs.recurringVisitors)||0);
+  state.transitPct = Math.min(100, parseNum(refs.transitPct));
+  state.activationConv = Math.min(100, parseNum(refs.activationConv));
+  state.reloadConv = Math.min(100, parseNum(refs.reloadConv));
+  state.avgInitial = parseNum(refs.avgInitial);
+  state.avgReload = parseNum(refs.avgReload);
+  state.maxBodegas = parseOptionalInt(refs.maxBodegas);
+
+  // Re-render & update hash (for shareable link)
+  render();
+  scheduleHashUpdate();
+}, 120);
+
+[refs.budget, refs.targetMonths, refs.numBodegas, refs.brokerFee,
+ refs.actPct, refs.reloadPct, refs.flatFee, refs.newVisitors,
+ refs.recurringVisitors, refs.transitPct, refs.activationConv, refs.reloadConv,
+ refs.avgInitial, refs.avgReload, refs.maxBodegas].forEach(el=>{
+  el.addEventListener('input', onChange);
+  el.addEventListener('blur', onChange);
+});
+
+refs.modeRadios.forEach(r => r.addEventListener('change', onChange));
+
+/* ---------- Reset / Copy / Share ---------- */
+refs.resetBtn.addEventListener('click', ()=>{
+  state = {...DEFAULTS};
+  syncInputsFromState();
+  render();
+  writeHashFromState(); // keep URL consistent
+  announce('Reset to defaults.');
+});
+refs.copyBtn.addEventListener('click', ()=>{
+  const snapshot = JSON.stringify(state, null, 2);
+  navigator.clipboard.writeText(snapshot).then(
+    ()=>announce('Copied inputs to clipboard as JSON.'),
+    ()=>announce('Unable to copy to clipboard.')
+  );
+});
+refs.shareBtn.addEventListener('click', ()=>{
+  writeHashFromState();
+  const url = location.href;
+  navigator.clipboard?.writeText(url).then(
+    ()=>announce('Shareable link copied to clipboard.'),
+    ()=>announce('Link ready in address bar (copy manually).')
+  );
+});
+function announce(msg){ refs.utilMsg.textContent = msg; setTimeout(()=>refs.utilMsg.textContent='', 2500); }
+
+/* ---------- URL Hash Serialization ---------- */
+let hashUpdateT=null;
+function scheduleHashUpdate(){ clearTimeout(hashUpdateT); hashUpdateT=setTimeout(writeHashFromState, 250); }
+function writeHashFromState(){
+  try{
+    const json = JSON.stringify(state);
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    location.hash = 's=' + b64;
+  }catch(e){ /* ignore */ }
+}
+function loadStateFromHash(){
+  const h = location.hash.slice(1);
+  if(!h) return null;
+  const params = new URLSearchParams(h);
+  const s = params.get('s');
+  if(!s) return null;
+  try{
+    const json = decodeURIComponent(escape(atob(s)));
+    const parsed = JSON.parse(json);
+    return {...DEFAULTS, ...parsed};
+  }catch(e){ return null; }
+}
+
+/* ---------- Init ---------- */
+function init(){
+  // Load from hash if present; else defaults
+  const loaded = loadStateFromHash();
+  if(loaded) state = {...DEFAULTS, ...loaded};
+
+  syncInputsFromState();
+  setVisByMode(state.mode);
+  render();
+
+  // Accessibility: set initial radio checked if not set
+  const selected = refs.modeRadios.find(r=>r.checked);
+  if(!selected){ refs.modeRadios[0].checked = true; state.mode = refs.modeRadios[0].value; }
+}
+init();
+
+/* ---------- Spec Sanity Test (comment only) ----------
+With defaults (Mode B, 100 bodegas):
+ per-bodega activations = 800 * 0.6 * 0.10 = 48
+ per-bodega reloads = 2400 * 0.6 * 0.50 = 720
+ per-bodega payout:
+   act%: 48 * $20 * 0.01 = $9.60
+   reload%: 720 * $25 * 0.0325 = $585.00
+   flat: (48+720) * $0.25 = $192.00
+   total ≈ $786.60
+ broker payout/month (all bodegas) = 48 * 100 * $200 = $960,000
+ monthly burn ≈ 100 * 786.60 + 960,000 = $1,038,660
+ runway ≈ $1,000,000 / $1,038,660 ≈ 0.96 months (floor 0)
+The UI will reflect these values.
+------------------------------------------------------ */
+</script>
+</body>
+</html>
