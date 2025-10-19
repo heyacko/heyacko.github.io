@@ -28,7 +28,7 @@
     display:grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap:20px;
-    text-align:left;
+    justify-items:center;   /* centers cards within their columns */
   }
   a.card {
     display:block;
@@ -39,6 +39,7 @@
     color:#f0f0f0;
     text-decoration:none;
     transition:transform .15s ease, background .15s ease;
+    text-align:center;   /* <-- added this line */
   }
   a.card:hover {
     transform:translateY(-3px);
