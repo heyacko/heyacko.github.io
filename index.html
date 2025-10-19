@@ -5,14 +5,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>acko website!</title>
 <style>
-  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif; background:#0f1115; color:#f0f0f0; margin:0; padding:0; }
-  .wrap { max-width:720px; margin:80px auto; text-align:center; padding:0 20px; }
-  h1 { font-size:2.4rem; margin-bottom:10px; }
-  p { color:#a8b0bf; margin-top:0; margin-bottom:40px; }
-  a.card { display:block; background:#171a21; border:1px solid #232a36; border-radius:14px; padding:24px; margin:20px 0; color:#f0f0f0; text-decoration:none; transition:transform .15s ease, background .15s ease; }
-  a.card:hover { transform:translateY(-3px); background:#1e2533; }
-  .title { font-weight:700; font-size:1.25rem; margin-bottom:6px; }
-  .desc { color:#a8b0bf; font-size:0.95rem; }
+  body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+    background:#0f1115; color:#f0f0f0; margin:0; padding:0;
+  }
+  .wrap {
+    max-width:1080px;
+    margin:80px auto;
+    text-align:center;
+    padding:0 20px;
+  }
+  h1 {
+    font-size:2.4rem;
+    margin-bottom:10px;
+  }
+  p {
+    color:#a8b0bf;
+    margin-top:0;
+    margin-bottom:40px;
+  }
+  .grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap:20px;
+    text-align:left;
+  }
+  a.card {
+    display:block;
+    background:#171a21;
+    border:1px solid #232a36;
+    border-radius:14px;
+    padding:24px;
+    color:#f0f0f0;
+    text-decoration:none;
+    transition:transform .15s ease, background .15s ease;
+  }
+  a.card:hover {
+    transform:translateY(-3px);
+    background:#1e2533;
+  }
+  .title {
+    font-weight:700;
+    font-size:1.25rem;
+    margin-bottom:6px;
+  }
+  .desc {
+    color:#a8b0bf;
+    font-size:0.95rem;
+  }
 </style>
 </head>
 <body>
@@ -20,26 +60,27 @@
     <h1>games</h1>
     <p>i made games</p>
 
-    <a href="political-compass.html" class="card">
-      <div class="title">🗳️ Modern U.S. Political Compass</div>
-      <div class="desc">20-question quiz exploring Collective vs Individual, Institutional Trust, Cosmopolitanism, and Order. Each run is randomized for unique results.</div>
-    </a>
+    <div class="grid">
+      <a href="political-compass.html" class="card">
+        <div class="title">🗳️ Modern U.S. Political Compass</div>
+        <div class="desc">20-question quiz exploring Collective vs Individual, Institutional Trust, Cosmopolitanism, and Order.</div>
+      </a>
 
-    <a href="rationalism-optimism.html" class="card">
-      <div class="title">🧠 Rationalism × Optimism: The Tuesday That Wouldn’t End</div>
-      <div class="desc">A short choose-your-own-adventure story that quietly measures Rationalism vs Romanticism and Optimism vs Pessimism—absurd, cozy, and existentially revealing.</div>
-    </a>
+      <a href="rationalism-optimism.html" class="card">
+        <div class="title">🧠 Rationalism × Optimism: The Tuesday That Wouldn’t End</div>
+        <div class="desc">A short choose-your-own-adventure story.</div>
+      </a>
 
-    <a href="socal-vs-norcal.html" class="card">
-      <div class="title">🌴 SoCal vs NorCal: Guessing Game</div>
-      <div class="desc">15 quick questions on culture, politics, and economics. Tap which region wins each stat. Mobile friendly with big buttons.</div>
-    </a>
+      <a href="socal-vs-norcal.html" class="card">
+        <div class="title">🌴 SoCal vs NorCal: Guessing Game</div>
+        <div class="desc">15 quick questions on culture, politics, and economics.</div>
+      </a>
 
-    <a href="word-dist.html" class="card">
-      <div class="title">🔠 Word Distance: Guessing Game</div>
-      <div class="desc">Guess the word that connects.</div>
-    </a>
-
+      <a href="word-dist.html" class="card">
+        <div class="title">🔠 Word Distance: Guessing Game</div>
+        <div class="desc">Guess the word that connects.</div>
+      </a>
+    </div>
   </div>
 </body>
 </html>
