@@ -1,0 +1,343 @@
+  :root {
+      --bg: #0f1115;
+      --card: #151924;
+      --muted: #9aa4bd;
+      --text: #e9ecf1;
+      --line: #232a36;
+      --accent: #5e9dc8;
+      --good: #35c76d;
+      --bad: #ff5a5a;
+      --warn: #f2b84b;
+      --focus: #87b7da;
+  }
+
+  @media (prefers-color-scheme: light) {
+      :root {
+          --bg: #f7f8fb;
+          --card: #ffffff;
+          --muted: #4a5568;
+          --text: #111827;
+          --line: #e5e7eb;
+          --accent: #2563eb;
+      }
+  }
+
+  * {
+      box-sizing: border-box
+  }
+
+  html,
+  body {
+      height: 100%
+  }
+
+  body {
+      margin: 0;
+      font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text)
+  }
+
+  a {
+      color: var(--accent)
+  }
+
+  .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px
+  }
+
+  header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px
+  }
+
+  header h1 {
+      margin: 0;
+      font-size: clamp(1.4rem, 2.5vw, 2rem)
+  }
+
+  header p {
+      margin: 0;
+      color: var(--muted)
+  }
+
+  .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 16px
+  }
+
+  @media (max-width:1000px) {
+      .grid {
+          grid-template-columns: 1fr
+      }
+  }
+
+  .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px
+  }
+
+  .panel h2,
+  .panel h3 {
+      margin: .2rem 0 .6rem 0;
+      font-size: 1rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em
+  }
+
+  .panel h3 {
+      margin-top: 1rem
+  }
+
+  .controls {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px
+  }
+
+  .field {
+      grid-column: span 6;
+      display: flex;
+      flex-direction: column
+  }
+
+  .field.third {
+      grid-column: span 4
+  }
+
+  .field.full {
+      grid-column: 1/-1
+  }
+
+  .label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px
+  }
+
+  label {
+      font-weight: 600
+  }
+
+  .help {
+      font-size: .85rem;
+      color: var(--muted);
+      margin-top: 4px
+  }
+
+  input[type="number"],
+  input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--text);
+      outline: none;
+  }
+
+  input[type="number"]:focus,
+  input[type="text"]:focus {
+      border-color: var(--focus);
+      box-shadow: 0 0 0 3px color-mix(in oklab, var(--focus) 30%, transparent)
+  }
+
+  .seg {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap
+  }
+
+  .seg label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      cursor: pointer;
+      user-select: none
+  }
+
+  .seg input {
+      accent-color: var(--accent)
+  }
+
+  .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px
+  }
+
+  .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer
+  }
+
+  .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white
+  }
+
+  .btn.ghost {
+      background: transparent
+  }
+
+  .btn:focus-visible {
+      outline: 3px solid var(--focus)
+  }
+
+  .stack {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap
+  }
+
+  .cards {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px
+  }
+
+  .card {
+      grid-column: span 6;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px
+  }
+
+  .card.third {
+      grid-column: span 4
+  }
+
+  .card.full {
+      grid-column: 1/-1
+  }
+
+  .kpi {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px
+  }
+
+  .kpi .value {
+      font-size: 1.35rem;
+      font-weight: 800
+  }
+
+  .muted {
+      color: var(--muted)
+  }
+
+  .state-ok {
+      color: var(--good)
+  }
+
+  .state-bad {
+      color: var(--bad)
+  }
+
+  .state-warn {
+      color: var(--warn)
+  }
+
+  .mono {
+      font-variant-numeric: tabular-nums
+  }
+
+  .table {
+      width: 100%;
+      border-collapse: collapse
+  }
+
+  .table th,
+  .table td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 0;
+      text-align: left
+  }
+
+  .tooltip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .8rem;
+      cursor: help;
+      user-select: none;
+  }
+
+  .tooltip:focus-visible {
+      outline: 3px solid var(--focus)
+  }
+
+  .tooltip[data-tip]::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 8px);
+      transform: translateX(-50%);
+      background: #000;
+      color: #fff;
+      padding: 8px 10px;
+      font-size: .85rem;
+      line-height: 1.2;
+      border-radius: 8px;
+      width: min(340px, 90vw);
+      opacity: 0;
+      pointer-events: none;
+      transition: .15s ease;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, .35);
+      white-space: normal;
+      z-index: 5;
+  }
+
+  .tooltip:hover::after,
+  .tooltip:focus::after {
+      opacity: 1
+  }
+
+  .assumptions {
+      font-size: .92rem;
+      color: var(--muted)
+  }
+
+  .sr-only {
+      position: absolute !important;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0
+  }
+
+  .footer-note {
+      font-size: .9rem;
+      color: var(--muted);
+      margin-top: 8px
+  }
