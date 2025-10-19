@@ -39,7 +39,7 @@ const INPUT_SCHEMA = [
         help:'Funds both retailers commissions and broker fees.' },
       { id:'targetMonths', label:'Target duration (months)', type:'number', step:'1', min:'1',
         help:'Visible in Mode A only.', mode:'A' },
-      { id:'numBodegas', label:'Number of participating retailers', type:'number', step:'1', min:'0',
+      { id:'numRetailers', label:'Number of participating retailers', type:'number', step:'1', min:'0',
         help:'Visible in Mode B only.', mode:'B' }
     ]
   },
@@ -58,7 +58,9 @@ const INPUT_SCHEMA = [
       { id:'reloadPct', label:'Commission on reload (%)', type:'number', step:'0.01', min:'0',
         help:'Percent of reload amount.' },
       { id:'flatFee', label:'Flat fee per transaction (USD)', type:'number', step:'0.01', min:'0',
-        help:'Applies to both activations and reloads.' }
+        help:'Applies to both activations and reloads.' },
+      { id:'activationBonus', label:'Promotional bonus per new activation (USD)', type:'number', step:'0.01', min:'0',
+        help:'Extra bonus paid to retailer for each new activation.' }
     ]
   },
   {
@@ -81,7 +83,7 @@ const INPUT_SCHEMA = [
   {
     key:'constraints', emoji:'🧱', title:'Constraints', class:'group-constraints',
     fields: [
-      { id:'maxBodegas', label:'Max retailers available to onboard', type:'number', step:'1', min:'0',
+      { id:'maxRetailers', label:'Max retailers available to onboard', type:'number', step:'1', min:'0',
         help:'Leave blank for no cap.' }
     ]
   }
@@ -166,11 +168,12 @@ function collectRefs(){
     // inputs by id
     budget: $('#budget'),
     targetMonths: $('#targetMonths'),
-    numBodegas: $('#numBodegas'),
+    numRetailers: $('#numRetailers'),
     brokerFee: $('#brokerFee'),
     actPct: $('#actPct'),
     reloadPct: $('#reloadPct'),
     flatFee: $('#flatFee'),
+    activationBonus: $('#activationBonus'),
     newVisitors: $('#newVisitors'),
     recurringVisitors: $('#recurringVisitors'),
     transitPct: $('#transitPct'),
@@ -178,7 +181,7 @@ function collectRefs(){
     reloadConv: $('#reloadConv'),
     avgInitial: $('#avgInitial'),
     avgReload: $('#avgReload'),
-    maxBodegas: $('#maxBodegas'),
+    maxRetailers: $('#maxRetailers'),
     // mode radios
     modeRadios: $$('input[name="mode"]'),
     // utility buttons/labels
@@ -204,35 +207,36 @@ function render(){
   const out = compute(state);
 
   // Activity
-  $('#ob-activations').textContent = fmt0.format(out.perBodegaActivations);
-  $('#ob-reloads').textContent     = fmt0.format(out.perBodegaReloads);
+  $('#ob-activations').textContent = fmt0.format(out.perRetailerActivations);
+  $('#ob-reloads').textContent     = fmt0.format(out.perRetailerReloads);
 
-  // Per-bodega payouts
+  // Per-retailer payouts
   $('#ob-p-activation').textContent = fmtUSD.format(out.pAct);
   $('#ob-p-reload').textContent     = fmtUSD.format(out.pReload);
   $('#ob-p-flat').textContent       = fmtUSD.format(out.pFlat);
-  $('#ob-p-total').textContent      = fmtUSD.format(out.perBodegaPayout);
+  $('#ob-p-bonus').textContent      = fmtUSD.format(out.pBonus);
+  $('#ob-p-total').textContent      = fmtUSD.format(out.perRetailerPayout);
 
   // KPIs
-  $('#kpi-bodegaPayout').textContent = fmtUSD.format(out.perBodegaPayout);
+  $('#kpi-retailerPayout').textContent = fmtUSD.format(out.perRetailerPayout);
   $('#kpi-brokerPayout').textContent = fmtUSD.format(out.brokerPayoutTotal || 0);
   $('#kpi-totalPayouts').textContent = fmtUSD.format(out.monthlyBurn);
 
   if(out.mode==='A'){
-    $('#ob-max-bodegas').textContent = fmt0.format(out.bodegas);
+    $('#ob-max-retailers').textContent = fmt0.format(out.retailers);
     $('#ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
     $('#ob-total-cost').textContent   = fmtUSD.format(out.totalCost);
     $('#ob-remaining').textContent    = fmtUSD.format(out.remaining);
     $('#ob-exceed').innerHTML         = out.exceed ? '<span class="state-bad">Yes</span>' : '<span class="state-ok">No</span>';
     $('#ob-runway').textContent = '—'; $('#ob-exhaust').textContent = '—';
-    $('#mode-context').textContent = `Mode A: With ${fmt0.format(out.bodegas)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
+    $('#mode-context').textContent = `Mode A: With ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
   }else{
     $('#ob-runway').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months (floor ${fmt0.format(out.runwayFloor)})` : '∞';
     $('#ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
     $('#ob-total-cost').textContent = '—'; $('#ob-remaining').textContent='—'; $('#ob-exceed').textContent='—';
-    $('#ob-max-bodegas').textContent = '—';
+    $('#ob-max-retailers').textContent = '—';
     $('#ob-exhaust').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months` : 'Never';
-    $('#mode-context').textContent = `Mode B: With ${fmt0.format(out.bodegas)} retailers, monthly burn is ${fmtUSD.format(out.monthlyBurn)} and runway is ~${out.runwayExact.toFixed(2)} months.`;
+    $('#mode-context').textContent = `Mode B: With ${fmt0.format(out.retailers)} retailers, monthly burn is ${fmtUSD.format(out.monthlyBurn)} and runway is ~${out.runwayExact.toFixed(2)} months.`;
   }
 }
 
@@ -245,11 +249,12 @@ function syncFromInputs(){
   // Numeric values
   state.budget         = parseNumEl(refs.budget);
   state.targetMonths   = Math.max(1, Math.floor(parseNumEl(refs.targetMonths) || 0));
-  state.numBodegas     = Math.floor(parseNumEl(refs.numBodegas) || 0);
+  state.numRetailers     = Math.floor(parseNumEl(refs.numRetailers) || 0);
   state.brokerFee      = parseNumEl(refs.brokerFee);
   state.actPct         = parseNumEl(refs.actPct);
   state.reloadPct      = parseNumEl(refs.reloadPct);
   state.flatFee        = parseNumEl(refs.flatFee);
+  state.activationBonus = parseNumEl(refs.activationBonus);
   state.newVisitors    = Math.floor(parseNumEl(refs.newVisitors) || 0);
   state.recurringVisitors = Math.floor(parseNumEl(refs.recurringVisitors) || 0);
   state.transitPct     = Math.min(100, parseNumEl(refs.transitPct));
@@ -257,7 +262,7 @@ function syncFromInputs(){
   state.reloadConv     = Math.min(100, parseNumEl(refs.reloadConv));
   state.avgInitial     = parseNumEl(refs.avgInitial);
   state.avgReload      = parseNumEl(refs.avgReload);
-  state.maxBodegas     = parseOptIntEl(refs.maxBodegas);
+  state.maxRetailers     = parseOptIntEl(refs.maxRetailers);
 }
 
 const onChange = debounce(()=>{ syncFromInputs(); render(); scheduleHashUpdate(); }, 120);
@@ -269,11 +274,12 @@ function syncInputs(){
   const assign = (el, v) => { if (el) el.value = v ?? ''; };
   assign(refs.budget, state.budget);
   assign(refs.targetMonths, state.targetMonths);
-  assign(refs.numBodegas, state.numBodegas);
+  assign(refs.numRetailers, state.numRetailers);
   assign(refs.brokerFee, state.brokerFee);
   assign(refs.actPct, state.actPct);
   assign(refs.reloadPct, state.reloadPct);
   assign(refs.flatFee, state.flatFee);
+  assign(refs.activationBonus, state.activationBonus);
   assign(refs.newVisitors, state.newVisitors);
   assign(refs.recurringVisitors, state.recurringVisitors);
   assign(refs.transitPct, state.transitPct);
@@ -281,17 +287,17 @@ function syncInputs(){
   assign(refs.reloadConv, state.reloadConv);
   assign(refs.avgInitial, state.avgInitial);
   assign(refs.avgReload, state.avgReload);
-  assign(refs.maxBodegas, state.maxBodegas);
+  assign(refs.maxRetailers, state.maxRetailers);
 }
 
 /* ---------------- Bindings ---------------- */
 function initBindings(){
   // Input events
   [
-    refs.budget, refs.targetMonths, refs.numBodegas, refs.brokerFee,
-    refs.actPct, refs.reloadPct, refs.flatFee, refs.newVisitors,
+    refs.budget, refs.targetMonths, refs.numRetailers, refs.brokerFee,
+    refs.actPct, refs.reloadPct, refs.flatFee, refs.activationBonus, refs.newVisitors,
     refs.recurringVisitors, refs.transitPct, refs.activationConv, refs.reloadConv,
-    refs.avgInitial, refs.avgReload, refs.maxBodegas
+    refs.avgInitial, refs.avgReload, refs.maxRetailers
   ].forEach(el => { if(el){ el.addEventListener('input', onChange); el.addEventListener('blur', onChange); }});
 
   // Radios (already have change in buildInputs, but keep safety)

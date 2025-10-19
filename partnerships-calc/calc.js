@@ -4,11 +4,12 @@ export const DEFAULTS = {
   mode: 'B',
   budget: 10_000,
   targetMonths: 2,
-  numBodegas: 10,
+  numRetailers: 10,
   brokerFee: 200,
   actPct: 1,
   reloadPct: 3.25,
   flatFee: 0.25,
+  activationBonus: 0.50,
   newVisitors: 50,
   recurringVisitors: 120,
   transitPct: 90,
@@ -16,7 +17,7 @@ export const DEFAULTS = {
   reloadConv: 50,
   avgInitial: 20,
   avgReload: 25,
-  maxBodegas: null
+  maxRetailers: null
 };
 
 // Export ONE thing: compute(state) returns all derived metrics.
@@ -27,51 +28,52 @@ export function compute(s){
   const actPct     = (s.actPct||0)/100;
   const reloadPct  = (s.reloadPct||0)/100;
 
-  // --- Per-bodega monthly activity ---
-  const perBodegaActivations = (s.newVisitors||0) * transit * actConv;
-  const perBodegaReloads     = (s.recurringVisitors||0) * transit * reloadConv;
+  // --- Per-retailer monthly activity ---
+  const perRetailerActivations = (s.newVisitors||0) * transit * actConv;
+  const perRetailerReloads     = (s.recurringVisitors||0) * transit * reloadConv;
 
-  // --- Per-bodega monthly payout (to bodega) ---
-  // From activation %, reload %, and flat fees
-  const pAct   = perBodegaActivations * (s.avgInitial||0) * actPct;    // activations × avg_initial × activation%
-  const pReload= perBodegaReloads     * (s.avgReload||0)  * reloadPct; // reloads × avg_reload × reload%
-  const pFlat  = (perBodegaActivations + perBodegaReloads) * (s.flatFee||0); // (activations+reloads) × flat_fee
-  const perBodegaPayout = pAct + pReload + pFlat;
+  // --- Per-retailer monthly payout (to retailer) ---
+  // From activation %, reload %, flat fees, and promotional bonus
+  const pAct   = perRetailerActivations * (s.avgInitial||0) * actPct;    // activations × avg_initial × activation%
+  const pReload= perRetailerReloads     * (s.avgReload||0)  * reloadPct; // reloads × avg_reload × reload%
+  const pFlat  = (perRetailerActivations + perRetailerReloads) * (s.flatFee||0); // (activations+reloads) × flat_fee
+  const pBonus = perRetailerActivations * (s.activationBonus||0);        // activations × bonus_per_activation
+  const perRetailerPayout = pAct + pReload + pFlat + pBonus;
 
-  // NOTE: Broker payout is now a ONE-TIME per-bodega fee, not monthly.
+  // NOTE: Broker payout is now a ONE-TIME per-retailer fee, not monthly.
 
   // Common result bits
   const base = {
-    perBodegaActivations, perBodegaReloads,
-    pAct, pReload, pFlat, perBodegaPayout
+    perRetailerActivations, perRetailerReloads,
+    pAct, pReload, pFlat, pBonus, perRetailerPayout
   };
 
   if (s.mode === 'A'){
-    // ---- Mode A: given budget + target months, solve max bodegas ----
+    // ---- Mode A: given budget + target months, solve max retailers ----
     const T = Math.max(1, Math.floor(s.targetMonths||0));
 
-    // Budget per bodega over the program = T * perBodegaPayout + brokerFee(one-time)
-    const perBodegaProgramCost = T * perBodegaPayout + (s.brokerFee||0);
-    let maxBodegas = perBodegaProgramCost > 0
-      ? Math.floor((s.budget||0) / perBodegaProgramCost)
+    // Budget per retailer over the program = T * perRetailerPayout + brokerFee(one-time)
+    const perRetailerProgramCost = T * perRetailerPayout + (s.brokerFee||0);
+    let maxRetailers = perRetailerProgramCost > 0
+      ? Math.floor((s.budget||0) / perRetailerProgramCost)
       : 0;
 
     // Optional external cap
-    if (s.maxBodegas != null) {
-      maxBodegas = Math.min(maxBodegas, Math.max(0, Math.floor(s.maxBodegas)));
+    if (s.maxRetailers != null) {
+      maxRetailers = Math.min(maxRetailers, Math.max(0, Math.floor(s.maxRetailers)));
     }
 
     // Derived economics at that scale
-    const totalBodegaPayoutMonth = maxBodegas * perBodegaPayout;    // monthly burn excludes broker (one-time)
-    const monthlyBurn            = totalBodegaPayoutMonth;
-    const brokerPayoutTotal      = maxBodegas * (s.brokerFee||0);   // one-time at start
+    const totalRetailerPayoutMonth = maxRetailers * perRetailerPayout;    // monthly burn excludes broker (one-time)
+    const monthlyBurn            = totalRetailerPayoutMonth;
+    const brokerPayoutTotal      = maxRetailers * (s.brokerFee||0);   // one-time at start
     const totalCost              = (monthlyBurn * T) + brokerPayoutTotal;
     const remaining              = (s.budget||0) - totalCost;
 
     return {
       ...base, mode:'A',
-      bodegas: maxBodegas,
-      totalBodegaPayoutMonth,
+      retailers: maxRetailers,
+      totalRetailerPayoutMonth,
       monthlyBurn,
       brokerPayoutTotal,     // one-time
       totalCost,
@@ -80,11 +82,11 @@ export function compute(s){
     };
   }
 
-  // ---- Mode B: given budget + bodegas, solve runway ----
-  const bodegas = Math.max(0, Math.floor(s.numBodegas||0));
-  const totalBodegaPayoutMonth = bodegas * perBodegaPayout;
-  const monthlyBurn            = totalBodegaPayoutMonth;
-  const brokerPayoutTotal      = bodegas * (s.brokerFee||0); // one-time at start
+  // ---- Mode B: given budget + retailers, solve runway ----
+  const retailers = Math.max(0, Math.floor(s.numRetailers||0));
+  const totalRetailerPayoutMonth = retailers * perRetailerPayout;
+  const monthlyBurn            = totalRetailerPayoutMonth;
+  const brokerPayoutTotal      = retailers * (s.brokerFee||0); // one-time at start
   const budgetAfterBroker      = (s.budget||0) - brokerPayoutTotal;
 
   let runwayExact;
@@ -99,8 +101,8 @@ export function compute(s){
 
   return {
     ...base, mode:'B',
-    bodegas,
-    totalBodegaPayoutMonth,
+    retailers,
+    totalRetailerPayoutMonth,
     monthlyBurn,
     brokerPayoutTotal,          // one-time
     runwayExact,

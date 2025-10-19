@@ -82,9 +82,14 @@
                       <td><span class="tooltip" tabindex="0" data-tip="(activations + reloads) × flat_fee_per_tx"></span></td>
                     </tr>
                     <tr>
+                      <td>From promotional bonus</td>
+                      <td id="ob-p-bonus">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="activations × bonus_per_activation"></span></td>
+                    </tr>
+                    <tr>
                       <th>Total per-retailer payout / month</th>
                       <th id="ob-p-total">—</th>
-                      <th><span class="tooltip" tabindex="0" data-tip="sum of activation%, reload%, and flat fee payouts"></span></th>
+                      <th><span class="tooltip" tabindex="0" data-tip="sum of activation%, reload%, flat fee, and bonus payouts"></span></th>
                     </tr>
                   </tbody>
                 </table>
@@ -96,7 +101,7 @@
             <div class="kpi">
               <div>
                 <div class="muted">Estimated payout per retailer / month</div>
-                <div id="kpi-bodegaPayout" class="value mono">—</div>
+                <div id="kpi-retailerPayout" class="value mono">—</div>
               </div>
               <span class="tooltip" tabindex="0" data-tip="per-retailers payout from % on loads + flat fees"></span>
             </div>
@@ -130,7 +135,7 @@
                   <tbody>
                     <tr class="only-mode-A">
                       <td>Max retailers under budget (floored)</td>
-                      <td id="ob-max-bodegas">—</td>
+                      <td id="ob-max-retailers">—</td>
                       <td><span class="tooltip" tabindex="0" data-tip="max_retailers = floor( budget ÷ [T × (per_retailers_payout + broker_fee × activations_per_retailer)] ) with optional cap"></span></td>
                     </tr>
                     <tr class="only-mode-B">
