@@ -2,9 +2,9 @@
 
 export const DEFAULTS = {
   mode: 'B',
-  budget: 1_000_000,
-  targetMonths: 12,
-  numBodegas: 100,
+  budget: 10_000,
+  targetMonths: 2,
+  numBodegas: 5,
   brokerFee: 200,
   actPct: 1,
   reloadPct: 3.25,
