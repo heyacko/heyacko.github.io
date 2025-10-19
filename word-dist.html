@@ -390,14 +390,14 @@
     const save = (k, v) => { try { localStorage.setItem('rel:' + k, String(v)); } catch { } };
     const load = (k) => { try { const v = localStorage.getItem('rel:' + k); return v ? Number(v) : null; } catch { return null; } };
 
-    async function conceptnetRel(a, b) {
+    async function conceptnetRel(a, b, timeout = 500) {
       if (!a || !b) return 0;
       const key = relKey(a, b);
       if (relCache.has(key)) return relCache.get(key);
       const vStored = load(key); if (vStored !== null) { relCache.set(key, vStored); return vStored; }
       const url = `https://api.conceptnet.io/relatedness?node1=/c/en/${encodeURIComponent(a)}&node2=/c/en/${encodeURIComponent(b)}`;
       try {
-        const res = await fetchWithTimeout(url, { timeout: 500 });
+        const res = await fetchWithTimeout(url, { timeout });
         const j = await res.json();
         const v = Number(j.value || 0) || 0;
         relCache.set(key, v); save(key, v);
@@ -405,13 +405,12 @@
       } catch { return 0; }
     }
 
-    const dmCache = new Map();
-    async function datamuseProfile(term) {
+    async function datamuseProfile(term, timeout = 500) {
       term = sanitize(term);
       if (dmCache.has(term)) return dmCache.get(term);
       try {
         const url = `https://api.datamuse.com/words?ml=${encodeURIComponent(term)}&max=100`;
-        const r = await fetchWithTimeout(url, { timeout: 500 });
+        const r = await fetchWithTimeout(url, { timeout });
         const arr = await r.json();
         let top = 0; const map = new Map();
         for (const x of arr) {
@@ -430,10 +429,11 @@
       }
     }
 
-    async function datamuseRel(a, b) {
+
+    async function datamuseRel(a, b, timeout = 500) {
       a = sanitize(a); b = sanitize(b);
       if (!a || !b) return 0;
-      const [pa, pb] = await Promise.all([datamuseProfile(a), datamuseProfile(b)]);
+      const [pa, pb] = await Promise.all([datamuseProfile(a, timeout), datamuseProfile(b, timeout)]);
       const s1 = pa.map.get(b) ? (pa.map.get(b) / pa.top) : 0;
       const s2 = pb.map.get(a) ? (pb.map.get(a) / pb.top) : 0;
       const sym = Math.max(s1, s2);
@@ -452,14 +452,16 @@
     }
 
     // ==== Staged blended relatedness ====
-    async function blendedRel(a, b) {
+    async function blendedRel(a, b, { dmTimeout = 500, cnTimeout = 500 } = {}) {
       const morph = diceCoeff(a, b);
-      const dm = await datamuseRel(a, b);
+      const dm = await datamuseRel(a, b, dmTimeout);
+
       if (dm >= 0.35 || dm <= 0.05) {
         const score = 0.8 * dm + 0.2 * morph;
         return Math.max(0, Math.min(1, score));
       }
-      const cnet = await conceptnetRel(a, b);
+
+      const cnet = await conceptnetRel(a, b, cnTimeout);
       const score = 0.55 * cnet + 0.3 * dm + 0.15 * morph;
       return Math.max(0, Math.min(1, score));
     }
