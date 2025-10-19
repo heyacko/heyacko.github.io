@@ -1,48 +1,204 @@
-// app.js — imports compute(), owns state, binds inputs, renders DOM.
+// app.js — schema-driven inputs + rendering. Imports pure compute().
 import { DEFAULTS, compute } from './calc.js';
 
-const $ = (s)=>document.querySelector(s);
-const $$= (s)=>Array.from(document.querySelectorAll(s));
+/* ---------------- Utilities ---------------- */
+const $  = (s)=>document.querySelector(s);
+const $$ = (s)=>Array.from(document.querySelectorAll(s));
 
 const fmtUSD = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2});
 const fmt0   = new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
-const clamp  = v => isFinite(v) ? Math.max(0,v) : 0;
-const parseNum = el => clamp(parseFloat(el.value));
-const parseOptInt = el => el.value.trim()===''? null : Math.max(0, Math.floor(+el.value||0));
+
+const clamp  = v => (isFinite(v) ? Math.max(0, v) : 0);
+const parseNumEl = el => clamp(parseFloat(el?.value));
+const parseOptIntEl = el => {
+  if (!el) return null;
+  const v = el.value.trim();
+  if (v === '') return null;
+  const n = Math.floor(Number(v));
+  return isFinite(n) ? Math.max(0, n) : null;
+};
 const debounce=(fn,ms=120)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
 
+/* ---------------- App State ---------------- */
 let state = { ...DEFAULTS };
 
-// DOM refs (match your existing IDs)
-const refs = {
-  modeRadios: $$('input[name="mode"]'),
-  budget: $('#budget'),
-  targetMonths: $('#targetMonths'),
-  numBodegas: $('#numBodegas'),
-  brokerFee: $('#brokerFee'),
-  actPct: $('#actPct'),
-  reloadPct: $('#reloadPct'),
-  flatFee: $('#flatFee'),
-  newVisitors: $('#newVisitors'),
-  recurringVisitors: $('#recurringVisitors'),
-  transitPct: $('#transitPct'),
-  activationConv: $('#activationConv'),
-  reloadConv: $('#reloadConv'),
-  avgInitial: $('#avgInitial'),
-  avgReload: $('#avgReload'),
-  maxBodegas: $('#maxBodegas'),
-  utilMsg: $('#utilMsg'),
-  resetBtn: $('#resetBtn'),
-  copyBtn: $('#copyBtn'),
-  shareBtn: $('#shareBtn'),
-};
+/* ---------------- Declarative Input Schema ---------------- */
+const INPUT_SCHEMA = [
+  {
+    key:'mode', emoji:'🎛️', title:'Mode', class:'group-mode',
+    kind:'seg',
+    options: [
+      { value:'A', label:'Mode A: Given budget & months, compute max bodegas' },
+      { value:'B', label:'Mode B: Given budget & bodegas, compute runway (months)' }
+    ]
+  },
+  {
+    key:'budget', emoji:'💸', title:'Budget & Horizon', class:'group-budget',
+    fields: [
+      { id:'budget', label:'Total campaign budget (USD)', type:'number', step:'0.01', min:'0',
+        help:'Funds both bodega commissions and broker fees.' },
+      { id:'targetMonths', label:'Target duration (months)', type:'number', step:'1', min:'1',
+        help:'Visible in Mode A only.', mode:'A' },
+      { id:'numBodegas', label:'Number of participating bodegas', type:'number', step:'1', min:'0',
+        help:'Visible in Mode B only.', mode:'B' }
+    ]
+  },
+  {
+    key:'broker', emoji:'🤝', title:'Broker Economics', class:'group-broker',
+    fields: [
+      { id:'brokerFee', label:'Broker fee per activation (USD)', type:'number', step:'0.01', min:'0',
+        help:'Assume one broker handling all bodegas.' }
+    ]
+  },
+  {
+    key:'comm', emoji:'🧾', title:'Bodega Commissions', class:'group-comm',
+    fields: [
+      { id:'actPct', label:'Commission on new activation (%)', type:'number', step:'0.01', min:'0',
+        help:'Percent of initial load amount.' },
+      { id:'reloadPct', label:'Commission on reload (%)', type:'number', step:'0.01', min:'0',
+        help:'Percent of reload amount.' },
+      { id:'flatFee', label:'Flat fee per transaction (USD)', type:'number', step:'0.01', min:'0',
+        help:'Applies to both activations and reloads.' }
+    ]
+  },
+  {
+    key:'traffic', emoji:'🚶', title:'Traffic & Conversion', class:'group-traffic',
+    fields: [
+      { id:'newVisitors', label:'Estimated monthly new visitors per bodega', type:'number', step:'1', min:'0' },
+      { id:'recurringVisitors', label:'Estimated monthly recurring visitors per bodega', type:'number', step:'1', min:'0' },
+      { id:'transitPct', label:'% of visitors who use public transit', type:'number', step:'0.01', min:'0', max:'100' },
+      { id:'activationConv', label:'% of transit-using new visitors who activate', type:'number', step:'0.01', min:'0', max:'100' },
+      { id:'reloadConv', label:'% of transit-using recurring visitors who reload (monthly)', type:'number', step:'0.01', min:'0', max:'100' }
+    ]
+  },
+  {
+    key:'amounts', emoji:'💵', title:'Amounts', class:'group-amounts',
+    fields: [
+      { id:'avgInitial', label:'Average initial load per activation (USD)', type:'number', step:'0.01', min:'0' },
+      { id:'avgReload',  label:'Average reload amount (USD)', type:'number', step:'0.01', min:'0' }
+    ]
+  },
+  {
+    key:'constraints', emoji:'🧱', title:'Constraints', class:'group-constraints',
+    fields: [
+      { id:'maxBodegas', label:'Max bodegas available to onboard', type:'number', step:'1', min:'0',
+        help:'Leave blank for no cap.' }
+    ]
+  }
+];
 
-function setVisByMode(mode){
-  const showA = mode==='A';
-  document.querySelectorAll('.only-mode-A').forEach(el=>el.style.display = showA?'':'none');
-  document.querySelectorAll('.only-mode-B').forEach(el=>el.style.display = showA?'none':'');
+/* ---------------- DOM Build from Schema ---------------- */
+function buildInputs(mount){
+  mount.innerHTML = '';
+
+  for (const group of INPUT_SCHEMA){
+    const sec = document.createElement('section');
+    sec.className = `input-group ${group.class||''}`;
+    const titleId = `${group.key}-title`;
+
+    // Group header
+    sec.innerHTML = `
+      <div class="group-title">
+        <span class="badge">${group.emoji||''}</span>
+        <span id="${titleId}">${group.title}</span>
+      </div>
+    `;
+
+    if (group.kind === 'seg'){
+      const seg = document.createElement('div');
+      seg.className = 'seg';
+      seg.setAttribute('role','radiogroup');
+      seg.setAttribute('aria-labelledby', titleId);
+      seg.innerHTML = group.options.map(opt => `
+        <label><input type="radio" name="mode" value="${opt.value}"> ${opt.label}</label>
+      `).join('');
+      sec.appendChild(seg);
+      mount.appendChild(sec);
+      continue;
+    }
+
+    const controls = document.createElement('div');
+    controls.className = 'controls';
+    controls.id = `group-${group.key}`;
+
+    for (const f of group.fields){
+      const field = document.createElement('div');
+      field.className = 'field third';
+      if (f.mode) field.dataset.mode = f.mode; // for CSS-based show/hide
+
+      const helpId = f.help ? `${f.id}-help` : null;
+      const inputmode = f.type === 'number'
+        ? (f.step && String(f.step).includes('.') ? 'decimal' : 'numeric')
+        : 'text';
+
+      field.innerHTML = `
+        <label for="${f.id}">${f.label}</label>
+        <input id="${f.id}" type="${f.type||'text'}"
+               ${f.step?`step="${f.step}"`:''} ${f.min?`min="${f.min}"`:''} ${f.max?`max="${f.max}"`:''}
+               inputmode="${inputmode}" ${helpId?`aria-describedby="${helpId}"`:''} />
+        ${f.help ? `<div id="${helpId}" class="help help--onfocus">${f.help}</div>` : ``}
+      `;
+      controls.appendChild(field);
+    }
+
+    sec.appendChild(controls);
+    mount.appendChild(sec);
+  }
+
+  // Wire mode radios now that they exist
+  const radios = $$('input[name="mode"]');
+  radios.forEach(r => {
+    r.checked = (r.value === state.mode);
+    r.addEventListener('change', () => {
+      state.mode = r.value;
+      document.body.classList.toggle('mode-A', state.mode==='A');
+      document.body.classList.toggle('mode-B', state.mode==='B');
+      render();
+      scheduleHashUpdate();
+    });
+  });
 }
 
+/* ---------------- Refs (after build) ---------------- */
+let refs = {};
+function collectRefs(){
+  refs = {
+    // inputs by id
+    budget: $('#budget'),
+    targetMonths: $('#targetMonths'),
+    numBodegas: $('#numBodegas'),
+    brokerFee: $('#brokerFee'),
+    actPct: $('#actPct'),
+    reloadPct: $('#reloadPct'),
+    flatFee: $('#flatFee'),
+    newVisitors: $('#newVisitors'),
+    recurringVisitors: $('#recurringVisitors'),
+    transitPct: $('#transitPct'),
+    activationConv: $('#activationConv'),
+    reloadConv: $('#reloadConv'),
+    avgInitial: $('#avgInitial'),
+    avgReload: $('#avgReload'),
+    maxBodegas: $('#maxBodegas'),
+    // mode radios
+    modeRadios: $$('input[name="mode"]'),
+    // utility buttons/labels
+    resetBtn: $('#resetBtn'),
+    copyBtn: $('#copyBtn'),
+    shareBtn: $('#shareBtn'),
+    utilMsg: $('#utilMsg')
+  };
+}
+
+/* ---------------- View toggles ---------------- */
+// Inputs: handled by CSS with body.mode-A / mode-B and [data-mode]
+// Outputs: still use the old .only-mode-A / .only-mode-B rows
+function setVisByMode(mode){
+  const showA = mode === 'A';
+  $$('.only-mode-A').forEach(el => el.style.display = showA ? '' : 'none');
+  $$('.only-mode-B').forEach(el => el.style.display = showA ? 'none' : '');
+}
+
+/* ---------------- Render ---------------- */
 function render(){
   setVisByMode(state.mode);
   const out = compute(state);
@@ -51,7 +207,7 @@ function render(){
   $('#ob-activations').textContent = fmt0.format(out.perBodegaActivations);
   $('#ob-reloads').textContent     = fmt0.format(out.perBodegaReloads);
 
-  // Payouts (per bodega)
+  // Per-bodega payouts
   $('#ob-p-activation').textContent = fmtUSD.format(out.pAct);
   $('#ob-p-reload').textContent     = fmtUSD.format(out.pReload);
   $('#ob-p-flat').textContent       = fmtUSD.format(out.pFlat);
@@ -80,73 +236,89 @@ function render(){
   }
 }
 
+/* ---------------- State <-> Inputs ---------------- */
 function syncFromInputs(){
-  const selected = refs.modeRadios.find(r=>r.checked);
-  if(selected) state.mode = selected.value;
+  // Mode from radios
+  const selected = refs.modeRadios.find(r => r.checked);
+  if (selected) state.mode = selected.value;
 
-  state.budget = parseNum(refs.budget);
-  state.targetMonths = Math.max(1, Math.floor(parseNum(refs.targetMonths)||0));
-  state.numBodegas = Math.floor(parseNum(refs.numBodegas)||0);
-  state.brokerFee = parseNum(refs.brokerFee);
-  state.actPct = parseNum(refs.actPct);
-  state.reloadPct = parseNum(refs.reloadPct);
-  state.flatFee = parseNum(refs.flatFee);
-  state.newVisitors = Math.floor(parseNum(refs.newVisitors)||0);
-  state.recurringVisitors = Math.floor(parseNum(refs.recurringVisitors)||0);
-  state.transitPct = Math.min(100, parseNum(refs.transitPct));
-  state.activationConv = Math.min(100, parseNum(refs.activationConv));
-  state.reloadConv = Math.min(100, parseNum(refs.reloadConv));
-  state.avgInitial = parseNum(refs.avgInitial);
-  state.avgReload = parseNum(refs.avgReload);
-  state.maxBodegas = parseOptInt(refs.maxBodegas);
+  // Numeric values
+  state.budget         = parseNumEl(refs.budget);
+  state.targetMonths   = Math.max(1, Math.floor(parseNumEl(refs.targetMonths) || 0));
+  state.numBodegas     = Math.floor(parseNumEl(refs.numBodegas) || 0);
+  state.brokerFee      = parseNumEl(refs.brokerFee);
+  state.actPct         = parseNumEl(refs.actPct);
+  state.reloadPct      = parseNumEl(refs.reloadPct);
+  state.flatFee        = parseNumEl(refs.flatFee);
+  state.newVisitors    = Math.floor(parseNumEl(refs.newVisitors) || 0);
+  state.recurringVisitors = Math.floor(parseNumEl(refs.recurringVisitors) || 0);
+  state.transitPct     = Math.min(100, parseNumEl(refs.transitPct));
+  state.activationConv = Math.min(100, parseNumEl(refs.activationConv));
+  state.reloadConv     = Math.min(100, parseNumEl(refs.reloadConv));
+  state.avgInitial     = parseNumEl(refs.avgInitial);
+  state.avgReload      = parseNumEl(refs.avgReload);
+  state.maxBodegas     = parseOptIntEl(refs.maxBodegas);
 }
 
 const onChange = debounce(()=>{ syncFromInputs(); render(); scheduleHashUpdate(); }, 120);
 
 function syncInputs(){
-  refs.modeRadios.forEach(r=>r.checked = (r.value===state.mode));
-  refs.budget.value = state.budget;
-  refs.targetMonths.value = state.targetMonths;
-  refs.numBodegas.value = state.numBodegas;
-  refs.brokerFee.value = state.brokerFee;
-  refs.actPct.value = state.actPct;
-  refs.reloadPct.value = state.reloadPct;
-  refs.flatFee.value = state.flatFee;
-  refs.newVisitors.value = state.newVisitors;
-  refs.recurringVisitors.value = state.recurringVisitors;
-  refs.transitPct.value = state.transitPct;
-  refs.activationConv.value = state.activationConv;
-  refs.reloadConv.value = state.reloadConv;
-  refs.avgInitial.value = state.avgInitial;
-  refs.avgReload.value = state.avgReload;
-  refs.maxBodegas.value = state.maxBodegas ?? '';
+  // Radios
+  refs.modeRadios.forEach(r => r.checked = (r.value === state.mode));
+  // Values
+  const assign = (el, v) => { if (el) el.value = v ?? ''; };
+  assign(refs.budget, state.budget);
+  assign(refs.targetMonths, state.targetMonths);
+  assign(refs.numBodegas, state.numBodegas);
+  assign(refs.brokerFee, state.brokerFee);
+  assign(refs.actPct, state.actPct);
+  assign(refs.reloadPct, state.reloadPct);
+  assign(refs.flatFee, state.flatFee);
+  assign(refs.newVisitors, state.newVisitors);
+  assign(refs.recurringVisitors, state.recurringVisitors);
+  assign(refs.transitPct, state.transitPct);
+  assign(refs.activationConv, state.activationConv);
+  assign(refs.reloadConv, state.reloadConv);
+  assign(refs.avgInitial, state.avgInitial);
+  assign(refs.avgReload, state.avgReload);
+  assign(refs.maxBodegas, state.maxBodegas);
 }
 
+/* ---------------- Bindings ---------------- */
 function initBindings(){
+  // Input events
   [
     refs.budget, refs.targetMonths, refs.numBodegas, refs.brokerFee,
     refs.actPct, refs.reloadPct, refs.flatFee, refs.newVisitors,
     refs.recurringVisitors, refs.transitPct, refs.activationConv, refs.reloadConv,
     refs.avgInitial, refs.avgReload, refs.maxBodegas
-  ].forEach(el => { el.addEventListener('input', onChange); el.addEventListener('blur', onChange); });
+  ].forEach(el => { if(el){ el.addEventListener('input', onChange); el.addEventListener('blur', onChange); }});
 
+  // Radios (already have change in buildInputs, but keep safety)
   refs.modeRadios.forEach(r => r.addEventListener('change', onChange));
 
-  refs.resetBtn.addEventListener('click', ()=>{
+  // Utility buttons
+  refs.resetBtn?.addEventListener('click', ()=>{
     state = { ...DEFAULTS };
-    syncInputs(); render(); writeHash(); msg('Reset to defaults.');
+    syncInputs();
+    document.body.classList.toggle('mode-A', state.mode==='A');
+    document.body.classList.toggle('mode-B', state.mode==='B');
+    render(); writeHash(); msg('Reset to defaults.');
   });
-  refs.copyBtn.addEventListener('click', ()=>{
-    navigator.clipboard.writeText(JSON.stringify(state,null,2)).then(()=>msg('Copied inputs to clipboard.'),()=>msg('Copy failed.'));
+  refs.copyBtn?.addEventListener('click', ()=>{
+    navigator.clipboard.writeText(JSON.stringify(state,null,2))
+      .then(()=>msg('Copied inputs to clipboard.'),()=>msg('Copy failed.'));
   });
-  refs.shareBtn.addEventListener('click', ()=>{
-    writeHash(); navigator.clipboard?.writeText(location.href).then(()=>msg('Shareable link copied.'),()=>msg('Link updated in address bar.'));
+  refs.shareBtn?.addEventListener('click', ()=>{
+    writeHash();
+    navigator.clipboard?.writeText(location.href)
+      .then(()=>msg('Shareable link copied.'),()=>msg('Link updated in address bar.'));
   });
 }
 
-function msg(t){ refs.utilMsg.textContent = t; setTimeout(()=>refs.utilMsg.textContent='', 2500); }
+function msg(t){ if(refs.utilMsg){ refs.utilMsg.textContent = t; setTimeout(()=>refs.utilMsg.textContent='', 2500); } }
 
-// URL hash (same format as before)
+/* ---------------- URL Hash (shareable link) ---------------- */
 let hashT=null;
 function scheduleHashUpdate(){ clearTimeout(hashT); hashT=setTimeout(writeHash, 250); }
 function writeHash(){
@@ -159,16 +331,34 @@ function loadFromHash(){
   const p = new URLSearchParams(location.hash.slice(1));
   const s = p.get('s'); if(!s) return null;
   try{
-    return { ...DEFAULTS, ...JSON.parse(decodeURIComponent(escape(atob(s)))) };
+    const parsed = JSON.parse(decodeURIComponent(escape(atob(s))));
+    return { ...DEFAULTS, ...parsed };
   }catch(e){ return null; }
 }
 
-// Boot
+/* ---------------- Boot ---------------- */
 (function init(){
+  // Restore state from URL if present
   const restored = loadFromHash();
-  if(restored) state = restored;
+  if (restored) state = restored;
+
+  // Build inputs from schema
+  const mount = $('#inputs-mount');
+  buildInputs(mount);
+
+  // Collect refs now that inputs exist
+  collectRefs();
+
+  // Push state values into inputs
   syncInputs();
-  setVisByMode(state.mode);
+
+  // Set initial mode class for CSS-driven visibility
+  document.body.classList.toggle('mode-A', state.mode==='A');
+  document.body.classList.toggle('mode-B', state.mode==='B');
+
+  // Bind events
   initBindings();
+
+  // Initial render
   render();
 })();
