@@ -341,3 +341,91 @@
       color: var(--muted);
       margin-top: 8px
   }
+
+  /* -------- Input groups: clearer sections with color + emoji badge -------- */
+  .input-group {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: color-mix(in oklab, var(--card) 92%, black);
+      margin-bottom: 14px;
+  }
+
+  .input-group .group-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      margin-bottom: 8px;
+  }
+
+  .badge {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 16px
+  }
+
+  /* per-group accent rings */
+  .group-mode .badge {
+      background: color-mix(in oklab, var(--accent) 18%, transparent);
+      border: 1px solid var(--accent)
+  }
+
+  .group-budget .badge {
+      background: color-mix(in oklab, #22c55e 18%, transparent);
+      border: 1px solid #22c55e
+  }
+
+  /* 💸 */
+  .group-broker .badge {
+      background: color-mix(in oklab, #a855f7 18%, transparent);
+      border: 1px solid #a855f7
+  }
+
+  /* 🤝 */
+  .group-comm .badge {
+      background: color-mix(in oklab, #f59e0b 18%, transparent);
+      border: 1px solid #f59e0b
+  }
+
+  /* 🧾 */
+  .group-traffic .badge {
+      background: color-mix(in oklab, #3b82f6 18%, transparent);
+      border: 1px solid #3b82f6
+  }
+
+  /* 🚶 */
+  .group-amounts .badge {
+      background: color-mix(in oklab, #ef4444 18%, transparent);
+      border: 1px solid #ef4444
+  }
+
+  /* 💵 */
+  .group-constraints .badge {
+      background: color-mix(in oklab, #10b981 18%, transparent);
+      border: 1px solid #10b981
+  }
+
+  /* 🧱 */
+
+  /* subtle dividers between stacked groups */
+  .input-group+.input-group {
+      margin-top: 16px
+  }
+
+  /* -------- Focus-only field blurbs -------- */
+  /* by default, hide the blurb under each input */
+  .help--onfocus {
+      display: none;
+  }
+
+  /* reveal blurb when the field (or its children) is focused */
+  .field:focus-within .help--onfocus {
+      display: block;
+  }
+
+  /* keep your existing general .help styles */

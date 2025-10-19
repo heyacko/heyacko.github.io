@@ -32,298 +32,333 @@
         <h2 id="inputs-header">Inputs</h2>
 
         <!-- Mode toggle -->
-        <div class="field full" role="group" aria-labelledby="mode-label">
-          <div class="label-row"><label id="mode-label">Mode</label></div>
+        <section class="input-group group-mode" aria-labelledby="mode-label">
+          <div class="group-title"><span class="badge">🎛️</span> <span id="mode-label">Mode</span></div>
           <div class="seg" aria-label="Calculation mode">
             <label><input type="radio" name="mode" value="A" /> Mode A: Given budget &amp; months, compute <strong>max
                 bodegas</strong></label>
             <label><input type="radio" name="mode" value="B" /> Mode B: Given budget &amp; bodegas, compute
               <strong>runway (months)</strong></label>
           </div>
-        </div>
+        </section>
 
-        <h3>Budget &amp; Horizon</h3>
-        <div class="controls" id="group-budget">
-          <div class="field third">
-            <label for="budget">Total campaign budget (USD)</label>
-            <input id="budget" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="budget-help" />
-            <div id="budget-help" class="help">Funds both bodega commissions and broker fees.</div>
+        <!-- BUDGET HORIZON -->
+        <section class="input-group group-budget" aria-labelledby="budget-title">
+          <div class="group-title"><span class="badge">💸</span> <span id="budget-title">Budget &amp; Horizon</span>
           </div>
-          <div class="field third only-mode-A">
-            <label for="targetMonths">Target duration (months)</label>
-            <input id="targetMonths" type="number" step="1" min="1" inputmode="numeric" aria-describedby="tm-help" />
-            <div id="tm-help" class="help">Visible in Mode A only.</div>
-          </div>
-          <div class="field third only-mode-B">
-            <label for="numBodegas">Number of participating bodegas</label>
-            <input id="numBodegas" type="number" step="1" min="0" inputmode="numeric" aria-describedby="nb-help" />
-            <div id="nb-help" class="help">Visible in Mode B only.</div>
-          </div>
-        </div>
-
-        <h3>Broker economics</h3>
-        <div class="controls" id="group-broker">
-          <div class="field third">
-            <label for="brokerFee">Broker fee per activation (USD)</label>
-            <input id="brokerFee" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="bf-help" />
-            <div id="bf-help" class="help">Assume one broker handling all bodegas.</div>
-          </div>
-        </div>
-
-        <h3>Bodega commissions</h3>
-        <div class="controls" id="group-comm">
-          <div class="field third">
-            <label for="actPct">Commission on new activation (%)</label>
-            <input id="actPct" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="ap-help" />
-            <div id="ap-help" class="help">Percent of initial load amount.</div>
-          </div>
-          <div class="field third">
-            <label for="reloadPct">Commission on reload (%)</label>
-            <input id="reloadPct" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="rp-help" />
-            <div id="rp-help" class="help">Percent of reload amount.</div>
-          </div>
-          <div class="field third">
-            <label for="flatFee">Flat fee per transaction (USD)</label>
-            <input id="flatFee" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="ff-help" />
-            <div id="ff-help" class="help">Applies to both activations and reloads.</div>
-          </div>
-        </div>
-
-        <h3>Traffic &amp; conversion</h3>
-        <div class="controls" id="group-traffic">
-          <div class="field third">
-            <label for="newVisitors">Estimated monthly new visitors per bodega</label>
-            <input id="newVisitors" type="number" step="1" min="0" inputmode="numeric" />
-          </div>
-          <div class="field third">
-            <label for="recurringVisitors">Estimated monthly recurring visitors per bodega</label>
-            <input id="recurringVisitors" type="number" step="1" min="0" inputmode="numeric" />
-          </div>
-          <div class="field third">
-            <label for="transitPct">% of visitors who use public transit</label>
-            <input id="transitPct" type="number" step="0.01" min="0" max="100" inputmode="decimal" />
-          </div>
-          <div class="field third">
-            <label for="activationConv">% of transit-using new visitors who activate</label>
-            <input id="activationConv" type="number" step="0.01" min="0" max="100" inputmode="decimal" />
-          </div>
-          <div class="field third">
-            <label for="reloadConv">% of transit-using recurring visitors who reload (monthly)</label>
-            <input id="reloadConv" type="number" step="0.01" min="0" max="100" inputmode="decimal" />
-          </div>
-        </div>
-
-        <h3>Amounts</h3>
-        <div class="controls" id="group-amounts">
-          <div class="field third">
-            <label for="avgInitial">Average initial load per activation (USD)</label>
-            <input id="avgInitial" type="number" step="0.01" min="0" inputmode="decimal" />
-          </div>
-          <div class="field third">
-            <label for="avgReload">Average reload amount (USD)</label>
-            <input id="avgReload" type="number" step="0.01" min="0" inputmode="decimal" />
-          </div>
-        </div>
-
-        <h3>Constraints (optional)</h3>
-        <div class="controls" id="group-constraints">
-          <div class="field third">
-            <label for="maxBodegas">Max bodegas available to onboard</label>
-            <input id="maxBodegas" type="number" step="1" min="0" inputmode="numeric" aria-describedby="mb-help" />
-            <div id="mb-help" class="help">Leave blank for no cap.</div>
-          </div>
-        </div>
-
-        <div class="row mt-10" role="group" aria-label="Utilities">
-          <button class="btn" id="resetBtn" type="button">Reset to defaults</button>
-          <button class="btn ghost" id="copyBtn" type="button">Copy snapshot (JSON)</button>
-          <button class="btn ghost" id="shareBtn" type="button"
-            title="Create a link with current inputs in the URL hash">Shareable link</button>
-          <span id="utilMsg" class="help" role="status" aria-live="polite"></span>
-        </div>
-      </section>
-
-      <!-- RIGHT: Outputs -->
-      <section class="panel" role="region" aria-labelledby="outputs-header">
-        <h2 id="outputs-header">Outputs</h2>
-
-        <div class="cards" aria-live="polite">
-          <div class="card full">
-            <div class="kpi">
-              <div>
-                <div class="muted">Per-bodega monthly activity</div>
-                <table class="table mono" aria-label="Per-bodega monthly activity table">
-                  <thead>
-                    <tr>
-                      <th>Metric</th>
-                      <th>Value</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Estimated activations / month</td>
-                      <td id="ob-activations">—</td>
-                      <td><span class="tooltip" tabindex="0" aria-label="Formula info"
-                          data-tip="activations = new_visitors × transit% × activation_conversion"></span></td>
-                    </tr>
-                    <tr>
-                      <td>Estimated reloads / month</td>
-                      <td id="ob-reloads">—</td>
-                      <td><span class="tooltip" tabindex="0" aria-label="Formula info"
-                          data-tip="reloads = recurring_visitors × transit% × reload_conversion"></span></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+          <div class="controls" id="group-budget">
+            <div class="field third">
+              <label for="budget">Total campaign budget (USD)</label>
+              <input id="budget" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="budget-help" />
+              <div id="budget-help" class="help">Funds both bodega commissions and broker fees.</div>
+            </div>
+            <div class="field third only-mode-A">
+              <label for="targetMonths">Target duration (months)</label>
+              <input id="targetMonths" type="number" step="1" min="1" inputmode="numeric" aria-describedby="tm-help" />
+              <div id="tm-help" class="help">Visible in Mode A only.</div>
+            </div>
+            <div class="field third only-mode-B">
+              <label for="numBodegas">Number of participating bodegas</label>
+              <input id="numBodegas" type="number" step="1" min="0" inputmode="numeric" aria-describedby="nb-help" />
+              <div id="nb-help" class="help">Visible in Mode B only.</div>
             </div>
           </div>
 
-          <div class="card full">
-            <div class="kpi">
-              <div>
-                <div class="muted">Per-bodega monthly payout (to bodega)</div>
-                <table class="table mono" aria-label="Per-bodega payout table">
-                  <thead>
-                    <tr>
-                      <th>Component</th>
-                      <th>USD</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>From activation %</td>
-                      <td id="ob-p-activation">—</td>
-                      <td><span class="tooltip" tabindex="0"
-                          data-tip="activations × avg_initial_load × activation_commission%"></span></td>
-                    </tr>
-                    <tr>
-                      <td>From reload %</td>
-                      <td id="ob-p-reload">—</td>
-                      <td><span class="tooltip" tabindex="0"
-                          data-tip="reloads × avg_reload_amount × reload_commission%"></span></td>
-                    </tr>
-                    <tr>
-                      <td>From flat fees</td>
-                      <td id="ob-p-flat">—</td>
-                      <td><span class="tooltip" tabindex="0"
-                          data-tip="(activations + reloads) × flat_fee_per_tx"></span></td>
-                    </tr>
-                    <tr>
-                      <th>Total per-bodega payout / month</th>
-                      <th id="ob-p-total">—</th>
-                      <th><span class="tooltip" tabindex="0"
-                          data-tip="sum of activation%, reload%, and flat fee payouts"></span></th>
-                    </tr>
-                  </tbody>
-                </table>
+          <!-- BROKER ECONOMICS -->
+          <section class="input-group group-broker" aria-labelledby="budget-title">
+            <div class="group-title"><span class="badge">💸</span> <span id="budget-title">Broker Economics</span>
+            </div>
+            <div class="controls" id="group-broker">
+              <div class="field third">
+                <label for="brokerFee">Broker fee per activation (USD)</label>
+                <input id="brokerFee" type="number" step="0.01" min="0" inputmode="decimal"
+                  aria-describedby="bf-help" />
+                <div id="bf-help" class="help">Assume one broker handling all bodegas.</div>
               </div>
             </div>
-          </div>
 
-          <div class="card third">
-            <div class="kpi">
-              <div>
-                <div class="muted">Estimated payout per bodega / month</div>
-                <div id="kpi-bodegaPayout" class="value mono">—</div>
+            <!-- BODEGA COMMISSIONS -->
+            <section class="input-group group-comm" aria-labelledby="comm-title">
+              <div class="group-title"><span class="badge">🧾</span> <span id="comm-title">Bodega commissions</span>
               </div>
-              <span class="tooltip" tabindex="0" data-tip="per-bodega payout from % on loads + flat fees"></span>
-            </div>
-          </div>
-
-          <div class="card third">
-            <div class="kpi">
-              <div>
-                <div class="muted">Estimated payout to broker / month</div>
-                <div id="kpi-brokerPayout" class="value mono">—</div>
+              <div class="controls" id="group-comm">
+                <div class="field third">
+                  <label for="actPct">Commission on new activation (%)</label>
+                  <input id="actPct" type="number" step="0.01" min="0" inputmode="decimal" aria-describedby="ap-help" />
+                  <div id="ap-help" class="help">Percent of initial load amount.</div>
+                </div>
+                <div class="field third">
+                  <label for="reloadPct">Commission on reload (%)</label>
+                  <input id="reloadPct" type="number" step="0.01" min="0" inputmode="decimal"
+                    aria-describedby="rp-help" />
+                  <div id="rp-help" class="help">Percent of reload amount.</div>
+                </div>
+                <div class="field third">
+                  <label for="flatFee">Flat fee per transaction (USD)</label>
+                  <input id="flatFee" type="number" step="0.01" min="0" inputmode="decimal"
+                    aria-describedby="ff-help" />
+                  <div id="ff-help" class="help">Applies to both activations and reloads.</div>
+                </div>
               </div>
-              <span class="tooltip" tabindex="0" data-tip="total_activations_all_bodegas × broker_fee"></span>
-            </div>
-          </div>
 
-          <div class="card third">
-            <div class="kpi">
-              <div>
-                <div class="muted">Total monthly program payouts</div>
-                <div id="kpi-totalPayouts" class="value mono">—</div>
-              </div>
-              <span class="tooltip" tabindex="0" data-tip="(bodegas × per-bodega payout) + broker payout"></span>
-            </div>
-          </div>
+              <!-- TRAFFIC & CONVERSION -->
+              <section class="input-group group-traffic" aria-labelledby="comm-title">
+                <div class="group-title"><span class="badge">🚶</span> <span id="comm-title">Traffic &amp;
+                    Conversion</span>
+                </div>
+                <div class="controls" id="group-traffic">
+                  <div class="field third">
+                    <label for="newVisitors">Estimated monthly new visitors per bodega</label>
+                    <input id="newVisitors" type="number" step="1" min="0" inputmode="numeric" />
+                  </div>
+                  <div class="field third">
+                    <label for="recurringVisitors">Estimated monthly recurring visitors per bodega</label>
+                    <input id="recurringVisitors" type="number" step="1" min="0" inputmode="numeric" />
+                  </div>
+                  <div class="field third">
+                    <label for="transitPct">% of visitors who use public transit</label>
+                    <input id="transitPct" type="number" step="0.01" min="0" max="100" inputmode="decimal" />
+                  </div>
+                  <div class="field third">
+                    <label for="activationConv">% of transit-using new visitors who activate</label>
+                    <input id="activationConv" type="number" step="0.01" min="0" max="100" inputmode="decimal" />
+                  </div>
+                  <div class="field third">
+                    <label for="reloadConv">% of transit-using recurring visitors who reload (monthly)</label>
+                    <input id="reloadConv" type="number" step="0.01" min="0" max="100" inputmode="decimal" />
+                  </div>
+                </div>
 
-          <div class="card full">
-            <div class="kpi">
-              <div>
-                <div class="muted">Program scale &amp; budget</div>
-                <table class="table mono" aria-label="Program scale and budget table">
-                  <tbody>
-                    <tr class="only-mode-A">
-                      <td>Max bodegas under budget (floored)</td>
-                      <td id="ob-max-bodegas">—</td>
-                      <td><span class="tooltip" tabindex="0"
-                          data-tip="max_bodegas = floor( budget ÷ [T × (per_bodega_payout + broker_fee × activations_per_bodega)] ) with optional cap"></span>
-                      </td>
-                    </tr>
-                    <tr class="only-mode-B">
-                      <td>Runway (months)</td>
-                      <td id="ob-runway">—</td>
-                      <td><span class="tooltip" tabindex="0" data-tip="runway = budget ÷ monthly_burn"></span></td>
-                    </tr>
-                    <tr>
-                      <td>Estimated monthly burn</td>
-                      <td id="ob-monthly-burn">—</td>
-                      <td><span class="tooltip" tabindex="0"
-                          data-tip="monthly_burn = bodegas × per_bodega_payout + broker_fee × total_activations_all_bodegas"></span>
-                      </td>
-                    </tr>
-                    <tr class="only-mode-A">
-                      <td>Total cost over target months</td>
-                      <td id="ob-total-cost">—</td>
-                      <td><span class="tooltip" tabindex="0"
-                          data-tip="total_cost = bodegas × T × (per_bodega_payout + broker_fee × activations_per_bodega)"></span>
-                      </td>
-                    </tr>
-                    <tr class="only-mode-A">
-                      <td>Remaining budget after target months</td>
-                      <td id="ob-remaining">—</td>
-                      <td><span class="tooltip" tabindex="0" data-tip="remaining = budget − total_cost"></span></td>
-                    </tr>
-                    <tr class="only-mode-B">
-                      <td>Budget exhausted in ~</td>
-                      <td id="ob-exhaust">—</td>
-                      <td><span class="tooltip" tabindex="0"
-                          data-tip="approximate months until budget reaches zero at current burn"></span></td>
-                    </tr>
-                    <tr>
-                      <td>Will it exceed budget?</td>
-                      <td id="ob-exceed">—</td>
-                      <td><span class="tooltip" tabindex="0"
-                          data-tip="Mode A: checks total_cost ≤ budget. Mode B: runway ≥ desired months (if any)."></span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div id="mode-context" class="footer-note"></div>
-              </div>
-            </div>
-          </div>
+                <section class="input-group group-amounts" aria-labelledby="comm-title">
+                  <div class="group-title"><span class="badge">💵</span> <span id="comm-title">Amounts</span>
+                  </div>
+                  <div class="controls" id="group-amounts">
+                    <div class="field third">
+                      <label for="avgInitial">Average initial load per activation (USD)</label>
+                      <input id="avgInitial" type="number" step="0.01" min="0" inputmode="decimal" />
+                    </div>
+                    <div class="field third">
+                      <label for="avgReload">Average reload amount (USD)</label>
+                      <input id="avgReload" type="number" step="0.01" min="0" inputmode="decimal" />
+                    </div>
+                  </div>
 
-          <div class="card full assumptions" role="note" aria-label="Assumptions">
-            <strong>Assumptions (v1 steady-state model):</strong>
-            <ul>
-              <li>Activations derive from <em>new</em> monthly foot traffic; reloads from <em>recurring</em> traffic.
-              </li>
-              <li>Newly activated riders are <em>not</em> added to recurring pools in future months (no cohorting).</li>
-              <li>One broker handles all bodegas; broker fee accrues on each activation as it happens.</li>
-              <li>All percentages are entered as percents (e.g., 10 means 10%).</li>
-              <li>All inputs are adjustable; defaults are placeholders.</li>
-            </ul>
-            <div class="footer-note">Future versions could add: cohorting, seasonality, multi-broker splits, per-borough
-              parameters.</div>
-          </div>
-        </div>
-      </section>
+                  <section class="input-group group-constraints" aria-labelledby="comm-title">
+                    <div class="group-title"><span class="badge">🧱</span> <span id="comm-title">Constraints</span>
+                    </div>
+                    <div class="controls" id="group-constraints">
+                      <div class="field third">
+                        <label for="maxBodegas">Max bodegas available to onboard</label>
+                        <input id="maxBodegas" type="number" step="1" min="0" inputmode="numeric"
+                          aria-describedby="mb-help" />
+                        <div id="mb-help" class="help">Leave blank for no cap.</div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-10" role="group" aria-label="Utilities">
+                      <button class="btn" id="resetBtn" type="button">Reset to defaults</button>
+                      <button class="btn ghost" id="copyBtn" type="button">Copy snapshot (JSON)</button>
+                      <button class="btn ghost" id="shareBtn" type="button"
+                        title="Create a link with current inputs in the URL hash">Shareable link</button>
+                      <span id="utilMsg" class="help" role="status" aria-live="polite"></span>
+                    </div>
+                  </section>
+
+                  <!-- RIGHT: Outputs -->
+                  <section class="panel" role="region" aria-labelledby="outputs-header">
+                    <h2 id="outputs-header">Outputs</h2>
+
+                    <div class="cards" aria-live="polite">
+                      <div class="card full">
+                        <div class="kpi">
+                          <div>
+                            <div class="muted">Per-bodega monthly activity</div>
+                            <table class="table mono" aria-label="Per-bodega monthly activity table">
+                              <thead>
+                                <tr>
+                                  <th>Metric</th>
+                                  <th>Value</th>
+                                  <th></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td>Estimated activations / month</td>
+                                  <td id="ob-activations">—</td>
+                                  <td><span class="tooltip" tabindex="0" aria-label="Formula info"
+                                      data-tip="activations = new_visitors × transit% × activation_conversion"></span>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>Estimated reloads / month</td>
+                                  <td id="ob-reloads">—</td>
+                                  <td><span class="tooltip" tabindex="0" aria-label="Formula info"
+                                      data-tip="reloads = recurring_visitors × transit% × reload_conversion"></span>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="card full">
+                        <div class="kpi">
+                          <div>
+                            <div class="muted">Per-bodega monthly payout (to bodega)</div>
+                            <table class="table mono" aria-label="Per-bodega payout table">
+                              <thead>
+                                <tr>
+                                  <th>Component</th>
+                                  <th>USD</th>
+                                  <th></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td>From activation %</td>
+                                  <td id="ob-p-activation">—</td>
+                                  <td><span class="tooltip" tabindex="0"
+                                      data-tip="activations × avg_initial_load × activation_commission%"></span></td>
+                                </tr>
+                                <tr>
+                                  <td>From reload %</td>
+                                  <td id="ob-p-reload">—</td>
+                                  <td><span class="tooltip" tabindex="0"
+                                      data-tip="reloads × avg_reload_amount × reload_commission%"></span></td>
+                                </tr>
+                                <tr>
+                                  <td>From flat fees</td>
+                                  <td id="ob-p-flat">—</td>
+                                  <td><span class="tooltip" tabindex="0"
+                                      data-tip="(activations + reloads) × flat_fee_per_tx"></span></td>
+                                </tr>
+                                <tr>
+                                  <th>Total per-bodega payout / month</th>
+                                  <th id="ob-p-total">—</th>
+                                  <th><span class="tooltip" tabindex="0"
+                                      data-tip="sum of activation%, reload%, and flat fee payouts"></span></th>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="card third">
+                        <div class="kpi">
+                          <div>
+                            <div class="muted">Estimated payout per bodega / month</div>
+                            <div id="kpi-bodegaPayout" class="value mono">—</div>
+                          </div>
+                          <span class="tooltip" tabindex="0"
+                            data-tip="per-bodega payout from % on loads + flat fees"></span>
+                        </div>
+                      </div>
+
+                      <div class="card third">
+                        <div class="kpi">
+                          <div>
+                            <div class="muted">Estimated payout to broker / month</div>
+                            <div id="kpi-brokerPayout" class="value mono">—</div>
+                          </div>
+                          <span class="tooltip" tabindex="0"
+                            data-tip="total_activations_all_bodegas × broker_fee"></span>
+                        </div>
+                      </div>
+
+                      <div class="card third">
+                        <div class="kpi">
+                          <div>
+                            <div class="muted">Total monthly program payouts</div>
+                            <div id="kpi-totalPayouts" class="value mono">—</div>
+                          </div>
+                          <span class="tooltip" tabindex="0"
+                            data-tip="(bodegas × per-bodega payout) + broker payout"></span>
+                        </div>
+                      </div>
+
+                      <div class="card full">
+                        <div class="kpi">
+                          <div>
+                            <div class="muted">Program scale &amp; budget</div>
+                            <table class="table mono" aria-label="Program scale and budget table">
+                              <tbody>
+                                <tr class="only-mode-A">
+                                  <td>Max bodegas under budget (floored)</td>
+                                  <td id="ob-max-bodegas">—</td>
+                                  <td><span class="tooltip" tabindex="0"
+                                      data-tip="max_bodegas = floor( budget ÷ [T × (per_bodega_payout + broker_fee × activations_per_bodega)] ) with optional cap"></span>
+                                  </td>
+                                </tr>
+                                <tr class="only-mode-B">
+                                  <td>Runway (months)</td>
+                                  <td id="ob-runway">—</td>
+                                  <td><span class="tooltip" tabindex="0"
+                                      data-tip="runway = budget ÷ monthly_burn"></span>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>Estimated monthly burn</td>
+                                  <td id="ob-monthly-burn">—</td>
+                                  <td><span class="tooltip" tabindex="0"
+                                      data-tip="monthly_burn = bodegas × per_bodega_payout + broker_fee × total_activations_all_bodegas"></span>
+                                  </td>
+                                </tr>
+                                <tr class="only-mode-A">
+                                  <td>Total cost over target months</td>
+                                  <td id="ob-total-cost">—</td>
+                                  <td><span class="tooltip" tabindex="0"
+                                      data-tip="total_cost = bodegas × T × (per_bodega_payout + broker_fee × activations_per_bodega)"></span>
+                                  </td>
+                                </tr>
+                                <tr class="only-mode-A">
+                                  <td>Remaining budget after target months</td>
+                                  <td id="ob-remaining">—</td>
+                                  <td><span class="tooltip" tabindex="0"
+                                      data-tip="remaining = budget − total_cost"></span>
+                                  </td>
+                                </tr>
+                                <tr class="only-mode-B">
+                                  <td>Budget exhausted in ~</td>
+                                  <td id="ob-exhaust">—</td>
+                                  <td><span class="tooltip" tabindex="0"
+                                      data-tip="approximate months until budget reaches zero at current burn"></span>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>Will it exceed budget?</td>
+                                  <td id="ob-exceed">—</td>
+                                  <td><span class="tooltip" tabindex="0"
+                                      data-tip="Mode A: checks total_cost ≤ budget. Mode B: runway ≥ desired months (if any)."></span>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <div id="mode-context" class="footer-note"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="card full assumptions" role="note" aria-label="Assumptions">
+                        <strong>Assumptions (v1 steady-state model):</strong>
+                        <ul>
+                          <li>Activations derive from <em>new</em> monthly foot traffic; reloads from <em>recurring</em>
+                            traffic.
+                          </li>
+                          <li>Newly activated riders are <em>not</em> added to recurring pools in future months (no
+                            cohorting).
+                          </li>
+                          <li>One broker handles all bodegas; broker fee accrues on each activation as it happens.</li>
+                          <li>All percentages are entered as percents (e.g., 10 means 10%).</li>
+                          <li>All inputs are adjustable; defaults are placeholders.</li>
+                        </ul>
+                        <div class="footer-note">Future versions could add: cohorting, seasonality, multi-broker splits,
+                          per-borough
+                          parameters.</div>
+                      </div>
+                    </div>
+                  </section>
     </div>
   </div>
 
