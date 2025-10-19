@@ -39,7 +39,7 @@
             <div class="kpi">
               <div>
                 <div class="muted">Per-retailer monthly activity</div>
-                <table class="table mono" aria-label="Per-bodega monthly activity table">
+                <table class="table mono" aria-label="Per-retailer monthly activity table">
                   <thead><tr><th>Metric</th><th>Value</th><th></th></tr></thead>
                   <tbody>
                     <tr>
@@ -62,7 +62,7 @@
             <div class="kpi">
               <div>
                 <div class="muted">Per-retailer monthly payout (to retailer)</div>
-                <table class="table mono" aria-label="Per-bodega payout table">
+                <table class="table mono" aria-label="Per-retailer payout table">
                   <thead><tr><th>Component</th><th>USD</th><th></th></tr></thead>
                   <tbody>
                     <tr>
@@ -97,7 +97,7 @@
                 <div class="muted">Estimated payout per retailer / month</div>
                 <div id="kpi-bodegaPayout" class="value mono">—</div>
               </div>
-              <span class="tooltip" tabindex="0" data-tip="per-bodega payout from % on loads + flat fees"></span>
+              <span class="tooltip" tabindex="0" data-tip="per-retailers payout from % on loads + flat fees"></span>
             </div>
           </div>
 
@@ -107,7 +107,7 @@
                 <div class="muted">Total broker payout (one-time)</div>
                 <div id="kpi-brokerPayout" class="value mono">—</div>
               </div>
-              <span class="tooltip" tabindex="0" data-tip="num_bodegas × broker_fee (one-time at onboarding)"></span>
+              <span class="tooltip" tabindex="0" data-tip="num_retailers × broker_fee (one-time at onboarding)"></span>
             </div>
           </div>
 
@@ -117,7 +117,7 @@
                 <div class="muted">Total monthly program payouts</div>
                 <div id="kpi-totalPayouts" class="value mono">—</div>
               </div>
-              <span class="tooltip" tabindex="0" data-tip="(bodegas × per-bodega payout) + broker payout"></span>
+              <span class="tooltip" tabindex="0" data-tip="(retailers × per-retailers payout) + broker payout"></span>
             </div>
           </div>
 
@@ -130,7 +130,7 @@
                     <tr class="only-mode-A">
                       <td>Max retailers under budget (floored)</td>
                       <td id="ob-max-bodegas">—</td>
-                      <td><span class="tooltip" tabindex="0" data-tip="max_bodegas = floor( budget ÷ [T × (per_bodega_payout + broker_fee × activations_per_bodega)] ) with optional cap"></span></td>
+                      <td><span class="tooltip" tabindex="0" data-tip="max_retailers = floor( budget ÷ [T × (per_retailers_payout + broker_fee × activations_per_retailer)] ) with optional cap"></span></td>
                     </tr>
                     <tr class="only-mode-B">
                       <td>Runway (months)</td>
@@ -140,12 +140,12 @@
                     <tr>
                       <td>Estimated monthly burn</td>
                       <td id="ob-monthly-burn">—</td>
-                      <td><span class="tooltip" tabindex="0" data-tip="monthly_burn = bodegas × per_bodega_payout + broker_fee × total_activations_all_bodegas"></span></td>
+                      <td><span class="tooltip" tabindex="0" data-tip="monthly_burn = retailers × per_retailers_payout + broker_fee × total_activations_all_retailers"></span></td>
                     </tr>
                     <tr class="only-mode-A">
                       <td>Total cost over target months</td>
                       <td id="ob-total-cost">—</td>
-                      <td><span class="tooltip" tabindex="0" data-tip="total_cost = bodegas × T × (per_bodega_payout + broker_fee × activations_per_bodega)"></span></td>
+                      <td><span class="tooltip" tabindex="0" data-tip="total_cost = retailers × T × (per_retailers_payout + broker_fee × activations_per_retailers)"></span></td>
                     </tr>
                     <tr class="only-mode-A">
                       <td>Remaining budget after target months</td>
@@ -174,7 +174,7 @@
             <ul>
               <li>Activations derive from <em>new</em> monthly foot traffic; reloads from <em>recurring</em> traffic.</li>
               <li>Newly activated riders are <em>not</em> added to recurring pools in future months (no cohorting).</li>
-              <li>One broker handles all bodegas; broker fee accrues on each activation as it happens.</li>
+              <li>One broker handles all retailers; broker fee accrues on each activation as it happens.</li>
               <li>All percentages are entered as percents (e.g., 10 means 10%).</li>
               <li>All inputs are adjustable; defaults are placeholders.</li>
             </ul>

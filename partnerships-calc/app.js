@@ -36,7 +36,7 @@ const INPUT_SCHEMA = [
     key:'budget', emoji:'💸', title:'Budget & Horizon', class:'group-budget',
     fields: [
       { id:'budget', label:'Total campaign budget (USD)', type:'number', step:'0.01', min:'0',
-        help:'Funds both bodega commissions and broker fees.' },
+        help:'Funds both retailers commissions and broker fees.' },
       { id:'targetMonths', label:'Target duration (months)', type:'number', step:'1', min:'1',
         help:'Visible in Mode A only.', mode:'A' },
       { id:'numBodegas', label:'Number of participating retailers', type:'number', step:'1', min:'0',
@@ -51,7 +51,7 @@ const INPUT_SCHEMA = [
     ]
   },
   {
-    key:'comm', emoji:'🧾', title:'Bodega Commissions', class:'group-comm',
+    key:'comm', emoji:'🧾', title:'Retailer Commissions', class:'group-comm',
     fields: [
       { id:'actPct', label:'Commission on new activation (%)', type:'number', step:'0.01', min:'0',
         help:'Percent of initial load amount.' },
@@ -64,8 +64,8 @@ const INPUT_SCHEMA = [
   {
     key:'traffic', emoji:'🚶', title:'Traffic & Conversion', class:'group-traffic',
     fields: [
-      { id:'newVisitors', label:'Estimated monthly new visitors per bodega', type:'number', step:'1', min:'0' },
-      { id:'recurringVisitors', label:'Estimated monthly recurring visitors per bodega', type:'number', step:'1', min:'0' },
+      { id:'newVisitors', label:'Estimated monthly new visitors per retailers', type:'number', step:'1', min:'0' },
+      { id:'recurringVisitors', label:'Estimated monthly recurring visitors per retailer', type:'number', step:'1', min:'0' },
       { id:'transitPct', label:'% of visitors who use public transit', type:'number', step:'0.01', min:'0', max:'100' },
       { id:'activationConv', label:'% of transit-using new visitors who activate', type:'number', step:'0.01', min:'0', max:'100' },
       { id:'reloadConv', label:'% of transit-using recurring visitors who reload (monthly)', type:'number', step:'0.01', min:'0', max:'100' }
@@ -225,14 +225,14 @@ function render(){
     $('#ob-remaining').textContent    = fmtUSD.format(out.remaining);
     $('#ob-exceed').innerHTML         = out.exceed ? '<span class="state-bad">Yes</span>' : '<span class="state-ok">No</span>';
     $('#ob-runway').textContent = '—'; $('#ob-exhaust').textContent = '—';
-    $('#mode-context').textContent = `Mode A: With ${fmt0.format(out.bodegas)} bodegas for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
+    $('#mode-context').textContent = `Mode A: With ${fmt0.format(out.bodegas)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
   }else{
     $('#ob-runway').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months (floor ${fmt0.format(out.runwayFloor)})` : '∞';
     $('#ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
     $('#ob-total-cost').textContent = '—'; $('#ob-remaining').textContent='—'; $('#ob-exceed').textContent='—';
     $('#ob-max-bodegas').textContent = '—';
     $('#ob-exhaust').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months` : 'Never';
-    $('#mode-context').textContent = `Mode B: With ${fmt0.format(out.bodegas)} bodegas, monthly burn is ${fmtUSD.format(out.monthlyBurn)} and runway is ~${out.runwayExact.toFixed(2)} months.`;
+    $('#mode-context').textContent = `Mode B: With ${fmt0.format(out.bodegas)} retailers, monthly burn is ${fmtUSD.format(out.monthlyBurn)} and runway is ~${out.runwayExact.toFixed(2)} months.`;
   }
 }
 
