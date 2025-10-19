@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Transit Partnership Calculator v0.1</title>
-  <meta name="description" content="Simulate a New York bodega partnership program for transit card activations & reloads. Calculates payouts, budget burn, and scale/runway under a fixed budget." />
+  <meta name="description" content="Simulate a transit partnership program for transit card activations & reloads. Calculates payouts, budget burn, and scale/runway under a fixed budget." />
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <div class="wrap">
     <header>
       <h1>Transit Partnership Calculator v0.1</h1>
-      <p id="app-desc">Estimate per-bodega payouts, broker fees, and budget burn to size or time a NYC bodega transit card program.</p>
+      <p id="app-desc">Estimate per-retailer payouts, broker fees, and budget burn to size or time a given partnership card program.</p>
     </header>
 
     <div class="grid" role="region" aria-labelledby="inputs-header">
@@ -38,7 +38,7 @@
           <div class="card full">
             <div class="kpi">
               <div>
-                <div class="muted">Per-bodega monthly activity</div>
+                <div class="muted">Per-retailer monthly activity</div>
                 <table class="table mono" aria-label="Per-bodega monthly activity table">
                   <thead><tr><th>Metric</th><th>Value</th><th></th></tr></thead>
                   <tbody>
@@ -61,7 +61,7 @@
           <div class="card full">
             <div class="kpi">
               <div>
-                <div class="muted">Per-bodega monthly payout (to bodega)</div>
+                <div class="muted">Per-retailer monthly payout (to retailer)</div>
                 <table class="table mono" aria-label="Per-bodega payout table">
                   <thead><tr><th>Component</th><th>USD</th><th></th></tr></thead>
                   <tbody>
@@ -81,7 +81,7 @@
                       <td><span class="tooltip" tabindex="0" data-tip="(activations + reloads) × flat_fee_per_tx"></span></td>
                     </tr>
                     <tr>
-                      <th>Total per-bodega payout / month</th>
+                      <th>Total per-retailer payout / month</th>
                       <th id="ob-p-total">—</th>
                       <th><span class="tooltip" tabindex="0" data-tip="sum of activation%, reload%, and flat fee payouts"></span></th>
                     </tr>
@@ -94,7 +94,7 @@
           <div class="card third">
             <div class="kpi">
               <div>
-                <div class="muted">Estimated payout per bodega / month</div>
+                <div class="muted">Estimated payout per retailer / month</div>
                 <div id="kpi-bodegaPayout" class="value mono">—</div>
               </div>
               <span class="tooltip" tabindex="0" data-tip="per-bodega payout from % on loads + flat fees"></span>
@@ -128,7 +128,7 @@
                 <table class="table mono" aria-label="Program scale and budget table">
                   <tbody>
                     <tr class="only-mode-A">
-                      <td>Max bodegas under budget (floored)</td>
+                      <td>Max retailers under budget (floored)</td>
                       <td id="ob-max-bodegas">—</td>
                       <td><span class="tooltip" tabindex="0" data-tip="max_bodegas = floor( budget ÷ [T × (per_bodega_payout + broker_fee × activations_per_bodega)] ) with optional cap"></span></td>
                     </tr>
@@ -178,7 +178,6 @@
               <li>All percentages are entered as percents (e.g., 10 means 10%).</li>
               <li>All inputs are adjustable; defaults are placeholders.</li>
             </ul>
-            <div class="footer-note">Future versions could add: cohorting, seasonality, multi-broker splits, per-borough parameters.</div>
           </div>
         </div>
       </section>
