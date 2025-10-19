@@ -215,7 +215,7 @@ function render(){
 
   // KPIs
   $('#kpi-bodegaPayout').textContent = fmtUSD.format(out.perBodegaPayout);
-  $('#kpi-brokerPayout').textContent = fmtUSD.format(out.brokerPayoutMonth ?? (out.perBodegaBroker * (out.bodegas||0)));
+  $('#kpi-brokerPayout').textContent = fmtUSD.format(out.brokerPayoutTotal || 0);
   $('#kpi-totalPayouts').textContent = fmtUSD.format(out.monthlyBurn);
 
   if(out.mode==='A'){
