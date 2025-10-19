@@ -411,6 +411,10 @@
       } catch { return 0; }
     }
 
+    // Use existing global if present (prevents redefinition across script tags)
+    window.dmCache = window.dmCache || new Map();
+    const dmCache = window.dmCache;
+
     async function datamuseProfile(term, timeout = 500) {
       term = sanitize(term);
       if (dmCache.has(term)) return dmCache.get(term);
