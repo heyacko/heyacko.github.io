@@ -345,6 +345,12 @@
       'fire', 'ice', 'water', 'stone', 'paper', 'music', 'money', 'love', 'war', 'peace', 'game', 'food', 'animal', 'plant', 'river', 'mountain', 'beach', 'sand', 'forest', 'computer', 'phone', 'book', 'movie', 'city', 'village', 'school', 'teacher', 'student', 'doctor', 'hospital', 'car', 'train', 'airplane', 'coffee', 'tea', 'sugar', 'salt', 'bread', 'cheese', 'fish', 'bird', 'cat', 'dog', 'house', 'home', 'family', 'friend', 'party', 'work', 'job', 'art', 'dance', 'song', 'light', 'dark', 'shadow', 'mirror', 'glass', 'window', 'door', 'key', 'lock', 'map', 'journey', 'travel', 'flight', 'storm', 'rain', 'snow', 'wind', 'sun', 'moon', 'star', 'planet', 'space', 'time', 'history', 'science', 'energy', 'power', 'sport', 'team', 'ball', 'goal', 'ocean', 'lake', 'island', 'bridge', 'road', 'path', 'desert', 'garden', 'flower', 'tree', 'leaf', 'root', 'seed'
     ];
 
+    const curatedPairs = [
+      ['cat', 'milk'], ['sun', 'beach'], ['paper', 'pen'], ['doctor', 'hospital'],
+      ['coffee', 'morning'], ['rain', 'umbrella'], ['music', 'dance'], ['bird', 'nest']
+    ];
+
+
     const state = {
       A: 'fire', B: 'ice', score: 0, streak: 0,
       threshold: 0.05, timer: null, baseTime: 12, timeLeft: 12,
@@ -490,30 +496,46 @@
     // ==== Faster seed picking + prefetch ====
     let nextPair = null;
 
-    async function pickSeedPairFast() {
-      for (let tries = 0; tries < 30; tries++) {
-        const a = commonNouns[Math.floor(Math.random() * commonNouns.length)];
-        const b = commonNouns[Math.floor(Math.random() * commonNouns.length)];
-        if (a === b) continue;
-        const m = diceCoeff(a, b);
-        if (m > 0.22 || m < 0.02) continue;
-        const relAB = await blendedRel(a, b);
-        if (relAB >= 0.05 && relAB <= 0.30) return { a, b, relAB };
+    async function pickSeedPairSmart() {
+      // Phases: gradually relax morphology + relatedness windows
+      const phases = [
+        { tries: 40, mMin: 0.02, mMax: 0.22, relMin: 0.05, relMax: 0.30, dmMs: 700, cnMs: 700 },
+        { tries: 40, mMin: 0.00, mMax: 0.28, relMin: 0.04, relMax: 0.36, dmMs: 800, cnMs: 800 },
+        { tries: 40, mMin: 0.00, mMax: 0.34, relMin: 0.03, relMax: 0.42, dmMs: 900, cnMs: 900 },
+      ];
+
+      for (const ph of phases) {
+        for (let i = 0; i < ph.tries; i++) {
+          const a = commonNouns[Math.floor(Math.random() * commonNouns.length)];
+          const b = commonNouns[Math.floor(Math.random() * commonNouns.length)];
+          if (a === b) continue;
+
+          const m = diceCoeff(a, b);
+          if (m < ph.mMin || m > ph.mMax) continue;
+
+          const relAB = await blendedRel(a, b, { dmTimeout: ph.dmMs, cnTimeout: ph.cnMs });
+          if (relAB >= ph.relMin && relAB <= ph.relMax) return { a, b, relAB };
+        }
       }
-      return { a: 'fire', b: 'ice', relAB: await blendedRel('fire', 'ice') };
+
+      // Curated fallback rotation (never "fire/ice" unless everything fails)
+      const pick = curatedPairs[Math.floor(Math.random() * curatedPairs.length)];
+      return { a: pick[0], b: pick[1], relAB: await blendedRel(pick[0], pick[1], { dmTimeout: 900, cnTimeout: 900 }) };
     }
 
+    // queueNextPair
     async function queueNextPair() {
-      try { nextPair = await pickSeedPairFast(); } catch { nextPair = null; }
+      try { nextPair = await pickSeedPairSmart(); } catch { nextPair = null; }
     }
 
+    // advanceToNextPair
     async function advanceToNextPair() {
       if (nextPair) {
         const { a, b } = nextPair;
         nextPair = null;
         await setPair(a, b);
       } else {
-        const { a, b } = await pickSeedPairFast();
+        const { a, b } = await pickSeedPairSmart();
         await setPair(a, b);
       }
     }
@@ -529,9 +551,10 @@
       queueNextPair(); // prefetch next
     }
 
+    // startGame
     async function startGame() {
       state.score = 0; state.streak = 0; state.threshold = 0.12; state.baseTime = 12; updateHUD();
-      const { a, b } = await pickSeedPairFast();
+      const { a, b } = await pickSeedPairSmart();
       await setPair(a, b);
     }
 
