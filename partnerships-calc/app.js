@@ -28,8 +28,8 @@ const INPUT_SCHEMA = [
     key:'mode', emoji:'🎛️', title:'Mode', class:'group-mode',
     kind:'seg',
     options: [
-      { value:'A', label:'Mode A: Given budget & months, compute max bodegas' },
-      { value:'B', label:'Mode B: Given budget & bodegas, compute runway (months)' }
+      { value:'A', label:'Mode A: Given budget & months, compute max retailers' },
+      { value:'B', label:'Mode B: Given budget & retailers, compute runway (months)' }
     ]
   },
   {
@@ -39,7 +39,7 @@ const INPUT_SCHEMA = [
         help:'Funds both bodega commissions and broker fees.' },
       { id:'targetMonths', label:'Target duration (months)', type:'number', step:'1', min:'1',
         help:'Visible in Mode A only.', mode:'A' },
-      { id:'numBodegas', label:'Number of participating bodegas', type:'number', step:'1', min:'0',
+      { id:'numBodegas', label:'Number of participating retailers', type:'number', step:'1', min:'0',
         help:'Visible in Mode B only.', mode:'B' }
     ]
   },
@@ -47,7 +47,7 @@ const INPUT_SCHEMA = [
     key:'broker', emoji:'🤝', title:'Broker Economics', class:'group-broker',
     fields: [
       { id:'brokerFee', label:'Broker fee per activation (USD)', type:'number', step:'0.01', min:'0',
-        help:'Assume one broker handling all bodegas.' }
+        help:'Assume one broker handling all retailers.' }
     ]
   },
   {
@@ -81,7 +81,7 @@ const INPUT_SCHEMA = [
   {
     key:'constraints', emoji:'🧱', title:'Constraints', class:'group-constraints',
     fields: [
-      { id:'maxBodegas', label:'Max bodegas available to onboard', type:'number', step:'1', min:'0',
+      { id:'maxBodegas', label:'Max retailers available to onboard', type:'number', step:'1', min:'0',
         help:'Leave blank for no cap.' }
     ]
   }
