@@ -14,14 +14,12 @@
       <p id="app-desc">Estimate per-bodega payouts, broker fees, and budget burn to size or time a NYC bodega transit card program.</p>
     </header>
 
-    <div class="grid" role="region" aria-labelledby="inputs-header">
-      <!-- LEFT: Inputs (schema-driven) -->
-      <section class="panel" aria-describedby="app-desc">
+    <!-- Two sibling panels only -->
+    <div class="grid" role="region" aria-label="Calculator panels">
+      <!-- LEFT: Inputs -->
+      <section id="inputs-panel" class="panel" aria-describedby="app-desc">
         <h2 id="inputs-header">Inputs</h2>
-
-        <!-- The entire inputs UI is rendered here by app.js/buildInputs using the schema -->
         <div id="inputs-mount"></div>
-
         <div class="row mt-10" role="group" aria-label="Utilities">
           <button class="btn" id="resetBtn" type="button">Reset to defaults</button>
           <button class="btn ghost" id="copyBtn" type="button">Copy snapshot (JSON)</button>
@@ -30,8 +28,8 @@
         </div>
       </section>
 
-      <!-- RIGHT: Outputs (sibling of inputs, not nested) -->
-      <section class="panel" role="region" aria-labelledby="outputs-header">
+      <!-- RIGHT: Outputs -->
+      <section id="outputs-panel" class="panel" role="region" aria-labelledby="outputs-header">
         <h2 id="outputs-header">Outputs</h2>
 
         <div class="cards" aria-live="polite">
@@ -45,12 +43,12 @@
                     <tr>
                       <td>Estimated activations / month</td>
                       <td id="ob-activations">—</td>
-                      <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="activations = new_visitors × transit% × activation_conversion"></span></td>
+                      <td><span class="tooltip" tabindex="0" data-tip="activations = new_visitors × transit% × activation_conversion"></span></td>
                     </tr>
                     <tr>
                       <td>Estimated reloads / month</td>
                       <td id="ob-reloads">—</td>
-                      <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="reloads = recurring_visitors × transit% × reload_conversion"></span></td>
+                      <td><span class="tooltip" tabindex="0" data-tip="reloads = recurring_visitors × transit% × reload_conversion"></span></td>
                     </tr>
                   </tbody>
                 </table>
@@ -182,10 +180,9 @@
           </div>
         </div>
       </section>
-    </div>
+    </div> <!-- /.grid -->
   </div>
 
-  <!-- app.js will import calc.js, build the inputs from a schema, and wire up interactions -->
   <script type="module" src="./app.js"></script>
 </body>
 </html>
