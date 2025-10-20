@@ -217,13 +217,16 @@ function setVisByMode(mode){
 
 /* ---------------- Executive Summary Functions ---------------- */
 function updateExecutiveSummary(out) {
+  // Check if we're on the Results tab - only update if elements exist
+  const budgetElement = $('#sum-budget-ok');
+  if (!budgetElement) return; // Exit early if Results tab is not active
+  
   // Budget Sufficiency - show color-coded text instead of Yes/No
   const budgetOk = !out.exceed;
   const budgetDetail = out.mode === 'A' 
     ? `${fmtUSD.format(out.totalCost)} of ${fmtUSD.format(state.budget)}`
     : `${fmtUSD.format(out.monthlyBurn)}/month burn`;
   
-  const budgetElement = $('#sum-budget-ok');
   budgetElement.innerHTML = `<small>${budgetDetail}</small>`;
   
   // Apply color coding
