@@ -78,7 +78,7 @@
                     <div class="muted">Total Revenue</div>
                     <div id="inputs-kpi-total-revenue" class="value mono">—</div>
                   </div>
-                  <span class="tooltip" tabindex="0" data-tip="Monthly revenue × target months (Mode A) or runway months (Mode B)"></span>
+                  <span class="tooltip" tabindex="0" data-tip="Monthly revenue × target months (Retailer Optimization) or runway months (Runway Optimization)"></span>
                 </div>
               </div>
 
@@ -88,7 +88,7 @@
                     <div class="muted">Total Cost</div>
                     <div id="inputs-kpi-cost" class="value mono">—</div>
                   </div>
-                  <span class="tooltip" tabindex="0" data-tip="Total cost over target months (Mode A) or monthly burn × runway (Mode B)"></span>
+                  <span class="tooltip" tabindex="0" data-tip="Total cost over target months (Retailer Optimization) or monthly burn × runway (Runway Optimization)"></span>
                 </div>
               </div>
 
@@ -119,6 +119,39 @@
                     <div id="inputs-kpi-monthly-cost" class="value mono">—</div>
                   </div>
                   <span class="tooltip" tabindex="0" data-tip="Monthly burn (retailers × per-retailer payout + broker fees)"></span>
+                </div>
+              </div>
+
+              <div class="card full">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Revenue &amp; Profit</div>
+                    <table class="table mono" aria-label="Revenue and profit table">
+                      <thead><tr><th>Metric</th><th>Value</th><th></th></tr></thead>
+                      <tbody>
+                        <tr>
+                          <td>Total transit-using visitors / month</td>
+                          <td id="inputs-ob-transit-visitors">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="retailers × (new_visitors + recurring_visitors) × transit%"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Total transit spend / month</td>
+                          <td id="inputs-ob-transit-spend">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="transit_visitors × avg_transactions × cost_per_transaction"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Monthly revenue</td>
+                          <td id="inputs-ob-monthly-revenue">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="transit_spend × interchange_rate%"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Monthly profit</td>
+                          <td id="inputs-ob-monthly-profit">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="revenue - monthly_burn"></span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
 
@@ -206,39 +239,6 @@
               <div class="card full">
                 <div class="kpi">
                   <div>
-                    <div class="muted">Revenue &amp; Profit</div>
-                    <table class="table mono" aria-label="Revenue and profit table">
-                      <thead><tr><th>Metric</th><th>Value</th><th></th></tr></thead>
-                      <tbody>
-                        <tr>
-                          <td>Total transit-using visitors / month</td>
-                          <td id="inputs-ob-transit-visitors">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="retailers × (new_visitors + recurring_visitors) × transit%"></span></td>
-                        </tr>
-                        <tr>
-                          <td>Total transit spend / month</td>
-                          <td id="inputs-ob-transit-spend">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="transit_visitors × avg_transactions × cost_per_transaction"></span></td>
-                        </tr>
-                        <tr>
-                          <td>Monthly revenue</td>
-                          <td id="inputs-ob-monthly-revenue">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="transit_spend × interchange_rate%"></span></td>
-                        </tr>
-                        <tr>
-                          <td>Monthly profit</td>
-                          <td id="inputs-ob-monthly-profit">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="revenue - monthly_burn"></span></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card full">
-                <div class="kpi">
-                  <div>
                     <div class="muted">Program scale &amp; budget</div>
                     <table class="table mono" aria-label="Program scale and budget table">
                       <tbody>
@@ -275,7 +275,7 @@
                         <tr>
                           <td>Will it exceed budget?</td>
                           <td id="inputs-ob-exceed">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="Mode A: checks total_cost ≤ budget. Mode B: runway ≥ desired months (if any)."></span></td>
+                          <td><span class="tooltip" tabindex="0" data-tip="Retailer Optimization: checks total_cost ≤ budget. Runway Optimization: runway ≥ desired months (if any)."></span></td>
                         </tr>
                       </tbody>
                     </table>
@@ -572,7 +572,7 @@
                         <tr>
                           <td>Will it exceed budget?</td>
                           <td id="ob-exceed">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="Mode A: checks total_cost ≤ budget. Mode B: runway ≥ desired months (if any)."></span></td>
+                          <td><span class="tooltip" tabindex="0" data-tip="Retailer Optimization: checks total_cost ≤ budget. Runway Optimization: runway ≥ desired months (if any)."></span></td>
                         </tr>
                       </tbody>
                     </table>

@@ -63,7 +63,7 @@ export function compute(s){
   };
 
   if (s.mode === 'A'){
-    // ---- Mode A: given budget + target months, solve max retailers ----
+    // ---- Retailer Optimization: given budget + target months, solve max retailers ----
     const T = Math.max(1, Math.floor(s.targetMonths||0));
 
     // Budget per retailer over the program = T * perRetailerPayout + brokerFee(one-time)
@@ -117,7 +117,7 @@ export function compute(s){
     };
   }
 
-  // ---- Mode B: given budget + retailers, solve runway ----
+  // ---- Runway Optimization: given budget + retailers, solve runway ----
   const retailers = Math.max(0, Math.floor(s.numRetailers||0));
   const totalRetailerPayoutMonth = retailers * perRetailerPayout;
   const monthlyBurn            = totalRetailerPayoutMonth;

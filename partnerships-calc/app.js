@@ -28,8 +28,8 @@ const INPUT_SCHEMA = [
     key:'mode', emoji:'🎛️', title:'Mode', class:'group-mode',
     kind:'seg',
     options: [
-      { value:'A', label:'Mode A: Given budget & months, compute max retailers' },
-      { value:'B', label:'Mode B: Given budget & retailers, compute runway (months)' }
+      { value:'A', label:'Retailer Optimization', description:'Compute optimal number of retailers given Budget and Time Period' },
+      { value:'B', label:'Runway Optimization', description:'Compute optimal number of months given Budget and Retailers' }
     ]
   },
   {
@@ -38,9 +38,9 @@ const INPUT_SCHEMA = [
       { id:'budget', label:'Total campaign budget (USD)', type:'number', step:'0.01', min:'0',
         help:'Funds both retailers commissions and broker fees.' },
       { id:'targetMonths', label:'Target duration (months)', type:'number', step:'1', min:'1',
-        help:'Visible in Mode A only.', mode:'A' },
+        help:'Visible in Retailer Optimization only.', mode:'A' },
       { id:'numRetailers', label:'Number of participating retailers', type:'number', step:'1', min:'0',
-        help:'Visible in Mode B only.', mode:'B' }
+        help:'Visible in Runway Optimization only.', mode:'B' }
     ]
   },
   {
@@ -123,7 +123,13 @@ function buildInputs(mount){
       seg.setAttribute('role','radiogroup');
       seg.setAttribute('aria-labelledby', titleId);
       seg.innerHTML = group.options.map(opt => `
-        <label><input type="radio" name="mode" value="${opt.value}"> ${opt.label}</label>
+        <label>
+          <input type="radio" name="mode" value="${opt.value}"> 
+          <div class="seg-content">
+            <div class="seg-label">${opt.label}</div>
+            ${opt.description ? `<div class="seg-description">${opt.description}</div>` : ''}
+          </div>
+        </label>
       `).join('');
       sec.appendChild(seg);
       mount.appendChild(sec);
@@ -244,8 +250,8 @@ function updateExecutiveSummary(out) {
   
   // Mode Context Summary
   const contextText = out.mode === 'A'
-    ? `Mode A: ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months`
-    : `Mode B: ${fmt0.format(out.retailers)} retailers, ${out.runwayExact.toFixed(1)} month runway`;
+    ? `Retailer Optimization: ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months`
+    : `Runway Optimization: ${fmt0.format(out.retailers)} retailers, ${out.runwayExact.toFixed(1)} month runway`;
   $('#mode-context-summary').textContent = contextText;
 }
 
@@ -273,11 +279,11 @@ function updateInputsTabOutputs(out) {
   let timePeriodText, timePeriodMonths;
   
   if (out.mode === 'A') {
-    // Mode A: Use target months
+    // Retailer Optimization: Use target months
     timePeriodMonths = Math.max(1, Math.floor(state.targetMonths || 0));
     timePeriodText = `${timePeriodMonths} months (Target Period)`;
   } else {
-    // Mode B: Use runway months
+    // Runway Optimization: Use runway months
     timePeriodMonths = isFinite(out.runwayExact) ? out.runwayExact : 0;
     timePeriodText = `${timePeriodMonths.toFixed(1)} months (Runway)`;
   }
@@ -289,12 +295,12 @@ function updateInputsTabOutputs(out) {
   let totalRevenue, totalCost;
   
   if (out.mode === 'A') {
-    // Mode A: Use target months
+    // Retailer Optimization: Use target months
     const targetMonths = Math.max(1, Math.floor(state.targetMonths || 0));
     totalRevenue = out.monthlyRevenue * targetMonths;
     totalCost = out.totalCost; // This is already calculated as total cost over target months
   } else {
-    // Mode B: Use runway months
+    // Runway Optimization: Use runway months
     const runwayMonths = isFinite(out.runwayExact) ? out.runwayExact : 0;
     totalRevenue = out.monthlyRevenue * runwayMonths;
     totalCost = out.monthlyBurn * runwayMonths;
@@ -346,7 +352,7 @@ function updateInputsTabOutputs(out) {
     $('#inputs-ob-exceed').innerHTML = out.exceed ? '<span class="state-bad">Yes</span>' : '<span class="state-ok">No</span>';
     $('#inputs-ob-runway').textContent = '—'; 
     $('#inputs-ob-exhaust').textContent = '—';
-    $('#inputs-mode-context').textContent = `Mode A: With ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
+    $('#inputs-mode-context').textContent = `Retailer Optimization: With ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
   }else{
     $('#inputs-ob-runway').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months (floor ${fmt0.format(out.runwayFloor)})` : '∞';
     $('#inputs-ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
@@ -355,7 +361,7 @@ function updateInputsTabOutputs(out) {
     $('#inputs-ob-exceed').textContent='—';
     $('#inputs-ob-max-retailers').textContent = '—';
     $('#inputs-ob-exhaust').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months` : 'Never';
-    $('#inputs-mode-context').textContent = `Mode B: With ${fmt0.format(out.retailers)} retailers, monthly burn is ${fmtUSD.format(out.monthlyBurn)} and runway is ~${out.runwayExact.toFixed(2)} months.`;
+    $('#inputs-mode-context').textContent = `Runway Optimization: With ${fmt0.format(out.retailers)} retailers, monthly burn is ${fmtUSD.format(out.monthlyBurn)} and runway is ~${out.runwayExact.toFixed(2)} months.`;
   }
 }
 
@@ -546,14 +552,14 @@ function render(){
     $('#ob-remaining').textContent    = fmtUSD.format(out.remaining);
     $('#ob-exceed').innerHTML         = out.exceed ? '<span class="state-bad">Yes</span>' : '<span class="state-ok">No</span>';
     $('#ob-runway').textContent = '—'; $('#ob-exhaust').textContent = '—';
-    $('#mode-context').textContent = `Mode A: With ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
+    $('#mode-context').textContent = `Retailer Optimization: With ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
   }else{
     $('#ob-runway').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months (floor ${fmt0.format(out.runwayFloor)})` : '∞';
     $('#ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
     $('#ob-total-cost').textContent = '—'; $('#ob-remaining').textContent='—'; $('#ob-exceed').textContent='—';
     $('#ob-max-retailers').textContent = '—';
     $('#ob-exhaust').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months` : 'Never';
-    $('#mode-context').textContent = `Mode B: With ${fmt0.format(out.retailers)} retailers, monthly burn is ${fmtUSD.format(out.monthlyBurn)} and runway is ~${out.runwayExact.toFixed(2)} months.`;
+    $('#mode-context').textContent = `Runway Optimization: With ${fmt0.format(out.retailers)} retailers, monthly burn is ${fmtUSD.format(out.monthlyBurn)} and runway is ~${out.runwayExact.toFixed(2)} months.`;
   }
 }
 
