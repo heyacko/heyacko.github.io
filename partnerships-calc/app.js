@@ -232,6 +232,7 @@ function render(){
   $('#ob-p-reload').textContent     = fmtUSD.format(out.pReload);
   $('#ob-p-flat').textContent       = fmtUSD.format(out.pFlat);
   $('#ob-p-bonus').textContent      = fmtUSD.format(out.pBonus);
+  $('#ob-p-base').textContent       = fmtUSD.format(out.perRetailerPayoutBase);
   $('#ob-p-total').textContent      = fmtUSD.format(out.perRetailerPayout);
 
   // KPIs

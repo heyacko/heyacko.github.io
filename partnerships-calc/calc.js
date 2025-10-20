@@ -46,7 +46,12 @@ export function compute(s){
   const pReload= perRetailerReloads     * (s.avgReload||0)  * reloadPct; // reloads × avg_reload × reload%
   const pFlat  = (perRetailerActivations + perRetailerReloads) * (s.flatFee||0); // (activations+reloads) × flat_fee
   const pBonus = perRetailerActivations * (s.activationBonus||0);        // activations × bonus_per_activation
-  const perRetailerPayout = pAct + pReload + pFlat + pBonus;
+  
+  // Base payout without promotional bonus
+  const perRetailerPayoutBase = pAct + pReload + pFlat;
+  
+  // Total payout including promotional bonus
+  const perRetailerPayout = perRetailerPayoutBase + pBonus;
 
   // NOTE: Broker payout is now a ONE-TIME per-retailer fee, not monthly.
 
@@ -54,7 +59,7 @@ export function compute(s){
   const base = {
     perRetailerActivations, perRetailerReloads,
     perRetailerVisitors, perRetailerRiders, perRetailerTransitTransactions,
-    pAct, pReload, pFlat, pBonus, perRetailerPayout
+    pAct, pReload, pFlat, pBonus, perRetailerPayoutBase, perRetailerPayout
   };
 
   if (s.mode === 'A'){
