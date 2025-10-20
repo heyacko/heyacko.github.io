@@ -6,7 +6,29 @@
 <title>acko website!</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  /* Page-specific styles for index.html - Frutiger Aero Edition */
+  /* 
+  ================================================================================
+  INDEX PAGE STYLES - HOMEPAGE CARD LAYOUT
+  ================================================================================
+  This section contains styles specific to the homepage (index.html). It creates
+  the beautiful card layout that displays all the available games/quizzes.
+  
+  WHAT THIS SECTION DOES:
+  - Styles the main "games" title with floating animation
+  - Creates the grid layout for the game cards
+  - Sets up the frosted glass effect for cards
+  - Handles emoji animations and hover effects
+  - Makes everything responsive for mobile devices
+  
+  KEY COMPONENTS:
+  - h1: Main title with floating animation
+  - .grid: Container that arranges cards in a responsive grid
+  - .shared-card: Individual game cards with glassmorphism effect
+  - .subtitle: Emojis that float on hover
+  - .title/.desc: Card text content
+  */
+  
+  /* Main title styling with floating animation */
   h1 {
     font-size: 3.5rem;
     margin-bottom: 20px;
@@ -22,6 +44,14 @@
     font-weight: 500;
     font-size: 1.1rem;
   }
+  /* 
+  ================================================================================
+  CARD GRID LAYOUT
+  ================================================================================
+  This creates a responsive grid that automatically adjusts the number of columns
+  based on screen size. Cards will be 320px wide minimum, and the grid will
+  add more columns as the screen gets wider.
+  */
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -29,7 +59,18 @@
     justify-items: center;
   }
   
-  /* Override shared-card for index page */
+  /* 
+  ================================================================================
+  FROSTED GLASS CARDS - HOMEPAGE STYLE
+  ================================================================================
+  These cards have a special frosted glass effect that makes the background grid
+  visible but blurred behind them. This creates a beautiful layered depth effect.
+  
+  TO ADJUST THE FROSTED GLASS EFFECT:
+  - Change background opacity (0.15) to make cards more/less transparent
+  - Modify backdrop-filter blur (30px) to make background more/less blurry
+  - Adjust border opacity to change the glass edge visibility
+  */
   .shared-card {
     height: 200px;
     padding: 30px;
@@ -48,6 +89,19 @@
     text-decoration: none;
   }
   
+  /* 
+  ================================================================================
+  EMOJI ANIMATIONS - INTERACTIVE ELEMENTS
+  ================================================================================
+  The emojis (🗳️, 🧠, 🌴, 🔠) are static by default and only float when you
+  hover over their cards. This creates a subtle, playful interaction.
+  
+  HOW IT WORKS:
+  - Emojis start completely still (no animation)
+  - When you hover over a card, the emoji starts floating gently
+  - When you stop hovering, the emoji smoothly returns to its starting position
+  - The float animation moves the emoji up and down 10px over 2 seconds
+  */
   .subtitle {
     font-size: 3.5rem;
     margin-bottom: 15px;
@@ -57,12 +111,13 @@
     transform: translateY(0px);
   }
   
+  /* Start floating animation on hover */
   .shared-card:hover .subtitle {
     animation: float 2s ease-in-out infinite;
     animation-fill-mode: both;
   }
   
-  /* Smooth return animation */
+  /* Smooth return to original position when not hovering */
   .shared-card:not(:hover) .subtitle {
     animation: float-return 0.3s ease-out forwards;
   }
@@ -82,7 +137,19 @@
     font-weight: 500;
   }
   
-  /* Frosted glass hover effect */
+  /* 
+  ================================================================================
+  CARD HOVER EFFECTS - INTERACTIVE FEEDBACK
+  ================================================================================
+  When you hover over a card, it gets a subtle glow effect instead of moving.
+  This creates a gentle, elegant interaction that doesn't disrupt the layout.
+  
+  HOVER EFFECTS:
+  - Card background becomes slightly more opaque
+  - Border changes to bright blue
+  - Glowing shadow appears around the card
+  - Smooth transition makes the effect feel natural
+  */
   .shared-card:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: #4a90e2;
@@ -93,6 +160,24 @@
     transition: all 0.4s ease;
   }
   
+  /* 
+  ================================================================================
+  ANIMATION KEYFRAMES - DEFINING THE MOVEMENTS
+  ================================================================================
+  These define the actual animations used throughout the page. Keyframes tell
+  the browser exactly how elements should move over time.
+  
+  FLOAT ANIMATION:
+  - Starts at normal position (0px)
+  - Moves up 10px at the halfway point (50%)
+  - Returns to normal position at the end (100%)
+  - This creates a gentle up-and-down floating motion
+  
+  FLOAT-RETURN ANIMATION:
+  - Starts from the floating position (-10px)
+  - Smoothly moves back to normal position (0px)
+  - Used when you stop hovering to prevent snapping
+  */
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
@@ -116,7 +201,19 @@
     }
   }
   
-  /* Mobile adjustments */
+  /* 
+  ================================================================================
+  MOBILE RESPONSIVENESS - PHONE AND TABLET OPTIMIZATION
+  ================================================================================
+  These styles make the homepage look great on smaller screens. They adjust
+  sizes, spacing, and layout to work well on phones and tablets.
+  
+  WHAT CHANGES ON MOBILE:
+  - Title becomes smaller (3.5rem → 2.5rem)
+  - Grid becomes single column (cards stack vertically)
+  - Cards get smaller height and padding
+  - Emojis become slightly smaller
+  */
   @media (max-width: 768px) {
     h1 {
       font-size: 2.5rem;
@@ -167,12 +264,30 @@
     </div>
   </div>
 
+  <!-- 
+  ================================================================================
+  PARALLAX SCROLLING EFFECT - BACKGROUND GRID ANIMATION
+  ================================================================================
+  This JavaScript creates a subtle parallax effect where the background grid
+  moves slightly as you scroll. This adds depth and visual interest to the page.
+  
+  HOW IT WORKS:
+  1. Listens for scroll events on the page
+  2. Gets how far the user has scrolled (in pixels)
+  3. Updates a CSS custom property (--scroll-y) with the scroll position
+  4. The CSS uses this value to move the background grid
+  
+  TO ADJUST THE PARALLAX EFFECT:
+  - Change the multiplier in the CSS (currently 0.3) to make it faster/slower
+  - Higher numbers = more movement, lower numbers = less movement
+  -->
   <script>
-    // Parallax effect for background grid
+    // Listen for scroll events and update the parallax effect
     window.addEventListener('scroll', function() {
+      // Get how far the user has scrolled down the page
       const scrolled = window.pageYOffset;
       
-      // Create a subtle parallax effect by moving the background position
+      // Update the CSS custom property that controls the grid position
       document.documentElement.style.setProperty('--scroll-y', scrolled + 'px');
     });
   </script>

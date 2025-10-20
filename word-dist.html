@@ -7,7 +7,26 @@
 <title>Word Association Tunnel — Clean MVP</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  /* Page-specific styles for word-dist.html */
+  /* 
+  ================================================================================
+  WORD DISTANCE GAME - PAGE-SPECIFIC STYLES
+  ================================================================================
+  This is a word association game where you connect two words by finding a "bridge"
+  word that relates to both. The game measures word relationships and provides
+  real-time feedback on your guesses.
+  
+  HOW THE GAME WORKS:
+  1. You see two words (A and B) that need to be connected
+  2. You type a "bridge" word (C) that relates to both A and B
+  3. The game shows how related your word is to each of the original words
+  4. Both relationships must reach a hidden threshold to succeed
+  
+  UNIQUE STYLING:
+  - Large, prominent timer and score display (HUD)
+  - Meter bars showing relationship strength
+  - Real-time feedback system
+  - Specialized input and button styling
+  */
   :root {
     --card: #151924;
     --text: #e9ecf1;
@@ -338,8 +357,28 @@
 
   <div class="toast" id="toast">Toast</div>
 
+  <!-- 
+  ================================================================================
+  WORD DISTANCE GAME - JAVASCRIPT FUNCTIONALITY
+  ================================================================================
+  This JavaScript handles the word association game logic, including:
+  - Timer and scoring system
+  - Word relationship calculations
+  - Real-time feedback display
+  - Game state management
+  
+  KEY FEATURES:
+  - Automatic timer that counts up during gameplay
+  - Streak counter for consecutive correct answers
+  - Visual meter bars showing relationship strength
+  - Toast notifications for feedback
+  - Keyboard shortcuts (Enter to submit)
+  -->
   <script>
+    // Helper function to select DOM elements
     const $ = s => document.querySelector(s);
+    
+    // UI element references - connects JavaScript to HTML elements
     const UI = {
       A: $('#wordA'), B: $('#wordB'), score: $('#score'), streak: $('#streak'),
       time: $('#time'), r1: $('#r1'), r2: $('#r2'), r1v: $('#r1v'), r2v: $('#r2v'),

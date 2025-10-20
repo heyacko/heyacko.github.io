@@ -1,5 +1,29 @@
-/* Shared styles for heyacko.github.io - Frutiger Aero Edition */
-/* Consolidated from repeated patterns across HTML pages */
+/* 
+================================================================================
+MAIN STYLESHEET FOR HEYACKO.GITHUB.IO - FRUTIGER AERO DESIGN THEME
+================================================================================
+This file contains all the shared styling for the website. It creates a beautiful
+"Frutiger Aero" aesthetic - think Nintendo Wii menu meets Windows Vista style.
+
+WHAT THIS FILE DOES:
+- Sets up the color scheme and design system
+- Creates glassmorphism effects (frosted glass look)
+- Defines shared components used across all pages
+- Makes the site mobile-friendly and accessible
+
+COLOR SYSTEM EXPLANATION:
+- --bg: Background gradient (soft blue sky colors)
+- --card: Card backgrounds (semi-transparent white)
+- --ink: Main text color (deep blue)
+- --muted: Secondary text (soft blue-gray)
+- --accent: Interactive elements (bright blue)
+- --ok: Success messages (green)
+- --warn: Warning messages (orange)
+- --bad: Error messages (red)
+- --line: Border colors (subtle blue)
+- --glow: Subtle blue glow effects
+- --glass: Semi-transparent white for glass effects
+*/
 
 :root {
   --bg: #e8f4fd;
@@ -15,7 +39,21 @@
   --glass: rgba(255, 255, 255, 0.25);
 }
 
-/* Base reset and typography */
+/* 
+================================================================================
+BASE STYLES - THE FOUNDATION
+================================================================================
+This section sets up the basic styling for the entire website:
+- Removes default browser margins and padding
+- Sets up the background with gradient and grid overlay
+- Defines the main font and text colors
+- Creates the warped grid pattern background effect
+
+BACKGROUND LAYERS (from bottom to top):
+1. Gradient background (soft blue sky)
+2. Warped grid pattern (geometric overlay)
+3. UI elements (cards, buttons, text)
+*/
 html, body {
   margin: 0;
   padding: 0;
@@ -32,7 +70,26 @@ html, body {
   position: relative;
 }
 
-/* Warped grid pattern overlay */
+/* 
+================================================================================
+WARPED GRID PATTERN - BACKGROUND DECORATION
+================================================================================
+This creates a subtle geometric grid pattern that appears behind all content.
+The grid has a 3D perspective effect that makes it look like it's floating
+in space behind the UI elements.
+
+HOW IT WORKS:
+- Uses CSS pseudo-element (::before) to create an overlay
+- Grid is made with linear gradients (horizontal and vertical lines)
+- 3D transforms create the "warped" perspective effect
+- Parallax scrolling makes it move slightly when you scroll
+- Mask creates a vignette effect (stronger in center, fades at edges)
+
+TO ADJUST THE GRID:
+- Change background-size to make grid smaller (30px) or larger (70px)
+- Change rgba opacity values to make lines lighter or darker
+- Modify transform values to change the perspective angle
+*/
 html::before {
   content: '';
   position: fixed;
@@ -60,7 +117,30 @@ html::before {
   will-change: transform;
 }
 
-/* Frutiger Aero Animations */
+/* 
+================================================================================
+ANIMATIONS - BRINGING THE DESIGN TO LIFE
+================================================================================
+These animations add subtle movement and life to the interface. They're designed
+to be gentle and not distracting, maintaining the calm Frutiger Aero aesthetic.
+
+FLOAT ANIMATION:
+- Creates gentle up-and-down movement
+- Used for titles and emojis
+- Moves 10px up and down over 3 seconds
+- Ease-in-out timing makes it feel natural
+
+GLASS GLOW ANIMATION:
+- Makes cards gently pulse with light
+- Changes the box-shadow intensity
+- Creates a "breathing" effect
+- Subtle enough not to be distracting
+
+TO ADJUST ANIMATIONS:
+- Change translateY values to make movement bigger/smaller
+- Modify duration (3s) to make it faster/slower
+- Adjust ease timing for different feel (ease, ease-in, ease-out)
+*/
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
@@ -101,7 +181,30 @@ html::before {
   }
 }
 
-/* Layout components */
+/* 
+================================================================================
+LAYOUT COMPONENTS - THE BUILDING BLOCKS
+================================================================================
+These are the main structural elements used across all pages. They create
+the consistent layout and spacing throughout the website.
+
+SHARED-WRAP:
+- Main container that centers content on the page
+- Sets maximum width so content doesn't get too wide on large screens
+- Adds consistent padding and margins
+- Used on every page for consistent layout
+
+SHARED-CARD:
+- The main content container (white frosted glass effect)
+- Semi-transparent background with blur effect
+- Rounded corners and subtle shadows
+- Used for quiz containers, results sections, etc.
+
+TO ADJUST LAYOUT:
+- Change max-width to make content wider/narrower
+- Modify padding values to add/remove spacing inside cards
+- Adjust border-radius to make corners more/less rounded
+*/
 .shared-wrap {
   max-width: 1200px;
   margin: 60px auto;
@@ -242,7 +345,31 @@ html::before {
   font-weight: 500;
 }
 
-/* Button styles - Frutiger Aero inspired */
+/* 
+================================================================================
+BUTTON STYLES - INTERACTIVE ELEMENTS
+================================================================================
+These styles create beautiful, consistent buttons used throughout the site.
+They have a modern glassmorphism look with smooth hover effects.
+
+SHARED-BTN (Primary Button):
+- Blue gradient background with white text
+- Used for main actions like "Next", "Submit"
+- Has a subtle shine effect on hover
+- Rounded corners and smooth transitions
+
+SHARED-BTN-GHOST (Secondary Button):
+- Transparent background with blue border
+- Used for secondary actions like "Back", "Restart", "Home"
+- Same size and shape as primary buttons for consistency
+- Becomes more opaque on hover
+
+TO ADJUST BUTTONS:
+- Change padding to make buttons bigger/smaller
+- Modify border-radius to make corners more/less rounded
+- Adjust font-size to change text size
+- Change colors in the gradient for different looks
+*/
 .shared-btn {
   appearance: none;
   border: none;
@@ -405,7 +532,15 @@ input[type="radio"] {
   accent-color: var(--accent);
 }
 
-/* Mobile responsiveness */
+/* 
+================================================================================
+MOBILE RESPONSIVENESS - MAKING IT WORK ON ALL DEVICES
+================================================================================
+This section makes the website look great on phones and tablets. It adjusts
+sizes, spacing, and layout for smaller screens.
+
+Taken from: https://github.com/Anupam-dagar/awesome-first-timers-guide
+*/
 @media (max-width: 768px) {
   .shared-wrap {
     padding: 0 15px;

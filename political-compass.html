@@ -6,8 +6,22 @@
 <title>Modern U.S. Politics Compass — Randomized Quiz</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  /* Page-specific styles for political-compass.html */
-  /* Most styles now consolidated in shared stylesheet */
+  /* 
+  ================================================================================
+  POLITICAL COMPASS QUIZ - PAGE-SPECIFIC STYLES
+  ================================================================================
+  This quiz measures political views on four axes:
+  1. Collective vs Individual
+  2. Institutional Trust vs Anti-Institutional  
+  3. Cosmopolitan vs Localist
+  4. Flux vs Order
+  
+  Most styling is handled by the shared stylesheet (style.css), but this page
+  can have its own custom styles if needed for specific elements.
+  
+  CURRENT STATUS: All styles have been consolidated into the shared stylesheet
+  for consistency across the site. This section is kept for future customizations.
+  */
 </style>
 </head>
 <body>
@@ -55,12 +69,25 @@
 </div>
 
 <script>
-/* ========= CONFIG: 10 QUESTIONS PER AXIS (SIMPLE / METAPHOR-DRIVEN) =========
-   Option polarity is consistent:
-   A = strongly toward LEFT label of the axis (+2)
-   B = somewhat toward LEFT (+1)
-   C = somewhat toward RIGHT (−1)
-   D = strongly toward RIGHT (−2)
+/* 
+================================================================================
+POLITICAL COMPASS QUIZ - MAIN CONFIGURATION
+================================================================================
+This quiz presents 20 questions (5 per axis) to measure political views on four dimensions.
+
+SCORING SYSTEM:
+- A = strongly toward LEFT label of the axis (+2 points)
+- B = somewhat toward LEFT (+1 point)  
+- C = somewhat toward RIGHT (-1 point)
+- D = strongly toward RIGHT (-2 points)
+
+FOUR AXES MEASURED:
+1. Collective ↔ Individual (community vs personal responsibility)
+2. Institutional Trust ↔ Anti-Institutional (trust in systems vs skepticism)
+3. Cosmopolitan ↔ Localist (global vs local focus)
+4. Flux ↔ Order (change vs stability)
+
+Each visit randomly selects 5 questions per axis (20 total) and shuffles the order.
 */
 const AXES = [
   { key:'collective', left:'Collective', right:'Individual' },
@@ -234,7 +261,13 @@ const axisTable = document.getElementById('axisTable');
 const clusterName = document.getElementById('clusterName');
 const clusterDesc = document.getElementById('clusterDesc');
 
-/* ========= RENDER ========= */
+/* 
+================================================================================
+QUIZ RENDERING FUNCTION - DISPLAYS QUESTIONS AND PROGRESS
+================================================================================
+This function updates the quiz interface to show the current question, progress,
+and answer options. It's called every time the user advances to a new question.
+*/
 function render() {
   const total = QUESTIONS.length;
   const human = idx+1;

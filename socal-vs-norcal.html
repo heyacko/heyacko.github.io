@@ -6,9 +6,22 @@
 <title>SoCal vs NorCal — Guessing Game</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  /* Page-specific styles for socal-vs-norcal.html */
+  /* 
+  ================================================================================
+  SOCAL vs NORCAL QUIZ - PAGE-SPECIFIC STYLES
+  ================================================================================
+  This quiz tests your knowledge of California geography, culture, and statistics.
+  It presents 15 questions comparing Southern California vs Northern California
+  on various topics like weather, economy, culture, and demographics.
+  
+  REGIONAL DEFINITIONS:
+  - SoCal = San Luis Obispo & south (including Los Angeles, San Diego, etc.)
+  - NorCal = Monterey & north (including San Francisco, Sacramento, etc.)
+  
+  CURRENT STATUS: Most styles are in the shared stylesheet, with a few custom
+  overrides for question text sizing and button layouts.
+  */
   .shared-qtext { font-weight:600; margin-bottom:14px; font-size:18px; }
-  /* Most styles now consolidated in shared stylesheet */
 </style>
 </head>
 <body>
@@ -48,8 +61,27 @@
 </div>
 
 <script>
-// ======================= DATA =======================
-// IMPORTANT: Answers reflect our "surprising" set. Plug sources when finalized.
+/* 
+================================================================================
+SOCAL vs NORCAL QUIZ - QUESTION DATABASE
+================================================================================
+This quiz presents 15 questions comparing Southern vs Northern California on
+various topics. The questions are designed to be surprising and educational,
+challenging common assumptions about California geography and culture.
+
+QUESTION TOPICS:
+- Weather and climate patterns
+- Economic and demographic data  
+- Cultural and lifestyle differences
+- Geographic and environmental factors
+
+SCORING:
+- Each correct answer adds 1 point to your score
+- Final score shows how many out of 15 you got right
+- Detailed results show your answers vs correct answers
+
+NOTE: Sources are planned for each question but not yet implemented.
+*/
 const BANK = [
   { q: "Which region has more wildfires per year (incidents, not acreage)?", answer: "SoCal", source: "" },
   { q: "Which region has more farmland acreage (with Kern & SLO counted as SoCal)?", answer: "SoCal", source: "" },
