@@ -217,25 +217,27 @@ function setVisByMode(mode){
 
 /* ---------------- Executive Summary Functions ---------------- */
 function updateExecutiveSummary(out) {
-  // Budget Sufficiency
+  // Budget Sufficiency - show color-coded text instead of Yes/No
   const budgetOk = !out.exceed;
-  const budgetText = budgetOk ? 'Yes' : 'No';
   const budgetDetail = out.mode === 'A' 
     ? `${fmtUSD.format(out.totalCost)} of ${fmtUSD.format(state.budget)}`
     : `${fmtUSD.format(out.monthlyBurn)}/month burn`;
-  $('#sum-budget-ok').innerHTML = `${budgetText}<br><small>${budgetDetail}</small>`;
   
-  // Monthly Profit
+  const budgetElement = $('#sum-budget-ok');
+  budgetElement.innerHTML = `<small>${budgetDetail}</small>`;
+  
+  // Apply color coding
+  budgetElement.className = budgetOk ? 'budget-ok' : 'budget-exceed';
+  
+  // Monthly Profit (unchanged)
   $('#sum-profit').textContent = fmtUSD.format(out.monthlyProfit);
   
-  // Broker Earnings
-  $('#sum-broker').textContent = fmtUSD.format(out.brokerPayoutTotal || 0);
+  // Cost - consolidated from broker and retailer earnings
+  const totalCost = (out.brokerPayoutTotal || 0) + (out.perRetailerPayout * out.retailers);
+  $('#sum-cost').textContent = fmtUSD.format(totalCost);
   
-  // Retailer Earnings
-  $('#sum-retailer').textContent = fmtUSD.format(out.perRetailerPayout);
-  
-  // Budget Progress Bar
-  updateBudgetProgress(out);
+  // Revenue - new card showing monthly revenue
+  $('#sum-revenue').textContent = fmtUSD.format(out.monthlyRevenue);
   
   // Mode Context Summary
   const contextText = out.mode === 'A'
@@ -244,36 +246,6 @@ function updateExecutiveSummary(out) {
   $('#mode-context-summary').textContent = contextText;
 }
 
-function updateBudgetProgress(out) {
-  let progressPercent = 0;
-  let progressText = '';
-  
-  if (out.mode === 'A') {
-    progressPercent = Math.min(100, (out.totalCost / state.budget) * 100);
-    progressText = `${progressPercent.toFixed(1)}% of budget used`;
-  } else {
-    // For Mode B, show current burn vs budget
-    const monthsAtCurrentBurn = state.budget / out.monthlyBurn;
-    progressPercent = Math.min(100, (1 / monthsAtCurrentBurn) * 100);
-    progressText = `${monthsAtCurrentBurn.toFixed(1)} months at current burn`;
-  }
-  
-  const progressFill = $('#budget-progress-fill');
-  const progressTextEl = $('#budget-progress-text');
-  
-  progressFill.style.width = `${progressPercent}%`;
-  progressTextEl.textContent = progressText;
-  
-  // Color coding
-  progressFill.className = 'progress-fill';
-  if (progressPercent < 70) {
-    progressFill.classList.add('green');
-  } else if (progressPercent < 90) {
-    progressFill.classList.add('yellow');
-  } else {
-    progressFill.classList.add('red');
-  }
-}
 
 function updateAccordionKPIs(out) {
   $('#activity-kpi').textContent = `${fmt0.format(out.perRetailerVisitors)} visitors`;
@@ -291,6 +263,55 @@ function updateCardFooters(out) {
   $('#footer-profit').textContent = fmtUSD.format(out.monthlyProfit);
   $('#footer-revenue').textContent = fmtUSD.format(out.monthlyRevenue);
   $('#footer-broker').textContent = fmtUSD.format(out.brokerPayoutTotal || 0);
+}
+
+function updateInputsTabOutputs(out) {
+  // Top KPI Cards - Profit, Revenue, Cost
+  $('#inputs-kpi-profit').textContent = fmtUSD.format(out.monthlyProfit);
+  $('#inputs-kpi-revenue').textContent = fmtUSD.format(out.monthlyRevenue);
+  const totalCost = (out.brokerPayoutTotal || 0) + (out.perRetailerPayout * out.retailers);
+  $('#inputs-kpi-cost').textContent = fmtUSD.format(totalCost);
+
+  // Activity
+  $('#inputs-ob-visitors').textContent = fmt0.format(out.perRetailerVisitors);
+  $('#inputs-ob-riders').textContent = fmt0.format(out.perRetailerRiders);
+  $('#inputs-ob-transit-transactions').textContent = fmt0.format(out.perRetailerTransitTransactions);
+  $('#inputs-ob-activations').textContent = fmt0.format(out.perRetailerActivations);
+  $('#inputs-ob-reloads').textContent = fmt0.format(out.perRetailerReloads);
+
+  // Per-retailer payouts
+  $('#inputs-ob-p-activation').textContent = fmtUSD.format(out.pAct);
+  $('#inputs-ob-p-reload').textContent = fmtUSD.format(out.pReload);
+  $('#inputs-ob-p-flat').textContent = fmtUSD.format(out.pFlat);
+  $('#inputs-ob-p-bonus').textContent = fmtUSD.format(out.pBonus);
+  $('#inputs-ob-p-base').textContent = fmtUSD.format(out.perRetailerPayoutBase);
+  $('#inputs-ob-p-total').textContent = fmtUSD.format(out.perRetailerPayout);
+
+  // Revenue & Profit
+  $('#inputs-ob-transit-visitors').textContent = fmt0.format(out.totalTransitVisitors);
+  $('#inputs-ob-transit-spend').textContent = fmtUSD.format(out.totalTransitSpend);
+  $('#inputs-ob-monthly-revenue').textContent = fmtUSD.format(out.monthlyRevenue);
+  $('#inputs-ob-monthly-profit').textContent = fmtUSD.format(out.monthlyProfit);
+
+  if(out.mode==='A'){
+    $('#inputs-ob-max-retailers').textContent = fmt0.format(out.retailers);
+    $('#inputs-ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
+    $('#inputs-ob-total-cost').textContent = fmtUSD.format(out.totalCost);
+    $('#inputs-ob-remaining').textContent = fmtUSD.format(out.remaining);
+    $('#inputs-ob-exceed').innerHTML = out.exceed ? '<span class="state-bad">Yes</span>' : '<span class="state-ok">No</span>';
+    $('#inputs-ob-runway').textContent = '—'; 
+    $('#inputs-ob-exhaust').textContent = '—';
+    $('#inputs-mode-context').textContent = `Mode A: With ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
+  }else{
+    $('#inputs-ob-runway').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months (floor ${fmt0.format(out.runwayFloor)})` : '∞';
+    $('#inputs-ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
+    $('#inputs-ob-total-cost').textContent = '—'; 
+    $('#inputs-ob-remaining').textContent='—'; 
+    $('#inputs-ob-exceed').textContent='—';
+    $('#inputs-ob-max-retailers').textContent = '—';
+    $('#inputs-ob-exhaust').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months` : 'Never';
+    $('#inputs-mode-context').textContent = `Mode B: With ${fmt0.format(out.retailers)} retailers, monthly burn is ${fmtUSD.format(out.monthlyBurn)} and runway is ~${out.runwayExact.toFixed(2)} months.`;
+  }
 }
 
 /* ---------------- Accordion Functions ---------------- */
@@ -469,6 +490,9 @@ function render(){
   
   // Card Footers
   updateCardFooters(out);
+  
+  // Inputs Tab Outputs Updates
+  updateInputsTabOutputs(out);
 
   if(out.mode==='A'){
     $('#ob-max-retailers').textContent = fmt0.format(out.retailers);
@@ -577,7 +601,12 @@ function initBindings(){
   });
 }
 
-function msg(t){ if(refs.utilMsg){ refs.utilMsg.textContent = t; setTimeout(()=>refs.utilMsg.textContent='', 2500); } }
+function msg(t){ 
+  if(refs.utilMsg){ 
+    refs.utilMsg.textContent = t; 
+    setTimeout(()=>refs.utilMsg.textContent='', 2500); 
+  }
+}
 
 /* ---------------- URL Hash (shareable link) ---------------- */
 let hashT=null;

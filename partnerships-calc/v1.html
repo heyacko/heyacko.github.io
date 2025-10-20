@@ -18,8 +18,8 @@
     <!-- Tab Navigation -->
     <div class="tab-navigation" role="tablist" aria-label="Calculator sections">
       <button class="tab-button active" id="inputs-tab" role="tab" aria-selected="true" aria-controls="inputs-panel">
-        <span class="tab-icon">⚙️</span>
-        <span class="tab-label">Inputs</span>
+        <span class="tab-icon">🧮</span>
+        <span class="tab-label">Calculator</span>
       </button>
       <button class="tab-button" id="outputs-tab" role="tab" aria-selected="false" aria-controls="outputs-panel">
         <span class="tab-icon">📊</span>
@@ -31,18 +31,220 @@
     <div class="tab-content">
       <!-- Inputs Tab -->
       <section id="inputs-panel" class="tab-panel active" role="tabpanel" aria-labelledby="inputs-tab">
-        <div class="panel" aria-describedby="app-desc">
-          <h2 id="inputs-header">Inputs</h2>
+        <div class="grid" role="region" aria-labelledby="inputs-header">
+          <!-- LEFT: Inputs (schema-driven) -->
+          <section class="panel" aria-describedby="app-desc">
+            <h2 id="inputs-header">Inputs</h2>
 
-          <!-- The entire inputs UI is rendered here by app.js/buildInputs using the schema -->
-          <div id="inputs-mount"></div>
+            <!-- The entire inputs UI is rendered here by app.js/buildInputs using the schema -->
+            <div id="inputs-mount"></div>
 
-          <div class="row mt-10" role="group" aria-label="Utilities">
-            <button class="btn" id="resetBtn" type="button">Reset to defaults</button>
-            <button class="btn ghost" id="copyBtn" type="button">Copy snapshot (JSON)</button>
-            <button class="btn ghost" id="shareBtn" type="button" title="Create a link with current inputs in the URL hash">Shareable link</button>
-            <span id="utilMsg" class="help" role="status" aria-live="polite"></span>
-          </div>
+            <div class="row mt-10" role="group" aria-label="Utilities">
+              <button class="btn" id="resetBtn" type="button">Reset to defaults</button>
+              <button class="btn ghost" id="copyBtn" type="button">Copy snapshot (JSON)</button>
+              <button class="btn ghost" id="shareBtn" type="button" title="Create a link with current inputs in the URL hash">Shareable link</button>
+              <span id="utilMsg" class="help" role="status" aria-live="polite"></span>
+            </div>
+          </section>
+
+          <!-- RIGHT: Outputs (sibling of inputs, not nested) -->
+          <section class="panel" role="region" aria-labelledby="inputs-outputs-header">
+            <h2 id="inputs-outputs-header">Outputs</h2>
+
+            <div class="cards" aria-live="polite">
+              <div class="card third">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Monthly Profit</div>
+                    <div id="inputs-kpi-profit" class="value mono">—</div>
+                  </div>
+                  <span class="tooltip" tabindex="0" data-tip="Monthly revenue minus monthly burn"></span>
+                </div>
+              </div>
+
+              <div class="card third">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Monthly Revenue</div>
+                    <div id="inputs-kpi-revenue" class="value mono">—</div>
+                  </div>
+                  <span class="tooltip" tabindex="0" data-tip="Total transit spend × interchange rate"></span>
+                </div>
+              </div>
+
+              <div class="card third">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Total Cost</div>
+                    <div id="inputs-kpi-cost" class="value mono">—</div>
+                  </div>
+                  <span class="tooltip" tabindex="0" data-tip="Broker payout + total retailer payouts"></span>
+                </div>
+              </div>
+
+              <div class="card full">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Per-retailer monthly activity</div>
+                    <table class="table mono" aria-label="Per-retailer monthly activity table">
+                      <thead><tr><th>Metric</th><th>Value</th><th></th></tr></thead>
+                      <tbody>
+                        <tr>
+                          <td>Estimated visitors / month</td>
+                          <td id="inputs-ob-visitors">—</td>
+                          <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="visitors = new_visitors + recurring_visitors"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Estimated riders / month</td>
+                          <td id="inputs-ob-riders">—</td>
+                          <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="riders = visitors × transit%"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Estimated transit transactions / month</td>
+                          <td id="inputs-ob-transit-transactions">—</td>
+                          <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="transit_transactions = riders × avg_transactions_per_visitor"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Estimated activations / month</td>
+                          <td id="inputs-ob-activations">—</td>
+                          <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="activations = new_visitors × transit% × activation_conversion"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Estimated reloads / month</td>
+                          <td id="inputs-ob-reloads">—</td>
+                          <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="reloads = recurring_visitors × transit% × reload_conversion"></span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card full">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Per-retailer monthly payout (to retailer)</div>
+                    <table class="table mono" aria-label="Per-retailer payout table">
+                      <thead><tr><th>Component</th><th>USD</th><th></th></tr></thead>
+                      <tbody>
+                        <tr>
+                          <td>From activation %</td>
+                          <td id="inputs-ob-p-activation">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="activations × avg_initial_load × activation_commission%"></span></td>
+                        </tr>
+                        <tr>
+                          <td>From reload %</td>
+                          <td id="inputs-ob-p-reload">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="reloads × avg_reload_amount × reload_commission%"></span></td>
+                        </tr>
+                        <tr>
+                          <td>From flat fees</td>
+                          <td id="inputs-ob-p-flat">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="(activations + reloads) × flat_fee_per_tx"></span></td>
+                        </tr>
+                        <tr>
+                          <td>From promotional bonus</td>
+                          <td id="inputs-ob-p-bonus">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="activations × bonus_per_activation"></span></td>
+                        </tr>
+                        <tr>
+                          <th>Base payout per retailer / month (without bonus)</th>
+                          <th id="inputs-ob-p-base">—</th>
+                          <th><span class="tooltip" tabindex="0" data-tip="sum of activation%, reload%, and flat fee payouts (no bonus)"></span></th>
+                        </tr>
+                        <tr>
+                          <th>Total payout per retailer / month (with bonus)</th>
+                          <th id="inputs-ob-p-total">—</th>
+                          <th><span class="tooltip" tabindex="0" data-tip="base payout + promotional bonus"></span></th>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card full">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Revenue &amp; Profit</div>
+                    <table class="table mono" aria-label="Revenue and profit table">
+                      <thead><tr><th>Metric</th><th>Value</th><th></th></tr></thead>
+                      <tbody>
+                        <tr>
+                          <td>Total transit-using visitors / month</td>
+                          <td id="inputs-ob-transit-visitors">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="retailers × (new_visitors + recurring_visitors) × transit%"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Total transit spend / month</td>
+                          <td id="inputs-ob-transit-spend">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="transit_visitors × avg_transactions × cost_per_transaction"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Monthly revenue</td>
+                          <td id="inputs-ob-monthly-revenue">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="transit_spend × interchange_rate%"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Monthly profit</td>
+                          <td id="inputs-ob-monthly-profit">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="revenue - monthly_burn"></span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card full">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Program scale &amp; budget</div>
+                    <table class="table mono" aria-label="Program scale and budget table">
+                      <tbody>
+                        <tr class="only-mode-A">
+                          <td>Max retailers under budget (floored)</td>
+                          <td id="inputs-ob-max-retailers">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="max_retailers = floor( budget ÷ [T × (per_retailers_payout + broker_fee × activations_per_retailer)] ) with optional cap"></span></td>
+                        </tr>
+                        <tr class="only-mode-B">
+                          <td>Runway (months)</td>
+                          <td id="inputs-ob-runway">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="runway = budget ÷ monthly_burn"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Estimated monthly burn</td>
+                          <td id="inputs-ob-monthly-burn">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="monthly_burn = retailers × per_retailers_payout + broker_fee × total_activations_all_retailers"></span></td>
+                        </tr>
+                        <tr class="only-mode-A">
+                          <td>Total cost over target months</td>
+                          <td id="inputs-ob-total-cost">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="total_cost = retailers × T × (per_retailers_payout + broker_fee × activations_per_retailers)"></span></td>
+                        </tr>
+                        <tr class="only-mode-A">
+                          <td>Remaining budget after target months</td>
+                          <td id="inputs-ob-remaining">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="remaining = budget − total_cost"></span></td>
+                        </tr>
+                        <tr class="only-mode-B">
+                          <td>Budget exhausted in ~</td>
+                          <td id="inputs-ob-exhaust">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="approximate months until budget reaches zero at current burn"></span></td>
+                        </tr>
+                        <tr>
+                          <td>Will it exceed budget?</td>
+                          <td id="inputs-ob-exceed">—</td>
+                          <td><span class="tooltip" tabindex="0" data-tip="Mode A: checks total_cost ≤ budget. Mode B: runway ≥ desired months (if any)."></span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div id="inputs-mode-context" class="footer-note"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
 
@@ -70,28 +272,21 @@
                     <div class="kpi-value" id="sum-profit">—</div>
                   </div>
                 </div>
-                <div class="kpi-item broker">
-                  <div class="kpi-icon">🤝</div>
+                <div class="kpi-item cost">
+                  <div class="kpi-icon">💸</div>
                   <div class="kpi-content">
-                    <div class="kpi-label">Broker Earnings</div>
-                    <div class="kpi-value" id="sum-broker">—</div>
+                    <div class="kpi-label">Cost</div>
+                    <div class="kpi-value" id="sum-cost">—</div>
                   </div>
                 </div>
-                <div class="kpi-item retailer">
-                  <div class="kpi-icon">🏪</div>
+                <div class="kpi-item revenue">
+                  <div class="kpi-icon">💰</div>
                   <div class="kpi-content">
-                    <div class="kpi-label">Retailer Earnings</div>
-                    <div class="kpi-value" id="sum-retailer">—</div>
+                    <div class="kpi-label">Revenue</div>
+                    <div class="kpi-value" id="sum-revenue">—</div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="budget-progress">
-              <div class="progress-label">Budget Utilization</div>
-              <div class="progress-bar">
-                <div class="progress-fill" id="budget-progress-fill"></div>
-              </div>
-              <div class="progress-text" id="budget-progress-text">—</div>
             </div>
             <div class="mode-context-summary" id="mode-context-summary">—</div>
           </div>
@@ -372,3 +567,4 @@
   <script type="module" src="./app.js"></script>
 </body>
 </html>
+

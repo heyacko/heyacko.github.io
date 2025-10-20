@@ -175,8 +175,17 @@ body.mode-B .field[data-mode="B"]{display:flex}
 
 .kpi-item.budget { border-left-color: #28a745; }
 .kpi-item.profit { border-left-color: #17a2b8; }
-.kpi-item.broker { border-left-color: #ffc107; }
-.kpi-item.retailer { border-left-color: #6f42c1; }
+.kpi-item.cost { border-left-color: #ffc107; }
+.kpi-item.revenue { border-left-color: #6f42c1; }
+
+/* Budget Sufficiency Color Coding */
+.budget-ok {
+  color: #28a745 !important;
+}
+
+.budget-exceed {
+  color: #dc3545 !important;
+}
 
 .kpi-icon {
   font-size: 1.5rem;
