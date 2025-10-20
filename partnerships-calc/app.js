@@ -221,6 +221,9 @@ function render(){
   const out = compute(state);
 
   // Activity
+  $('#ob-visitors').textContent = fmt0.format(out.perRetailerVisitors);
+  $('#ob-riders').textContent = fmt0.format(out.perRetailerRiders);
+  $('#ob-transit-transactions').textContent = fmt0.format(out.perRetailerTransitTransactions);
   $('#ob-activations').textContent = fmt0.format(out.perRetailerActivations);
   $('#ob-reloads').textContent     = fmt0.format(out.perRetailerReloads);
 

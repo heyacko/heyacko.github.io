@@ -34,6 +34,11 @@ export function compute(s){
   // --- Per-retailer monthly activity ---
   const perRetailerActivations = (s.newVisitors||0) * transit * actConv;
   const perRetailerReloads     = (s.recurringVisitors||0) * transit * reloadConv;
+  
+  // Additional per-retailer metrics
+  const perRetailerVisitors = (s.newVisitors||0) + (s.recurringVisitors||0); // total visitors per retailer
+  const perRetailerRiders = perRetailerVisitors * transit; // transit-using visitors (riders) per retailer
+  const perRetailerTransitTransactions = perRetailerRiders * (s.avgTransitTransactions||0); // transit transactions per retailer
 
   // --- Per-retailer monthly payout (to retailer) ---
   // From activation %, reload %, flat fees, and promotional bonus
@@ -48,6 +53,7 @@ export function compute(s){
   // Common result bits
   const base = {
     perRetailerActivations, perRetailerReloads,
+    perRetailerVisitors, perRetailerRiders, perRetailerTransitTransactions,
     pAct, pReload, pFlat, pBonus, perRetailerPayout
   };
 

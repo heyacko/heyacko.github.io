@@ -74,6 +74,21 @@
                   <thead><tr><th>Metric</th><th>Value</th><th></th></tr></thead>
                   <tbody>
                     <tr>
+                      <td>Estimated visitors / month</td>
+                      <td id="ob-visitors">—</td>
+                      <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="visitors = new_visitors + recurring_visitors"></span></td>
+                    </tr>
+                    <tr>
+                      <td>Estimated riders / month</td>
+                      <td id="ob-riders">—</td>
+                      <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="riders = visitors × transit%"></span></td>
+                    </tr>
+                    <tr>
+                      <td>Estimated transit transactions / month</td>
+                      <td id="ob-transit-transactions">—</td>
+                      <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="transit_transactions = riders × avg_transactions_per_visitor"></span></td>
+                    </tr>
+                    <tr>
                       <td>Estimated activations / month</td>
                       <td id="ob-activations">—</td>
                       <td><span class="tooltip" tabindex="0" aria-label="Formula info" data-tip="activations = new_visitors × transit% × activation_conversion"></span></td>
