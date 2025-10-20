@@ -5,6 +5,8 @@ export const DEFAULTS = {
   budget: 10_000,
   targetMonths: 2,
   numRetailers: 10,
+  targetMonthsC: 2,
+  numRetailersC: 10,
   brokerFee: 200,
   actPct: 1,
   reloadPct: 3.25,
@@ -110,6 +112,56 @@ export function compute(s){
       totalCost,
       remaining,
       exceed: totalCost > (s.budget||0),
+      totalTransitVisitors,
+      totalTransitSpend,
+      monthlyRevenue,
+      monthlyProfit
+    };
+  }
+
+  // ---- Budget Optimization: given retailers + target months, solve required budget ----
+  if (s.mode === 'C') {
+    const T = Math.max(1, Math.floor(s.targetMonthsC||0));
+    const N = Math.max(0, Math.floor(s.numRetailersC||0));
+    
+    // Calculate per-retailer payout (same logic as Mode A)
+    const perRetailerVisitors = (s.newVisitors||0) + (s.recurringVisitors||0);
+    const perRetailerRiders = perRetailerVisitors * transit;
+    const perRetailerTransitTransactions = perRetailerRiders * (s.avgTransitTransactions||0);
+    const perRetailerActivations = (s.newVisitors||0) * transit * actConv;
+    const perRetailerReloads = (s.recurringVisitors||0) * transit * reloadConv;
+    
+    const pAct = perRetailerActivations * (s.avgInitial||0) * actPct;
+    const pReload = perRetailerReloads * (s.avgReload||0) * reloadPct;
+    const pFlat = (perRetailerActivations + perRetailerReloads) * (s.flatFee||0);
+    const pBonus = perRetailerActivations * (s.activationBonus||0);
+    const perRetailerPayoutBase = pAct + pReload + pFlat;
+    const perRetailerPayout = perRetailerPayoutBase + pBonus;
+    
+    // Calculate required budget
+    const monthlyBurn = N * perRetailerPayout;
+    const brokerPayoutTotal = N * (s.brokerFee||0);
+    const requiredBudget = monthlyBurn * T + brokerPayoutTotal;
+    
+    // Calculate revenue and profit (same logic as other modes)
+    const totalTransitVisitors = N * perRetailerVisitors * transit;
+    const totalTransitSpend = totalTransitVisitors * (s.avgTransitTransactions||0) * (s.costPerTransaction||0);
+    const monthlyRevenue = totalTransitSpend * (s.interchangeRate||0)/100;
+    const monthlyProfit = monthlyRevenue - monthlyBurn;
+    
+    return {
+      mode: 'C',
+      retailers: N,
+      targetMonths: T,
+      requiredBudget,
+      monthlyBurn,
+      brokerPayoutTotal,
+      perRetailerVisitors,
+      perRetailerRiders,
+      perRetailerTransitTransactions,
+      perRetailerActivations,
+      perRetailerReloads,
+      pAct, pReload, pFlat, pBonus, perRetailerPayoutBase, perRetailerPayout,
       totalTransitVisitors,
       totalTransitSpend,
       monthlyRevenue,

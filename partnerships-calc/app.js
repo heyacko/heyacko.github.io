@@ -29,18 +29,23 @@ const INPUT_SCHEMA = [
     kind:'seg',
     options: [
       { value:'A', label:'Retailer Optimization', description:'Compute optimal number of retailers given Budget and Time Period' },
-      { value:'B', label:'Runway Optimization', description:'Compute optimal number of months given Budget and Retailers' }
+      { value:'B', label:'Runway Optimization', description:'Compute optimal number of months given Budget and Retailers' },
+      { value:'C', label:'Budget Optimization', description:'Compute required budget given Retailers and Time Period' }
     ]
   },
   {
     key:'budget', emoji:'💸', title:'Budget & Horizon', class:'group-budget',
     fields: [
       { id:'budget', label:'Total campaign budget (USD)', type:'number', step:'0.01', min:'0',
-        help:'Funds both retailers commissions and broker fees.' },
+        help:'Funds both retailers commissions and broker fees.', mode:'AB' },
       { id:'targetMonths', label:'Target duration (months)', type:'number', step:'1', min:'1',
-        help:'Visible in Retailer Optimization only.', mode:'A' },
+        help:'Visible in Retailer Optimization and Budget Optimization only.', mode:'A' },
       { id:'numRetailers', label:'Number of participating retailers', type:'number', step:'1', min:'0',
-        help:'Visible in Runway Optimization only.', mode:'B' }
+        help:'Visible in Runway Optimization and Budget Optimization only.', mode:'B' },
+      { id:'targetMonthsC', label:'Target duration (months)', type:'number', step:'1', min:'1',
+        help:'Visible in Budget Optimization only.', mode:'C' },
+      { id:'numRetailersC', label:'Number of participating retailers', type:'number', step:'1', min:'0',
+        help:'Visible in Budget Optimization only.', mode:'C' }
     ]
   },
   {
@@ -172,6 +177,7 @@ function buildInputs(mount){
       state.mode = r.value;
       document.body.classList.toggle('mode-A', state.mode==='A');
       document.body.classList.toggle('mode-B', state.mode==='B');
+      document.body.classList.toggle('mode-C', state.mode==='C');
       render();
       scheduleHashUpdate();
     });
@@ -186,6 +192,8 @@ function collectRefs(){
     budget: $('#budget'),
     targetMonths: $('#targetMonths'),
     numRetailers: $('#numRetailers'),
+    targetMonthsC: $('#targetMonthsC'),
+    numRetailersC: $('#numRetailersC'),
     brokerFee: $('#brokerFee'),
     actPct: $('#actPct'),
     reloadPct: $('#reloadPct'),
@@ -251,7 +259,9 @@ function updateExecutiveSummary(out) {
   // Mode Context Summary
   const contextText = out.mode === 'A'
     ? `Retailer Optimization: ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months`
-    : `Runway Optimization: ${fmt0.format(out.retailers)} retailers, ${out.runwayExact.toFixed(1)} month runway`;
+    : out.mode === 'B'
+    ? `Runway Optimization: ${fmt0.format(out.retailers)} retailers, ${out.runwayExact.toFixed(1)} month runway`
+    : `Budget Optimization: ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonthsC||0)))} months`;
   $('#mode-context-summary').textContent = contextText;
 }
 
@@ -262,7 +272,9 @@ function updateAccordionKPIs(out) {
   $('#revenue-kpi').textContent = fmtUSD.format(out.monthlyRevenue);
   $('#scale-kpi').textContent = out.mode === 'A' 
     ? `${fmt0.format(out.retailers)} retailers` 
-    : `${out.runwayExact.toFixed(1)} months`;
+    : out.mode === 'B'
+    ? `${out.runwayExact.toFixed(1)} months`
+    : `${fmt0.format(out.retailers)} retailers`;
 }
 
 function updateCardFooters(out) {
@@ -284,17 +296,27 @@ function updateInputsTabOutputs(out) {
     timePeriodText = `${out.retailers} retailers`;
     titleText = 'Optimal Retailer Partnerships';
     descriptionText = `Given ${fmtUSD.format(state.budget)} and ${timePeriodMonths} months, the campaign can safely partner with ${out.retailers} retailers without going over budget`;
-  } else {
+  } else if (out.mode === 'B') {
     // Runway Optimization: Use runway months
     timePeriodMonths = isFinite(out.runwayExact) ? out.runwayExact : 0;
     timePeriodText = `${timePeriodMonths.toFixed(1)} months`;
     titleText = 'Optimal Campaign Length';
     descriptionText = `Given ${fmtUSD.format(state.budget)} and ${out.retailers} retailers, the campaign can safely run for ${timePeriodMonths.toFixed(1)} months without going over budget`;
+  } else if (out.mode === 'C') {
+    // Budget Optimization: Show required budget
+    timePeriodMonths = Math.max(1, Math.floor(state.targetMonthsC || 0));
+    timePeriodText = fmtUSD.format(out.requiredBudget);
+    titleText = 'Required Budget';
+    descriptionText = `Given ${out.retailers} retailers and ${timePeriodMonths} months, the campaign requires ${fmtUSD.format(out.requiredBudget)} to fully fund the program`;
   }
   
   $('#inputs-time-period-title').textContent = titleText;
   $('#inputs-time-period').textContent = timePeriodText;
   $('#inputs-time-period-description').textContent = descriptionText;
+  
+  // Hide the separate Budget Length card since Time Period card now shows budget for Mode C
+  const budgetLengthCard = $('#inputs-budget-length-card');
+  budgetLengthCard.style.display = 'none';
   
   // Top KPI Cards - Total Profit, Total Revenue, Total Cost
   // Calculate Total Revenue and Total Cost based on mode
@@ -305,11 +327,16 @@ function updateInputsTabOutputs(out) {
     const targetMonths = Math.max(1, Math.floor(state.targetMonths || 0));
     totalRevenue = out.monthlyRevenue * targetMonths;
     totalCost = out.totalCost; // This is already calculated as total cost over target months
-  } else {
+  } else if (out.mode === 'B') {
     // Runway Optimization: Use runway months
     const runwayMonths = isFinite(out.runwayExact) ? out.runwayExact : 0;
     totalRevenue = out.monthlyRevenue * runwayMonths;
     totalCost = out.monthlyBurn * runwayMonths;
+  } else {
+    // Budget Optimization: Use target months
+    const targetMonths = Math.max(1, Math.floor(state.targetMonthsC || 0));
+    totalRevenue = out.monthlyRevenue * targetMonths;
+    totalCost = out.requiredBudget; // This is the required budget
   }
   
   // Total Profit = Total Revenue - Total Cost
@@ -553,6 +580,8 @@ function render(){
     $('#ob-exceed').innerHTML         = out.exceed ? '<span class="state-bad">Yes</span>' : '<span class="state-ok">No</span>';
     $('#ob-runway').textContent = '—'; $('#ob-exhaust').textContent = '—';
     $('#mode-context').textContent = `Retailer Optimization: With ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
+  }else if(out.mode === 'C'){
+    $('#mode-context').textContent = `Budget Optimization: With ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonthsC||0)))} months, required budget is ${fmtUSD.format(out.requiredBudget)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
   }else{
     $('#ob-runway').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months (floor ${fmt0.format(out.runwayFloor)})` : '∞';
     $('#ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
@@ -573,6 +602,8 @@ function syncFromInputs(){
   state.budget         = parseNumEl(refs.budget);
   state.targetMonths   = Math.max(1, Math.floor(parseNumEl(refs.targetMonths) || 0));
   state.numRetailers     = Math.floor(parseNumEl(refs.numRetailers) || 0);
+  state.targetMonthsC  = Math.max(1, Math.floor(parseNumEl(refs.targetMonthsC) || 0));
+  state.numRetailersC    = Math.floor(parseNumEl(refs.numRetailersC) || 0);
   state.brokerFee      = parseNumEl(refs.brokerFee);
   state.actPct         = parseNumEl(refs.actPct);
   state.reloadPct      = parseNumEl(refs.reloadPct);
@@ -601,6 +632,8 @@ function syncInputs(){
   assign(refs.budget, state.budget);
   assign(refs.targetMonths, state.targetMonths);
   assign(refs.numRetailers, state.numRetailers);
+  assign(refs.targetMonthsC, state.targetMonthsC);
+  assign(refs.numRetailersC, state.numRetailersC);
   assign(refs.brokerFee, state.brokerFee);
   assign(refs.actPct, state.actPct);
   assign(refs.reloadPct, state.reloadPct);
@@ -623,7 +656,7 @@ function syncInputs(){
 function initBindings(){
   // Input events
   [
-    refs.budget, refs.targetMonths, refs.numRetailers, refs.brokerFee,
+    refs.budget, refs.targetMonths, refs.numRetailers, refs.targetMonthsC, refs.numRetailersC, refs.brokerFee,
     refs.actPct, refs.reloadPct, refs.flatFee, refs.activationBonus, refs.newVisitors,
     refs.recurringVisitors, refs.transitPct, refs.activationConv, refs.reloadConv,
     refs.avgInitial, refs.avgReload, refs.maxRetailers, refs.interchangeRate,
@@ -639,6 +672,7 @@ function initBindings(){
     syncInputs();
     document.body.classList.toggle('mode-A', state.mode==='A');
     document.body.classList.toggle('mode-B', state.mode==='B');
+    document.body.classList.toggle('mode-C', state.mode==='C');
     render(); writeHash(); msg('Reset to defaults.');
   });
   refs.copyBtn?.addEventListener('click', ()=>{
@@ -696,6 +730,7 @@ function loadFromHash(){
   // Set initial mode class for CSS-driven visibility
   document.body.classList.toggle('mode-A', state.mode==='A');
   document.body.classList.toggle('mode-B', state.mode==='B');
+  document.body.classList.toggle('mode-C', state.mode==='C');
 
   // Bind events
   initBindings();

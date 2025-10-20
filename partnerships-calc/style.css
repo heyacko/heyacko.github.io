@@ -139,6 +139,11 @@ input[type="number"]:focus,input[type="text"]:focus{
 body.mode-A .field[data-mode="A"]{display:flex}
 .field[data-mode="B"]{display:none}
 body.mode-B .field[data-mode="B"]{display:flex}
+.field[data-mode="C"]{display:none}
+body.mode-C .field[data-mode="C"]{display:flex}
+.field[data-mode="AB"]{display:none}
+body.mode-A .field[data-mode="AB"]{display:flex}
+body.mode-B .field[data-mode="AB"]{display:flex}
 
 /* Utility spacing */
 .mt-10{margin-top:10px}
