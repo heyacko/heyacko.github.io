@@ -215,6 +215,221 @@ function setVisByMode(mode){
   $$('.only-mode-B').forEach(el => el.style.display = showA ? 'none' : '');
 }
 
+/* ---------------- Executive Summary Functions ---------------- */
+function updateExecutiveSummary(out) {
+  // Budget Sufficiency
+  const budgetOk = !out.exceed;
+  const budgetText = budgetOk ? 'Yes' : 'No';
+  const budgetDetail = out.mode === 'A' 
+    ? `${fmtUSD.format(out.totalCost)} of ${fmtUSD.format(state.budget)}`
+    : `${fmtUSD.format(out.monthlyBurn)}/month burn`;
+  $('#sum-budget-ok').innerHTML = `${budgetText}<br><small>${budgetDetail}</small>`;
+  
+  // Monthly Profit
+  $('#sum-profit').textContent = fmtUSD.format(out.monthlyProfit);
+  
+  // Broker Earnings
+  $('#sum-broker').textContent = fmtUSD.format(out.brokerPayoutTotal || 0);
+  
+  // Retailer Earnings
+  $('#sum-retailer').textContent = fmtUSD.format(out.perRetailerPayout);
+  
+  // Budget Progress Bar
+  updateBudgetProgress(out);
+  
+  // Mode Context Summary
+  const contextText = out.mode === 'A'
+    ? `Mode A: ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months`
+    : `Mode B: ${fmt0.format(out.retailers)} retailers, ${out.runwayExact.toFixed(1)} month runway`;
+  $('#mode-context-summary').textContent = contextText;
+}
+
+function updateBudgetProgress(out) {
+  let progressPercent = 0;
+  let progressText = '';
+  
+  if (out.mode === 'A') {
+    progressPercent = Math.min(100, (out.totalCost / state.budget) * 100);
+    progressText = `${progressPercent.toFixed(1)}% of budget used`;
+  } else {
+    // For Mode B, show current burn vs budget
+    const monthsAtCurrentBurn = state.budget / out.monthlyBurn;
+    progressPercent = Math.min(100, (1 / monthsAtCurrentBurn) * 100);
+    progressText = `${monthsAtCurrentBurn.toFixed(1)} months at current burn`;
+  }
+  
+  const progressFill = $('#budget-progress-fill');
+  const progressTextEl = $('#budget-progress-text');
+  
+  progressFill.style.width = `${progressPercent}%`;
+  progressTextEl.textContent = progressText;
+  
+  // Color coding
+  progressFill.className = 'progress-fill';
+  if (progressPercent < 70) {
+    progressFill.classList.add('green');
+  } else if (progressPercent < 90) {
+    progressFill.classList.add('yellow');
+  } else {
+    progressFill.classList.add('red');
+  }
+}
+
+function updateAccordionKPIs(out) {
+  $('#activity-kpi').textContent = `${fmt0.format(out.perRetailerVisitors)} visitors`;
+  $('#payout-kpi').textContent = fmtUSD.format(out.perRetailerPayout);
+  $('#revenue-kpi').textContent = fmtUSD.format(out.monthlyRevenue);
+  $('#scale-kpi').textContent = out.mode === 'A' 
+    ? `${fmt0.format(out.retailers)} retailers` 
+    : `${out.runwayExact.toFixed(1)} months`;
+}
+
+function updateCardFooters(out) {
+  $('#footer-visitors').textContent = fmt0.format(out.perRetailerVisitors);
+  $('#footer-riders').textContent = fmt0.format(out.perRetailerRiders);
+  $('#footer-retailer-payout').textContent = fmtUSD.format(out.perRetailerPayout);
+  $('#footer-profit').textContent = fmtUSD.format(out.monthlyProfit);
+  $('#footer-revenue').textContent = fmtUSD.format(out.monthlyRevenue);
+  $('#footer-broker').textContent = fmtUSD.format(out.brokerPayoutTotal || 0);
+}
+
+/* ---------------- Accordion Functions ---------------- */
+function initAccordions() {
+  const accordionHeaders = $$('.accordion-header');
+  accordionHeaders.forEach(header => {
+    header.addEventListener('click', () => {
+      const isExpanded = header.getAttribute('aria-expanded') === 'true';
+      const content = $(`#${header.getAttribute('aria-controls')}`);
+      
+      // Toggle state
+      header.setAttribute('aria-expanded', !isExpanded);
+      content.classList.toggle('expanded', !isExpanded);
+      
+      // Close other accordions (optional - remove if you want multiple open)
+      accordionHeaders.forEach(otherHeader => {
+        if (otherHeader !== header) {
+          otherHeader.setAttribute('aria-expanded', 'false');
+          const otherContent = $(`#${otherHeader.getAttribute('aria-controls')}`);
+          otherContent.classList.remove('expanded');
+        }
+      });
+    });
+  });
+}
+
+/* ---------------- Tab Functions ---------------- */
+function initTabs() {
+  const tabButtons = $$('.tab-button');
+  const tabPanels = $$('.tab-panel');
+  
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const targetPanel = $(`#${button.getAttribute('aria-controls')}`);
+      
+      // Update tab buttons
+      tabButtons.forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      button.classList.add('active');
+      button.setAttribute('aria-selected', 'true');
+      
+      // Update tab panels
+      tabPanels.forEach(panel => {
+        panel.classList.remove('active');
+      });
+      targetPanel.classList.add('active');
+      
+      // Trigger render when switching to outputs tab
+      if (button.id === 'outputs-tab') {
+        render();
+      }
+    });
+  });
+  
+  // Keyboard navigation
+  tabButtons.forEach((button, index) => {
+    button.addEventListener('keydown', (e) => {
+      let targetIndex = index;
+      
+      switch(e.key) {
+        case 'ArrowLeft':
+          targetIndex = index > 0 ? index - 1 : tabButtons.length - 1;
+          break;
+        case 'ArrowRight':
+          targetIndex = index < tabButtons.length - 1 ? index + 1 : 0;
+          break;
+        case 'Home':
+          targetIndex = 0;
+          break;
+        case 'End':
+          targetIndex = tabButtons.length - 1;
+          break;
+        default:
+          return;
+      }
+      
+      e.preventDefault();
+      tabButtons[targetIndex].click();
+      tabButtons[targetIndex].focus();
+    });
+  });
+}
+
+/* ---------------- Sub-Tab Functions ---------------- */
+function initSubTabs() {
+  const subTabButtons = $$('.sub-tab-button');
+  const subTabPanels = $$('.sub-tab-panel');
+  
+  subTabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const targetPanel = $(`#${button.getAttribute('aria-controls')}`);
+      
+      // Update sub-tab buttons
+      subTabButtons.forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      button.classList.add('active');
+      button.setAttribute('aria-selected', 'true');
+      
+      // Update sub-tab panels
+      subTabPanels.forEach(panel => {
+        panel.classList.remove('active');
+      });
+      targetPanel.classList.add('active');
+    });
+  });
+  
+  // Keyboard navigation for sub-tabs
+  subTabButtons.forEach((button, index) => {
+    button.addEventListener('keydown', (e) => {
+      let targetIndex = index;
+      
+      switch(e.key) {
+        case 'ArrowLeft':
+          targetIndex = index > 0 ? index - 1 : subTabButtons.length - 1;
+          break;
+        case 'ArrowRight':
+          targetIndex = index < subTabButtons.length - 1 ? index + 1 : 0;
+          break;
+        case 'Home':
+          targetIndex = 0;
+          break;
+        case 'End':
+          targetIndex = subTabButtons.length - 1;
+          break;
+        default:
+          return;
+      }
+      
+      e.preventDefault();
+      subTabButtons[targetIndex].click();
+      subTabButtons[targetIndex].focus();
+    });
+  });
+}
+
 /* ---------------- Render ---------------- */
 function render(){
   setVisByMode(state.mode);
@@ -245,6 +460,15 @@ function render(){
   $('#ob-transit-spend').textContent = fmtUSD.format(out.totalTransitSpend);
   $('#ob-monthly-revenue').textContent = fmtUSD.format(out.monthlyRevenue);
   $('#ob-monthly-profit').textContent = fmtUSD.format(out.monthlyProfit);
+
+  // Executive Summary
+  updateExecutiveSummary(out);
+  
+  // Accordion KPIs
+  updateAccordionKPIs(out);
+  
+  // Card Footers
+  updateCardFooters(out);
 
   if(out.mode==='A'){
     $('#ob-max-retailers').textContent = fmt0.format(out.retailers);
@@ -395,6 +619,11 @@ function loadFromHash(){
 
   // Bind events
   initBindings();
+  
+  // Initialize accordions, tabs, and sub-tabs
+  initAccordions();
+  initTabs();
+  initSubTabs();
 
   // Initial render
   render();
