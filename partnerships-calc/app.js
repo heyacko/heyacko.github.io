@@ -269,6 +269,21 @@ function updateCardFooters(out) {
 }
 
 function updateInputsTabOutputs(out) {
+  // Time Period Indicator
+  let timePeriodText, timePeriodMonths;
+  
+  if (out.mode === 'A') {
+    // Mode A: Use target months
+    timePeriodMonths = Math.max(1, Math.floor(state.targetMonths || 0));
+    timePeriodText = `${timePeriodMonths} months (Target Period)`;
+  } else {
+    // Mode B: Use runway months
+    timePeriodMonths = isFinite(out.runwayExact) ? out.runwayExact : 0;
+    timePeriodText = `${timePeriodMonths.toFixed(1)} months (Runway)`;
+  }
+  
+  $('#inputs-time-period').textContent = timePeriodText;
+  
   // Top KPI Cards - Total Profit, Total Revenue, Total Cost
   // Calculate Total Revenue and Total Cost based on mode
   let totalRevenue, totalCost;
@@ -288,9 +303,19 @@ function updateInputsTabOutputs(out) {
   // Total Profit = Total Revenue - Total Cost
   const totalProfit = totalRevenue - totalCost;
   
+  // Update Total KPIs with color coding for profit
   $('#inputs-kpi-total-profit').textContent = fmtUSD.format(totalProfit);
+  $('#inputs-kpi-total-profit').className = `value mono ${totalProfit >= 0 ? 'profit-positive' : 'profit-negative'}`;
+  
   $('#inputs-kpi-total-revenue').textContent = fmtUSD.format(totalRevenue);
   $('#inputs-kpi-cost').textContent = fmtUSD.format(totalCost);
+  
+  // Update Monthly KPIs with color coding for profit
+  $('#inputs-kpi-monthly-profit').textContent = fmtUSD.format(out.monthlyProfit);
+  $('#inputs-kpi-monthly-profit').className = `value mono ${out.monthlyProfit >= 0 ? 'profit-positive' : 'profit-negative'}`;
+  
+  $('#inputs-kpi-monthly-revenue').textContent = fmtUSD.format(out.monthlyRevenue);
+  $('#inputs-kpi-monthly-cost').textContent = fmtUSD.format(out.monthlyBurn);
 
   // Activity
   $('#inputs-ob-visitors').textContent = fmt0.format(out.perRetailerVisitors);

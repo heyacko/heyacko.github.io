@@ -52,6 +52,16 @@
             <h2 id="inputs-outputs-header">Outputs</h2>
 
             <div class="cards" aria-live="polite">
+              <div class="card full">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Time Period</div>
+                    <div id="inputs-time-period" class="value mono">—</div>
+                  </div>
+                  <span class="tooltip" tabindex="0" data-tip="Number of months used to calculate Total Revenue, Total Cost, and Total Profit"></span>
+                </div>
+              </div>
+
               <div class="card third">
                 <div class="kpi">
                   <div>
@@ -79,6 +89,36 @@
                     <div id="inputs-kpi-cost" class="value mono">—</div>
                   </div>
                   <span class="tooltip" tabindex="0" data-tip="Total cost over target months (Mode A) or monthly burn × runway (Mode B)"></span>
+                </div>
+              </div>
+
+              <div class="card third">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Monthly Profit</div>
+                    <div id="inputs-kpi-monthly-profit" class="value mono">—</div>
+                  </div>
+                  <span class="tooltip" tabindex="0" data-tip="Monthly revenue minus monthly burn"></span>
+                </div>
+              </div>
+
+              <div class="card third">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Monthly Revenue</div>
+                    <div id="inputs-kpi-monthly-revenue" class="value mono">—</div>
+                  </div>
+                  <span class="tooltip" tabindex="0" data-tip="Total transit spend × interchange rate"></span>
+                </div>
+              </div>
+
+              <div class="card third">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Monthly Cost</div>
+                    <div id="inputs-kpi-monthly-cost" class="value mono">—</div>
+                  </div>
+                  <span class="tooltip" tabindex="0" data-tip="Monthly burn (retailers × per-retailer payout + broker fees)"></span>
                 </div>
               </div>
 

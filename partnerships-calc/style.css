@@ -78,9 +78,12 @@ input[type="number"]:focus,input[type="text"]:focus{
 .kpi .value{font-size:1.35rem;font-weight:800}
 
 .muted{color:var(--muted)}
+.muted.small{font-size:0.8rem;margin-top:4px}
 .state-ok{color:var(--good)}
 .state-bad{color:var(--bad)}
 .state-warn{color:var(--warn)}
+.profit-positive{color:var(--good)}
+.profit-negative{color:var(--bad)}
 .mono{font-variant-numeric:tabular-nums}
 
 .table{width:100%;border-collapse:collapse}
