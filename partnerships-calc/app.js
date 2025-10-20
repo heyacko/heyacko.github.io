@@ -269,10 +269,27 @@ function updateCardFooters(out) {
 }
 
 function updateInputsTabOutputs(out) {
-  // Top KPI Cards - Profit, Revenue, Cost
-  $('#inputs-kpi-profit').textContent = fmtUSD.format(out.monthlyProfit);
-  $('#inputs-kpi-revenue').textContent = fmtUSD.format(out.monthlyRevenue);
-  const totalCost = (out.brokerPayoutTotal || 0) + (out.perRetailerPayout * out.retailers);
+  // Top KPI Cards - Total Profit, Total Revenue, Total Cost
+  // Calculate Total Revenue and Total Cost based on mode
+  let totalRevenue, totalCost;
+  
+  if (out.mode === 'A') {
+    // Mode A: Use target months
+    const targetMonths = Math.max(1, Math.floor(state.targetMonths || 0));
+    totalRevenue = out.monthlyRevenue * targetMonths;
+    totalCost = out.totalCost; // This is already calculated as total cost over target months
+  } else {
+    // Mode B: Use runway months
+    const runwayMonths = isFinite(out.runwayExact) ? out.runwayExact : 0;
+    totalRevenue = out.monthlyRevenue * runwayMonths;
+    totalCost = out.monthlyBurn * runwayMonths;
+  }
+  
+  // Total Profit = Total Revenue - Total Cost
+  const totalProfit = totalRevenue - totalCost;
+  
+  $('#inputs-kpi-total-profit').textContent = fmtUSD.format(totalProfit);
+  $('#inputs-kpi-total-revenue').textContent = fmtUSD.format(totalRevenue);
   $('#inputs-kpi-cost').textContent = fmtUSD.format(totalCost);
 
   // Activity

@@ -71,6 +71,7 @@ input[type="number"]:focus,input[type="text"]:focus{
 .cards{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
 .card{grid-column:span 6;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
 .card.third{grid-column:span 4}
+.card.quarter{grid-column:span 3}
 .card.full{grid-column:1/-1}
 
 .kpi{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}

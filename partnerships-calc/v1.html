@@ -23,7 +23,7 @@
       </button>
       <button class="tab-button" id="outputs-tab" role="tab" aria-selected="false" aria-controls="outputs-panel">
         <span class="tab-icon">📊</span>
-        <span class="tab-label">Results</span>
+        <span class="tab-label">Results (WIP)</span>
       </button>
     </div>
 
@@ -55,20 +55,20 @@
               <div class="card third">
                 <div class="kpi">
                   <div>
-                    <div class="muted">Monthly Profit</div>
-                    <div id="inputs-kpi-profit" class="value mono">—</div>
+                    <div class="muted">Total Profit</div>
+                    <div id="inputs-kpi-total-profit" class="value mono">—</div>
                   </div>
-                  <span class="tooltip" tabindex="0" data-tip="Monthly revenue minus monthly burn"></span>
+                  <span class="tooltip" tabindex="0" data-tip="Total Revenue - Total Cost"></span>
                 </div>
               </div>
 
               <div class="card third">
                 <div class="kpi">
                   <div>
-                    <div class="muted">Monthly Revenue</div>
-                    <div id="inputs-kpi-revenue" class="value mono">—</div>
+                    <div class="muted">Total Revenue</div>
+                    <div id="inputs-kpi-total-revenue" class="value mono">—</div>
                   </div>
-                  <span class="tooltip" tabindex="0" data-tip="Total transit spend × interchange rate"></span>
+                  <span class="tooltip" tabindex="0" data-tip="Monthly revenue × target months (Mode A) or runway months (Mode B)"></span>
                 </div>
               </div>
 
@@ -78,7 +78,7 @@
                     <div class="muted">Total Cost</div>
                     <div id="inputs-kpi-cost" class="value mono">—</div>
                   </div>
-                  <span class="tooltip" tabindex="0" data-tip="Broker payout + total retailer payouts"></span>
+                  <span class="tooltip" tabindex="0" data-tip="Total cost over target months (Mode A) or monthly burn × runway (Mode B)"></span>
                 </div>
               </div>
 
