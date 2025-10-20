@@ -1,0 +1,223 @@
+/* Shared styles for heyacko.github.io */
+/* Consolidated from repeated patterns across HTML pages */
+
+:root {
+  --bg: #0f1115;
+  --card: #171a21;
+  --ink: #e7e9ee;
+  --muted: #a9b0bd;
+  --accent: #4aa8ff;
+  --ok: #66d9a8;
+  --warn: #ffcc66;
+  --bad: #ff7a7a;
+  --line: #232a36;
+}
+
+/* Base reset and typography */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+}
+
+/* Layout components */
+.shared-wrap {
+  max-width: 1080px;
+  margin: 80px auto;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.shared-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+
+.shared-progress {
+  height: 10px;
+  border-radius: 8px;
+  background: #263142;
+  overflow: hidden;
+  margin: 12px 0 6px;
+}
+
+.shared-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width .25s ease;
+}
+
+.shared-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.shared-qbox {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 12px;
+  background: #11141a;
+  border: 1px solid #232a36;
+}
+
+.shared-qtext {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.shared-opts {
+  display: grid;
+  gap: 10px;
+}
+
+.shared-opt {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: #0f131a;
+  border: 1px solid #263142;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.shared-controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.shared-muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.shared-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #0f141c;
+  border: 1px solid #2a3446;
+  color: var(--muted);
+}
+
+.shared-footer {
+  color: var(--muted);
+  margin-top: 18px;
+  font-size: 13px;
+}
+
+/* Button styles */
+.shared-btn {
+  appearance: none;
+  border: 0;
+  background: var(--accent);
+  color: #031423;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shared-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.shared-btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid #2a3446;
+}
+
+/* Typography */
+.shared-h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  letter-spacing: .2px;
+}
+
+.shared-sub {
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+
+/* Results and feedback */
+.shared-results {
+  display: none;
+  margin-top: 18px;
+}
+
+.shared-feedback {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.shared-feedback-good {
+  background: rgba(102,217,168,.12);
+  border: 1px solid rgba(102,217,168,.4);
+  color: var(--ok);
+}
+
+.shared-feedback-bad {
+  background: rgba(255,122,122,.12);
+  border: 1px solid rgba(255,122,122,.4);
+  color: var(--bad);
+}
+
+/* Grid layouts */
+.shared-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.shared-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.shared-axis-row {
+  display: grid;
+  grid-template-columns: 180px 1fr 70px;
+  align-items: center;
+  gap: 10px;
+}
+
+.shared-bar {
+  height: 10px;
+  border-radius: 8px;
+  background: #263142;
+  overflow: hidden;
+}
+
+.shared-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+}
+
+/* Radio input styling */
+input[type="radio"] {
+  transform: translateY(2px);
+}
+
+/* Responsive adjustments */
+@media (min-width: 560px) {
+  .shared-big-btns {
+    grid-template-columns: 1fr 1fr;
+  }
+}

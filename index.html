@@ -4,17 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>acko website!</title>
+<link rel="stylesheet" href="style.css">
 <style>
-  body {
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
-    background:#0f1115; color:#f0f0f0; margin:0; padding:0;
-  }
-  .wrap {
-    max-width:1080px;
-    margin:80px auto;
-    text-align:center;
-    padding:0 20px;
-  }
+  /* Page-specific styles for index.html */
   h1 {
     font-size:2.4rem;
     margin-bottom:10px;
@@ -35,55 +27,69 @@
     background:#171a21;
     border:1px solid #232a36;
     border-radius:14px;
-    padding:24px;
+    padding:20px;  /* Consistent padding */
     color:#f0f0f0;
     text-decoration:none;
     transition:transform .15s ease, background .15s ease;
-    text-align:center;   /* <-- added this line */
+    text-align:center;
+    height: 150px;  /* Slightly increased height for better spacing */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;  /* Ensure padding is included in height */
   }
   a.card:hover {
     transform:translateY(-3px);
     background:#1e2533;
   }
+  .subtitle {
+    font-size: 2rem;  /* Increased emoji size */
+    margin-bottom: 8px;  /* Space below emoji */
+    line-height: 1;  /* Tight line height for emoji */
+  }
   .title {
     font-weight:700;
-    font-size:1.25rem;
+    font-size:1.1rem;  /* Slightly smaller for better fit */
     margin-bottom:6px;
+    line-height: 1.2;  /* Better line height for wrapping text */
+    padding: 0 4px;  /* Small horizontal padding for text */
   }
   .desc {
     color:#a8b0bf;
-    font-size:0.95rem;
+    font-size:0.9rem;  /* Slightly smaller for better fit */
+    line-height: 1.3;  /* Better line height */
+    padding: 0 4px;  /* Small horizontal padding for text */
   }
 </style>
 </head>
 <body>
-  <div class="wrap">
+  <div class="shared-wrap">
     <h1>games</h1>
     <p>i made games</p>
 
     <div class="grid">
       <a href="political-compass.html" class="card">
+        <div class="subtitle">🗳️</div>
         <div class="title">Modern U.S. Political Compass</div>
         <div class="desc">20-question political quiz.</div>
-        <div class="subtitle">🗳️</div>
       </a>
 
       <a href="rationalism-optimism.html" class="card">
-        <div class="title">The Tuesday That Wouldn’t End</div>
-        <div class="desc">A short choose-your-own-adventure story.</div>
         <div class="subtitle">🧠</div>
+        <div class="title">The Tuesday That Wouldn't End</div>
+        <div class="desc">A short choose-your-own-adventure story.</div>
       </a>
 
       <a href="socal-vs-norcal.html" class="card">
+        <div class="subtitle">🌴</div>
         <div class="title">SoCal vs NorCal: Guessing Game</div>
         <div class="desc">15 quick questions on culture, politics, and economics.</div>
-        <div class="subtitle">🌴</div>
       </a>
 
       <a href="word-dist.html" class="card">
+        <div class="subtitle">🔠</div>
         <div class="title">Word Distance: Guessing Game</div>
         <div class="desc">Guess the word that connects.</div>
-        <div class="subtitle">🔠</div>
       </a>
     </div>
   </div>
