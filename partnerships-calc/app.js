@@ -66,7 +66,7 @@ const INPUT_SCHEMA = [
   {
     key:'traffic', emoji:'🚶', title:'Traffic & Conversion', class:'group-traffic',
     fields: [
-      { id:'newVisitors', label:'Estimated monthly new visitors per retailers', type:'number', step:'1', min:'0' },
+      { id:'newVisitors', label:'Estimated monthly new visitors per retailer', type:'number', step:'1', min:'0' },
       { id:'recurringVisitors', label:'Estimated monthly recurring visitors per retailer', type:'number', step:'1', min:'0' },
       { id:'transitPct', label:'% of visitors who use public transit', type:'number', step:'0.01', min:'0', max:'100' },
       { id:'activationConv', label:'% of transit-using new visitors who activate', type:'number', step:'0.01', min:'0', max:'100' },
