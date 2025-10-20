@@ -1,16 +1,18 @@
-/* Shared styles for heyacko.github.io */
+/* Shared styles for heyacko.github.io - Frutiger Aero Edition */
 /* Consolidated from repeated patterns across HTML pages */
 
 :root {
-  --bg: #0f1115;
-  --card: #171a21;
-  --ink: #e7e9ee;
-  --muted: #a9b0bd;
-  --accent: #4aa8ff;
-  --ok: #66d9a8;
-  --warn: #ffcc66;
-  --bad: #ff7a7a;
-  --line: #232a36;
+  --bg: #e8f4fd;
+  --card: rgba(255, 255, 255, 0.8);
+  --ink: #2c5aa0;
+  --muted: #7a9cc6;
+  --accent: #4a90e2;
+  --ok: #7ed321;
+  --warn: #f5a623;
+  --bad: #d0021b;
+  --line: rgba(74, 144, 226, 0.3);
+  --glow: rgba(74, 144, 226, 0.2);
+  --glass: rgba(255, 255, 255, 0.25);
 }
 
 /* Base reset and typography */
@@ -18,40 +20,141 @@ html, body {
   margin: 0;
   padding: 0;
   background: var(--bg);
+  background-image: 
+    linear-gradient(135deg, #e8f4fd 0%, #d1e7f7 25%, #b8d9f1 50%, #d1e7f7 75%, #e8f4fd 100%),
+    radial-gradient(circle at 20% 80%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(126, 211, 33, 0.1) 0%, transparent 50%);
+  background-size: 100% 100%, 100% 100%, 100% 100%;
   color: var(--ink);
-  font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+  font: 16px/1.5 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 400;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Warped grid pattern overlay */
+html::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(44, 90, 160, 0.4) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(44, 90, 160, 0.4) 2px, transparent 2px);
+  background-size: 50px 50px;
+  background-position: 0 calc(var(--scroll-y, 0px) * 0.3);
+  transform: perspective(1200px) rotateX(65deg) rotateY(0deg) rotateZ(12deg);
+  transform-origin: center center;
+  opacity: 0.5;
+  z-index: 1;
+  pointer-events: none;
+  filter: blur(0.5px);
+  mask-image: 
+    radial-gradient(ellipse at center, black 60%, transparent 100%),
+    linear-gradient(black, black);
+  mask-size: 120% 120%, 100% 100%;
+  mask-position: center center, center center;
+  mask-composite: intersect;
+  will-change: transform;
+}
+
+/* Frutiger Aero Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glass-glow {
+  0%, 100% { 
+    box-shadow: 
+      0 8px 32px rgba(74, 144, 226, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% { 
+    box-shadow: 
+      0 12px 40px rgba(74, 144, 226, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes bubble-rise {
+  0% { 
+    transform: translateY(100vh) scale(0);
+    opacity: 0;
+  }
+  10% { 
+    opacity: 1;
+  }
+  90% { 
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(-100vh) scale(1);
+    opacity: 0;
+  }
 }
 
 /* Layout components */
 .shared-wrap {
-  max-width: 1080px;
-  margin: 80px auto;
+  max-width: 1200px;
+  margin: 60px auto;
   text-align: center;
   padding: 0 20px;
+  position: relative;
+  z-index: 10;
 }
 
 .shared-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 
+    0 8px 32px rgba(74, 144, 226, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+  animation: glass-glow 3s ease-in-out infinite;
+  z-index: 10;
+}
+
+.shared-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
 }
 
 .shared-progress {
-  height: 10px;
-  border-radius: 8px;
-  background: #263142;
+  height: 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(74, 144, 226, 0.2);
   overflow: hidden;
-  margin: 12px 0 6px;
+  margin: 15px 0 8px;
+  position: relative;
+  backdrop-filter: blur(10px);
 }
 
 .shared-progress > span {
   display: block;
   height: 100%;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent), #7ed321);
   width: 0%;
   transition: width .25s ease;
+  border-radius: 20px;
+  box-shadow: 0 0 10px rgba(74, 144, 226, 0.3);
 }
 
 .shared-meta {
@@ -59,20 +162,285 @@ html, body {
   justify-content: space-between;
   align-items: center;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .shared-qbox {
-  margin-top: 16px;
-  padding: 18px;
-  border-radius: 12px;
-  background: #11141a;
-  border: 1px solid #232a36;
+  margin-top: 20px;
+  padding: 25px;
+  border-radius: 16px;
+  background: var(--glass);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 4px 16px rgba(74, 144, 226, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .shared-qtext {
   font-weight: 600;
+  margin-bottom: 15px;
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.shared-opts {
+  display: grid;
+  gap: 12px;
+}
+
+.shared-opt {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 15px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.shared-opt:hover {
+  background: rgba(74, 144, 226, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px rgba(74, 144, 226, 0.2);
+  transform: translateY(-2px);
+}
+
+.shared-controls {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.shared-muted {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.shared-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.shared-footer {
+  color: var(--muted);
+  margin-top: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Button styles - Frutiger Aero inspired */
+.shared-btn {
+  appearance: none;
+  border: none;
+  background: linear-gradient(135deg, var(--accent), #5ba0f2);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 16px rgba(74, 144, 226, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shared-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.shared-btn:hover::before {
+  left: 100%;
+}
+
+.shared-btn:hover {
+  background: linear-gradient(135deg, #5ba0f2, var(--accent));
+  box-shadow: 
+    0 6px 20px rgba(74, 144, 226, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.shared-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, var(--muted), #9bb5d8);
+}
+
+.shared-btn-ghost {
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  color: var(--ink);
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shared-btn-ghost:hover {
+  background: rgba(74, 144, 226, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px rgba(74, 144, 226, 0.2);
+}
+
+/* Typography */
+.shared-h1 {
+  margin: 0 0 15px;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.shared-sub {
+  color: var(--muted);
+  margin: 0 0 20px;
+  font-weight: 500;
+}
+
+/* Results and feedback */
+.shared-results {
+  display: none;
+  margin-top: 25px;
+}
+
+.shared-feedback {
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+.shared-feedback-good {
+  background: rgba(126, 211, 33, 0.1);
+  backdrop-filter: blur(10px);
+  border-color: var(--ok);
+  color: var(--ok);
+  box-shadow: 0 4px 16px rgba(126, 211, 33, 0.2);
+}
+
+.shared-feedback-bad {
+  background: rgba(208, 2, 27, 0.1);
+  backdrop-filter: blur(10px);
+  border-color: var(--bad);
+  color: var(--bad);
+  box-shadow: 0 4px 16px rgba(208, 2, 27, 0.2);
+}
+
+/* Grid layouts */
+.shared-grid {
+  display: grid;
+  gap: 15px;
+}
+
+.shared-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.shared-axis-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 80px;
+  align-items: center;
+  gap: 15px;
+}
+
+.shared-bar {
+  height: 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(74, 144, 226, 0.2);
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.shared-bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--ok), #7ed321);
+  border-radius: 20px;
+  box-shadow: 0 0 10px rgba(126, 211, 33, 0.3);
+}
+
+/* Radio input styling */
+input[type="radio"] {
+  transform: translateY(2px);
+  accent-color: var(--accent);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .shared-wrap {
+    padding: 0 15px;
+    margin: 30px auto;
+  }
+  
+  .shared-card {
+    padding: 20px;
+  }
+  
+  .shared-h1 {
+    font-size: 24px;
+  }
+  
+  .shared-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .shared-btn {
+    width: 100%;
+  }
+  
+  .shared-axis-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* Common page-specific styles consolidated */
+.shared-qtext {
+  font-weight: 600;
   margin-bottom: 12px;
+  color: var(--ink);
+  font-size: 18px;
 }
 
 .shared-opts {
@@ -84,110 +452,21 @@ html, body {
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  background: #0f131a;
-  border: 1px solid #263142;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   padding: 12px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.shared-controls {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.shared-muted {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.shared-pill {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  background: #0f141c;
-  border: 1px solid #2a3446;
-  color: var(--muted);
-}
-
-.shared-footer {
-  color: var(--muted);
-  margin-top: 18px;
-  font-size: 13px;
-}
-
-/* Button styles */
-.shared-btn {
-  appearance: none;
-  border: 0;
-  background: var(--accent);
-  color: #031423;
-  padding: 12px 16px;
   border-radius: 12px;
-  font-weight: 700;
   cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
-.shared-btn:disabled {
-  opacity: .55;
-  cursor: not-allowed;
-}
-
-.shared-btn-ghost {
-  background: transparent;
-  color: var(--ink);
-  border: 1px solid #2a3446;
-}
-
-/* Typography */
-.shared-h1 {
-  margin: 0 0 8px;
-  font-size: 28px;
-  letter-spacing: .2px;
-}
-
-.shared-sub {
-  color: var(--muted);
-  margin: 0 0 16px;
-}
-
-/* Results and feedback */
-.shared-results {
-  display: none;
-  margin-top: 18px;
-}
-
-.shared-feedback {
-  margin-top: 14px;
-  padding: 12px;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
-.shared-feedback-good {
-  background: rgba(102,217,168,.12);
-  border: 1px solid rgba(102,217,168,.4);
-  color: var(--ok);
-}
-
-.shared-feedback-bad {
-  background: rgba(255,122,122,.12);
-  border: 1px solid rgba(255,122,122,.4);
-  color: var(--bad);
-}
-
-/* Grid layouts */
-.shared-grid {
-  display: grid;
-  gap: 10px;
-}
-
-.shared-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.shared-opt:hover {
+  background: rgba(74, 144, 226, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px rgba(74, 144, 226, 0.2);
+  transform: translateY(-2px);
 }
 
 .shared-axis-row {
@@ -199,25 +478,91 @@ html, body {
 
 .shared-bar {
   height: 10px;
-  border-radius: 8px;
-  background: #263142;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(74, 144, 226, 0.2);
   overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
 .shared-bar > span {
   display: block;
   height: 100%;
-  background: var(--ok);
+  background: linear-gradient(90deg, var(--ok), #7ed321);
+  border-radius: 20px;
+  box-shadow: 0 0 10px rgba(126, 211, 33, 0.3);
 }
 
-/* Radio input styling */
-input[type="radio"] {
-  transform: translateY(2px);
+/* Specialized components for specific pages */
+.bigBtns {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+  margin-top: 8px;
 }
 
-/* Responsive adjustments */
-@media (min-width: 560px) {
-  .shared-big-btns {
-    grid-template-columns: 1fr 1fr;
-  }
+.choiceBtn {
+  appearance: none;
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  color: var(--ink);
+  padding: 16px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.choiceBtn:active {
+  transform: translateY(1px);
+}
+
+.choiceBtn[disabled] {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.feedback {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.feedback.good {
+  background: rgba(126, 211, 33, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--ok);
+  color: var(--ok);
+  box-shadow: 0 4px 16px rgba(126, 211, 33, 0.2);
+}
+
+.feedback.bad {
+  background: rgba(208, 2, 27, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--bad);
+  color: var(--bad);
+  box-shadow: 0 4px 16px rgba(208, 2, 27, 0.2);
+}
+
+.tag {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Home button styling */
+a.shared-btn-ghost {
+  text-decoration: none;
+}
+
+a.shared-btn-ghost:hover {
+  text-decoration: none;
 }

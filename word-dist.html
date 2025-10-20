@@ -83,7 +83,10 @@
   .hud-value {
     font-size: clamp(40px, 12vw, 72px);
     font-weight: 900;
-    line-height: 1.05
+    line-height: 1.05;
+    min-width: 80px;
+    text-align: center;
+    display: inline-block;
   }
 
   .board {
@@ -272,61 +275,64 @@
 </head>
 
 <body>
-  <div class="app">
-    <header>
-      <h1>Word Association Tunnel</h1>
-    </header>
+  <div class="shared-wrap">
+    <div class="app">
+      <header>
+        <h1>Word Association Tunnel</h1>
+      </header>
 
-    <div class="hud">
-      <div class="hud-item">
-        <div class="hud-label">TIMER</div>
-        <div class="hud-value" id="time">—</div>
-      </div>
-      <div class="hud-item">
-        <div class="hud-label">STREAK</div>
-        <div class="hud-value" id="streak">0</div>
-      </div>
-      <div class="hud-item">
-        <div class="hud-label">SCORE</div>
-        <div class="hud-value" id="score">0</div>
-      </div>
-    </div>
-
-    <div class="board">
-      <div class="pair">
-        <div class="pair-row">
-          <div class="word" id="wordA">…</div>
-          <div class="connector">⟶</div>
-          <div class="word" id="wordB">…</div>
+      <div class="hud">
+        <div class="hud-item">
+          <div class="hud-label">TIMER</div>
+          <div class="hud-value" id="time">—</div>
         </div>
-        <div class="meters">
-          <div class="meter">
-            <label><span>rel(A, C)</span><span id="r1v">0.00</span></label>
-            <div class="bar">
-              <div class="fill" id="r1"></div>
+        <div class="hud-item">
+          <div class="hud-label">STREAK</div>
+          <div class="hud-value" id="streak">0</div>
+        </div>
+        <div class="hud-item">
+          <div class="hud-label">SCORE</div>
+          <div class="hud-value" id="score">0</div>
+        </div>
+      </div>
+
+      <div class="board">
+        <div class="pair">
+          <div class="pair-row">
+            <div class="word" id="wordA">…</div>
+            <div class="connector">⟶</div>
+            <div class="word" id="wordB">…</div>
+          </div>
+          <div class="meters">
+            <div class="meter">
+              <label><span>rel(A, C)</span><span id="r1v">0.00</span></label>
+              <div class="bar">
+                <div class="fill" id="r1"></div>
+              </div>
+            </div>
+            <div class="meter">
+              <label><span>rel(C, B)</span><span id="r2v">0.00</span></label>
+              <div class="bar">
+                <div class="fill" id="r2"></div>
+              </div>
             </div>
           </div>
-          <div class="meter">
-            <label><span>rel(C, B)</span><span id="r2v">0.00</span></label>
-            <div class="bar">
-              <div class="fill" id="r2"></div>
-            </div>
+          <div class="input-row">
+            <input id="guess" type="text" placeholder="Type a bridge word…" autocomplete="off" />
+            <button id="submit" class="shared-btn">Submit ↵</button>
+          </div>
+          <div class="controls">
+            <button id="skip" class="shared-btn-ghost">Skip Pair</button>
+            <button id="reset" class="shared-btn-ghost">Reset</button>
+            <a href="index.html" class="shared-btn-ghost">🏠 Home</a>
           </div>
         </div>
-        <div class="input-row">
-          <input id="guess" type="text" placeholder="Type a bridge word…" autocomplete="off" />
-          <button id="submit">Submit ↵</button>
-        </div>
-        <div class="controls">
-          <button id="skip" class="btn-warn">Skip Pair</button>
-          <button id="reset" class="btn-secondary">Reset</button>
-        </div>
       </div>
-    </div>
 
-    <div class="footer">
-      <div>Connect <strong>A</strong> and <strong>B</strong>. Both meters must reach the hidden threshold.</div>
-      <div><span class="kbd">Enter</span> submit</div>
+      <div class="footer">
+        <div>Connect <strong>A</strong> and <strong>B</strong>. Both meters must reach the hidden threshold.</div>
+        <div><span class="kbd">Enter</span> submit</div>
+      </div>
     </div>
   </div>
 

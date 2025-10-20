@@ -6,59 +6,132 @@
 <title>acko website!</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  /* Page-specific styles for index.html */
+  /* Page-specific styles for index.html - Frutiger Aero Edition */
   h1 {
-    font-size:2.4rem;
-    margin-bottom:10px;
+    font-size: 3.5rem;
+    margin-bottom: 20px;
+    font-weight: 700;
+    color: #2c5aa0;
+    text-shadow: 0 2px 4px rgba(44, 90, 160, 0.1);
+    animation: float 3s ease-in-out infinite;
   }
   p {
-    color:#a8b0bf;
-    margin-top:0;
-    margin-bottom:40px;
+    color: #7a9cc6;
+    margin-top: 0;
+    margin-bottom: 40px;
+    font-weight: 500;
+    font-size: 1.1rem;
   }
   .grid {
-    display:grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap:20px;
-    justify-items:center;   /* centers cards within their columns */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 25px;
+    justify-items: center;
   }
-  a.card {
-    display:block;
-    background:#171a21;
-    border:1px solid #232a36;
-    border-radius:14px;
-    padding:20px;  /* Consistent padding */
-    color:#f0f0f0;
-    text-decoration:none;
-    transition:transform .15s ease, background .15s ease;
-    text-align:center;
-    height: 150px;  /* Slightly increased height for better spacing */
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    box-sizing: border-box;  /* Ensure padding is included in height */
+  
+  /* Override shared-card for index page */
+  .shared-card {
+    height: 200px;
+    padding: 30px;
+    animation: glass-glow 4s ease-in-out infinite;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 
+      0 8px 32px rgba(74, 144, 226, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    text-decoration: none;
+    transition: all 0.4s ease;
   }
-  a.card:hover {
-    transform:translateY(-3px);
-    background:#1e2533;
+  
+  .shared-card * {
+    text-decoration: none;
   }
+  
   .subtitle {
-    font-size: 2rem;  /* Increased emoji size */
-    margin-bottom: 8px;  /* Space below emoji */
-    line-height: 1;  /* Tight line height for emoji */
+    font-size: 3.5rem;
+    margin-bottom: 15px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    transition: transform 0.3s ease;
+    transform: translateY(0px);
+  }
+  
+  .shared-card:hover .subtitle {
+    animation: float 2s ease-in-out infinite;
+    animation-fill-mode: both;
+  }
+  
+  /* Smooth return animation */
+  .shared-card:not(:hover) .subtitle {
+    animation: float-return 0.3s ease-out forwards;
   }
   .title {
-    font-weight:700;
-    font-size:1.1rem;  /* Slightly smaller for better fit */
-    margin-bottom:6px;
-    line-height: 1.2;  /* Better line height for wrapping text */
-    padding: 0 4px;  /* Small horizontal padding for text */
+    font-weight: 600;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    line-height: 1.2;
+    padding: 0 10px;
+    color: #2c5aa0;
   }
   .desc {
-    color:#a8b0bf;
-    font-size:0.9rem;  /* Slightly smaller for better fit */
-    line-height: 1.3;  /* Better line height */
-    padding: 0 4px;  /* Small horizontal padding for text */
+    color: #7a9cc6;
+    font-size: 1rem;
+    line-height: 1.4;
+    padding: 0 10px;
+    font-weight: 500;
+  }
+  
+  /* Frosted glass hover effect */
+  .shared-card:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #4a90e2;
+    box-shadow: 
+      0 8px 32px rgba(74, 144, 226, 0.1),
+      0 0 40px rgba(74, 144, 226, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.4s ease;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  @keyframes float-return {
+    0% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
+  
+  @keyframes glass-glow {
+    0%, 100% { 
+      box-shadow: 
+        0 8px 32px rgba(74, 144, 226, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    50% { 
+      box-shadow: 
+        0 12px 40px rgba(74, 144, 226, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+  }
+  
+  /* Mobile adjustments */
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 2.5rem;
+    }
+    .grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    .shared-card {
+      height: 180px;
+      padding: 25px;
+    }
+    .subtitle {
+      font-size: 3rem;
+    }
   }
 </style>
 </head>
@@ -68,30 +141,40 @@
     <p>i made games</p>
 
     <div class="grid">
-      <a href="political-compass.html" class="card">
+      <a href="political-compass.html" class="shared-card">
         <div class="subtitle">🗳️</div>
         <div class="title">Modern U.S. Political Compass</div>
         <div class="desc">20-question political quiz.</div>
       </a>
 
-      <a href="rationalism-optimism.html" class="card">
+      <a href="rationalism-optimism.html" class="shared-card">
         <div class="subtitle">🧠</div>
         <div class="title">The Tuesday That Wouldn't End</div>
         <div class="desc">A short choose-your-own-adventure story.</div>
       </a>
 
-      <a href="socal-vs-norcal.html" class="card">
+      <a href="socal-vs-norcal.html" class="shared-card">
         <div class="subtitle">🌴</div>
         <div class="title">SoCal vs NorCal: Guessing Game</div>
         <div class="desc">15 quick questions for California experts.</div>
       </a>
 
-      <a href="word-dist.html" class="card">
+      <a href="word-dist.html" class="shared-card">
         <div class="subtitle">🔠</div>
         <div class="title">Word Distance: Guessing Game</div>
         <div class="desc">Guess the word that connects.</div>
       </a>
     </div>
   </div>
+
+  <script>
+    // Parallax effect for background grid
+    window.addEventListener('scroll', function() {
+      const scrolled = window.pageYOffset;
+      
+      // Create a subtle parallax effect by moving the background position
+      document.documentElement.style.setProperty('--scroll-y', scrolled + 'px');
+    });
+  </script>
 </body>
 </html>
