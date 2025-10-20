@@ -64,7 +64,7 @@ html, body {
     radial-gradient(circle at 80% 20%, rgba(126, 211, 33, 0.1) 0%, transparent 50%);
   background-size: 100% 100%, 100% 100%, 100% 100%;
   color: var(--ink);
-  font: 16px/1.5 'Lucida Console', Monaco, 'Courier New', monospace;
+  font: 16px/1.5 'Yu Gothic UI', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-weight: 400;
   min-height: 100vh;
   position: relative;
@@ -448,7 +448,7 @@ TO ADJUST BUTTONS:
 
 /* Typography */
 .shared-h1 {
-  font-family: 'Yu Gothic UI', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Lucida Console', Monaco, 'Courier New', monospace;
   margin: 0 0 15px;
   font-size: 32px;
   font-weight: 700;
