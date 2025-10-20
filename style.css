@@ -448,6 +448,7 @@ TO ADJUST BUTTONS:
 
 /* Typography */
 .shared-h1 {
+  font-family: 'Yu Gothic UI', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0 0 15px;
   font-size: 32px;
   font-weight: 700;
