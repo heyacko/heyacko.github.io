@@ -81,6 +81,17 @@ const INPUT_SCHEMA = [
     ]
   },
   {
+    key:'revenue', emoji:'💰', title:'Revenue & Profit', class:'group-revenue',
+    fields: [
+      { id:'interchangeRate', label:'Interchange rate (%)', type:'number', step:'0.01', min:'0', max:'100',
+        help:'Percentage of transit spend that becomes revenue.' },
+      { id:'avgTransitTransactions', label:'Avg transit transactions per visitor per month', type:'number', step:'0.1', min:'0',
+        help:'Average number of transit transactions per transit-using visitor per month.' },
+      { id:'costPerTransaction', label:'Cost per transit transaction (USD)', type:'number', step:'0.01', min:'0',
+        help:'Average cost of each transit transaction.' }
+    ]
+  },
+  {
     key:'constraints', emoji:'🧱', title:'Constraints', class:'group-constraints',
     fields: [
       { id:'maxRetailers', label:'Max retailers available to onboard', type:'number', step:'1', min:'0',
@@ -182,6 +193,9 @@ function collectRefs(){
     avgInitial: $('#avgInitial'),
     avgReload: $('#avgReload'),
     maxRetailers: $('#maxRetailers'),
+    interchangeRate: $('#interchangeRate'),
+    avgTransitTransactions: $('#avgTransitTransactions'),
+    costPerTransaction: $('#costPerTransaction'),
     // mode radios
     modeRadios: $$('input[name="mode"]'),
     // utility buttons/labels
@@ -221,6 +235,12 @@ function render(){
   $('#kpi-retailerPayout').textContent = fmtUSD.format(out.perRetailerPayout);
   $('#kpi-brokerPayout').textContent = fmtUSD.format(out.brokerPayoutTotal || 0);
   $('#kpi-totalPayouts').textContent = fmtUSD.format(out.monthlyBurn);
+
+  // Revenue & Profit
+  $('#ob-transit-visitors').textContent = fmt0.format(out.totalTransitVisitors);
+  $('#ob-transit-spend').textContent = fmtUSD.format(out.totalTransitSpend);
+  $('#ob-monthly-revenue').textContent = fmtUSD.format(out.monthlyRevenue);
+  $('#ob-monthly-profit').textContent = fmtUSD.format(out.monthlyProfit);
 
   if(out.mode==='A'){
     $('#ob-max-retailers').textContent = fmt0.format(out.retailers);
@@ -263,6 +283,9 @@ function syncFromInputs(){
   state.avgInitial     = parseNumEl(refs.avgInitial);
   state.avgReload      = parseNumEl(refs.avgReload);
   state.maxRetailers     = parseOptIntEl(refs.maxRetailers);
+  state.interchangeRate = Math.min(100, parseNumEl(refs.interchangeRate));
+  state.avgTransitTransactions = parseNumEl(refs.avgTransitTransactions);
+  state.costPerTransaction = parseNumEl(refs.costPerTransaction);
 }
 
 const onChange = debounce(()=>{ syncFromInputs(); render(); scheduleHashUpdate(); }, 120);
@@ -288,6 +311,9 @@ function syncInputs(){
   assign(refs.avgInitial, state.avgInitial);
   assign(refs.avgReload, state.avgReload);
   assign(refs.maxRetailers, state.maxRetailers);
+  assign(refs.interchangeRate, state.interchangeRate);
+  assign(refs.avgTransitTransactions, state.avgTransitTransactions);
+  assign(refs.costPerTransaction, state.costPerTransaction);
 }
 
 /* ---------------- Bindings ---------------- */
@@ -297,7 +323,8 @@ function initBindings(){
     refs.budget, refs.targetMonths, refs.numRetailers, refs.brokerFee,
     refs.actPct, refs.reloadPct, refs.flatFee, refs.activationBonus, refs.newVisitors,
     refs.recurringVisitors, refs.transitPct, refs.activationConv, refs.reloadConv,
-    refs.avgInitial, refs.avgReload, refs.maxRetailers
+    refs.avgInitial, refs.avgReload, refs.maxRetailers, refs.interchangeRate,
+    refs.avgTransitTransactions, refs.costPerTransaction
   ].forEach(el => { if(el){ el.addEventListener('input', onChange); el.addEventListener('blur', onChange); }});
 
   // Radios (already have change in buildInputs, but keep safety)

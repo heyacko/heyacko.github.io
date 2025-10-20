@@ -17,7 +17,10 @@ export const DEFAULTS = {
   reloadConv: 50,
   avgInitial: 20,
   avgReload: 25,
-  maxRetailers: null
+  maxRetailers: null,
+  interchangeRate: 3.0,
+  avgTransitTransactions: 20,
+  costPerTransaction: 2.90
 };
 
 // Export ONE thing: compute(state) returns all derived metrics.
@@ -70,6 +73,23 @@ export function compute(s){
     const totalCost              = (monthlyBurn * T) + brokerPayoutTotal;
     const remaining              = (s.budget||0) - totalCost;
 
+    // --- Revenue & Profit Calculations ---
+    const interchangeRate = (s.interchangeRate||0)/100;
+    const avgTransitTransactions = s.avgTransitTransactions||0;
+    const costPerTransaction = s.costPerTransaction||0;
+    
+    // Total transit-using visitors per month across all retailers
+    const totalTransitVisitors = maxRetailers * ((s.newVisitors||0) + (s.recurringVisitors||0)) * transit;
+    
+    // Total transit spend per month
+    const totalTransitSpend = totalTransitVisitors * avgTransitTransactions * costPerTransaction;
+    
+    // Revenue per month
+    const monthlyRevenue = totalTransitSpend * interchangeRate;
+    
+    // Profit per month (Revenue - Monthly Burn)
+    const monthlyProfit = monthlyRevenue - monthlyBurn;
+
     return {
       ...base, mode:'A',
       retailers: maxRetailers,
@@ -78,7 +98,11 @@ export function compute(s){
       brokerPayoutTotal,     // one-time
       totalCost,
       remaining,
-      exceed: totalCost > (s.budget||0)
+      exceed: totalCost > (s.budget||0),
+      totalTransitVisitors,
+      totalTransitSpend,
+      monthlyRevenue,
+      monthlyProfit
     };
   }
 
@@ -88,6 +112,23 @@ export function compute(s){
   const monthlyBurn            = totalRetailerPayoutMonth;
   const brokerPayoutTotal      = retailers * (s.brokerFee||0); // one-time at start
   const budgetAfterBroker      = (s.budget||0) - brokerPayoutTotal;
+
+  // --- Revenue & Profit Calculations ---
+  const interchangeRate = (s.interchangeRate||0)/100;
+  const avgTransitTransactions = s.avgTransitTransactions||0;
+  const costPerTransaction = s.costPerTransaction||0;
+  
+  // Total transit-using visitors per month across all retailers
+  const totalTransitVisitors = retailers * ((s.newVisitors||0) + (s.recurringVisitors||0)) * transit;
+  
+  // Total transit spend per month
+  const totalTransitSpend = totalTransitVisitors * avgTransitTransactions * costPerTransaction;
+  
+  // Revenue per month
+  const monthlyRevenue = totalTransitSpend * interchangeRate;
+  
+  // Profit per month (Revenue - Monthly Burn)
+  const monthlyProfit = monthlyRevenue - monthlyBurn;
 
   let runwayExact;
   if (monthlyBurn <= 0) {
@@ -107,6 +148,10 @@ export function compute(s){
     brokerPayoutTotal,          // one-time
     runwayExact,
     runwayFloor: Math.floor(runwayExact),
-    exceed: false
+    exceed: false,
+    totalTransitVisitors,
+    totalTransitSpend,
+    monthlyRevenue,
+    monthlyProfit
   };
 }

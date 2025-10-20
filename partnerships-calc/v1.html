@@ -36,6 +36,36 @@
         <h2 id="outputs-header">Outputs</h2>
 
         <div class="cards" aria-live="polite">
+          <div class="card third">
+            <div class="kpi">
+              <div>
+                <div class="muted">Estimated payout per retailer / month</div>
+                <div id="kpi-retailerPayout" class="value mono">—</div>
+              </div>
+              <span class="tooltip" tabindex="0" data-tip="per-retailers payout from % on loads + flat fees"></span>
+            </div>
+          </div>
+
+          <div class="card third">
+            <div class="kpi">
+              <div>
+                <div class="muted">Total broker payout (one-time)</div>
+                <div id="kpi-brokerPayout" class="value mono">—</div>
+              </div>
+              <span class="tooltip" tabindex="0" data-tip="num_retailers × broker_fee (one-time at onboarding)"></span>
+            </div>
+          </div>
+
+          <div class="card third">
+            <div class="kpi">
+              <div>
+                <div class="muted">Total monthly program payouts</div>
+                <div id="kpi-totalPayouts" class="value mono">—</div>
+              </div>
+              <span class="tooltip" tabindex="0" data-tip="(retailers × per-retailers payout) + broker payout"></span>
+            </div>
+          </div>
+
           <div class="card full">
             <div class="kpi">
               <div>
@@ -97,33 +127,36 @@
             </div>
           </div>
 
-          <div class="card third">
+          <div class="card full">
             <div class="kpi">
               <div>
-                <div class="muted">Estimated payout per retailer / month</div>
-                <div id="kpi-retailerPayout" class="value mono">—</div>
+                <div class="muted">Revenue &amp; Profit</div>
+                <table class="table mono" aria-label="Revenue and profit table">
+                  <thead><tr><th>Metric</th><th>Value</th><th></th></tr></thead>
+                  <tbody>
+                    <tr>
+                      <td>Total transit-using visitors / month</td>
+                      <td id="ob-transit-visitors">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="retailers × (new_visitors + recurring_visitors) × transit%"></span></td>
+                    </tr>
+                    <tr>
+                      <td>Total transit spend / month</td>
+                      <td id="ob-transit-spend">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="transit_visitors × avg_transactions × cost_per_transaction"></span></td>
+                    </tr>
+                    <tr>
+                      <td>Monthly revenue</td>
+                      <td id="ob-monthly-revenue">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="transit_spend × interchange_rate%"></span></td>
+                    </tr>
+                    <tr>
+                      <td>Monthly profit</td>
+                      <td id="ob-monthly-profit">—</td>
+                      <td><span class="tooltip" tabindex="0" data-tip="revenue - monthly_burn"></span></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <span class="tooltip" tabindex="0" data-tip="per-retailers payout from % on loads + flat fees"></span>
-            </div>
-          </div>
-
-          <div class="card third">
-            <div class="kpi">
-              <div>
-                <div class="muted">Total broker payout (one-time)</div>
-                <div id="kpi-brokerPayout" class="value mono">—</div>
-              </div>
-              <span class="tooltip" tabindex="0" data-tip="num_retailers × broker_fee (one-time at onboarding)"></span>
-            </div>
-          </div>
-
-          <div class="card third">
-            <div class="kpi">
-              <div>
-                <div class="muted">Total monthly program payouts</div>
-                <div id="kpi-totalPayouts" class="value mono">—</div>
-              </div>
-              <span class="tooltip" tabindex="0" data-tip="(retailers × per-retailers payout) + broker payout"></span>
             </div>
           </div>
 
