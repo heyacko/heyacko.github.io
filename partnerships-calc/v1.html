@@ -55,8 +55,9 @@
               <div class="card full">
                 <div class="kpi">
                   <div>
-                    <div class="muted">Time Period</div>
+                    <div class="muted" id="inputs-time-period-title">Time Period</div>
                     <div id="inputs-time-period" class="value mono">—</div>
+                    <div class="muted small" id="inputs-time-period-description">—</div>
                   </div>
                   <span class="tooltip" tabindex="0" data-tip="Number of months used to calculate Total Revenue, Total Cost, and Total Profit"></span>
                 </div>
@@ -95,16 +96,6 @@
               <div class="card third">
                 <div class="kpi">
                   <div>
-                    <div class="muted">Monthly Profit</div>
-                    <div id="inputs-kpi-monthly-profit" class="value mono">—</div>
-                  </div>
-                  <span class="tooltip" tabindex="0" data-tip="Monthly revenue minus monthly burn"></span>
-                </div>
-              </div>
-
-              <div class="card third">
-                <div class="kpi">
-                  <div>
                     <div class="muted">Monthly Revenue</div>
                     <div id="inputs-kpi-monthly-revenue" class="value mono">—</div>
                   </div>
@@ -117,8 +108,42 @@
                   <div>
                     <div class="muted">Monthly Cost</div>
                     <div id="inputs-kpi-monthly-cost" class="value mono">—</div>
+                    <div class="muted small">Recurring monthly costs only</div>
                   </div>
-                  <span class="tooltip" tabindex="0" data-tip="Monthly burn (retailers × per-retailer payout + broker fees)"></span>
+                  <span class="tooltip" tabindex="0" data-tip="Monthly burn excluding one-time broker activation fees"></span>
+                </div>
+              </div>
+
+              <div class="card third">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">One-time Broker Costs</div>
+                    <div id="inputs-kpi-broker-costs" class="value mono">—</div>
+                    <div class="muted small">Total activation fees</div>
+                  </div>
+                  <span class="tooltip" tabindex="0" data-tip="Total broker fees for all retailer activations (one-time)"></span>
+                </div>
+              </div>
+
+              <div class="card third">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Monthly Profit (Recurring)</div>
+                    <div id="inputs-kpi-monthly-profit-recurring" class="value mono">—</div>
+                    <div class="muted small">Excluding one-time costs</div>
+                  </div>
+                  <span class="tooltip" tabindex="0" data-tip="Monthly revenue minus recurring monthly costs only"></span>
+                </div>
+              </div>
+
+              <div class="card third">
+                <div class="kpi">
+                  <div>
+                    <div class="muted">Monthly Profit (Total)</div>
+                    <div id="inputs-kpi-monthly-profit-total" class="value mono">—</div>
+                    <div class="muted small">Including one-time costs</div>
+                  </div>
+                  <span class="tooltip" tabindex="0" data-tip="Monthly revenue minus all costs (recurring + amortized one-time)"></span>
                 </div>
               </div>
 
@@ -236,53 +261,6 @@
                 </div>
               </div>
 
-              <div class="card full">
-                <div class="kpi">
-                  <div>
-                    <div class="muted">Program scale &amp; budget</div>
-                    <table class="table mono" aria-label="Program scale and budget table">
-                      <tbody>
-                        <tr class="only-mode-A">
-                          <td>Max retailers under budget (floored)</td>
-                          <td id="inputs-ob-max-retailers">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="max_retailers = floor( budget ÷ [T × (per_retailers_payout + broker_fee × activations_per_retailer)] ) with optional cap"></span></td>
-                        </tr>
-                        <tr class="only-mode-B">
-                          <td>Runway (months)</td>
-                          <td id="inputs-ob-runway">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="runway = budget ÷ monthly_burn"></span></td>
-                        </tr>
-                        <tr>
-                          <td>Estimated monthly burn</td>
-                          <td id="inputs-ob-monthly-burn">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="monthly_burn = retailers × per_retailers_payout + broker_fee × total_activations_all_retailers"></span></td>
-                        </tr>
-                        <tr class="only-mode-A">
-                          <td>Total cost over target months</td>
-                          <td id="inputs-ob-total-cost">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="total_cost = retailers × T × (per_retailers_payout + broker_fee × activations_per_retailers)"></span></td>
-                        </tr>
-                        <tr class="only-mode-A">
-                          <td>Remaining budget after target months</td>
-                          <td id="inputs-ob-remaining">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="remaining = budget − total_cost"></span></td>
-                        </tr>
-                        <tr class="only-mode-B">
-                          <td>Budget exhausted in ~</td>
-                          <td id="inputs-ob-exhaust">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="approximate months until budget reaches zero at current burn"></span></td>
-                        </tr>
-                        <tr>
-                          <td>Will it exceed budget?</td>
-                          <td id="inputs-ob-exceed">—</td>
-                          <td><span class="tooltip" tabindex="0" data-tip="Retailer Optimization: checks total_cost ≤ budget. Runway Optimization: runway ≥ desired months (if any)."></span></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <div id="inputs-mode-context" class="footer-note"></div>
-                  </div>
-                </div>
-              </div>
             </div>
           </section>
         </div>

@@ -275,20 +275,26 @@ function updateCardFooters(out) {
 }
 
 function updateInputsTabOutputs(out) {
-  // Time Period Indicator
-  let timePeriodText, timePeriodMonths;
+  // Dynamic Time Period Card
+  let timePeriodText, timePeriodMonths, titleText, descriptionText;
   
   if (out.mode === 'A') {
     // Retailer Optimization: Use target months
     timePeriodMonths = Math.max(1, Math.floor(state.targetMonths || 0));
-    timePeriodText = `${timePeriodMonths} months (Target Period)`;
+    timePeriodText = `${out.retailers} retailers`;
+    titleText = 'Optimal Retailer Partnerships';
+    descriptionText = `Given ${fmtUSD.format(state.budget)} and ${timePeriodMonths} months, the campaign can safely partner with ${out.retailers} retailers without going over budget`;
   } else {
     // Runway Optimization: Use runway months
     timePeriodMonths = isFinite(out.runwayExact) ? out.runwayExact : 0;
-    timePeriodText = `${timePeriodMonths.toFixed(1)} months (Runway)`;
+    timePeriodText = `${timePeriodMonths.toFixed(1)} months`;
+    titleText = 'Optimal Campaign Length';
+    descriptionText = `Given ${fmtUSD.format(state.budget)} and ${out.retailers} retailers, the campaign can safely run for ${timePeriodMonths.toFixed(1)} months without going over budget`;
   }
   
+  $('#inputs-time-period-title').textContent = titleText;
   $('#inputs-time-period').textContent = timePeriodText;
+  $('#inputs-time-period-description').textContent = descriptionText;
   
   // Top KPI Cards - Total Profit, Total Revenue, Total Cost
   // Calculate Total Revenue and Total Cost based on mode
@@ -316,12 +322,25 @@ function updateInputsTabOutputs(out) {
   $('#inputs-kpi-total-revenue').textContent = fmtUSD.format(totalRevenue);
   $('#inputs-kpi-cost').textContent = fmtUSD.format(totalCost);
   
-  // Update Monthly KPIs with color coding for profit
-  $('#inputs-kpi-monthly-profit').textContent = fmtUSD.format(out.monthlyProfit);
-  $('#inputs-kpi-monthly-profit').className = `value mono ${out.monthlyProfit >= 0 ? 'profit-positive' : 'profit-negative'}`;
+  // Calculate monthly costs breakdown
+  const recurringMonthlyCost = out.monthlyBurn; // This excludes broker fees (they're one-time)
+  const totalBrokerCosts = (out.brokerPayoutTotal || 0);
   
+  // Calculate monthly profits
+  const monthlyProfitRecurring = out.monthlyRevenue - recurringMonthlyCost;
+  const monthlyProfitTotal = out.monthlyRevenue - recurringMonthlyCost - (totalBrokerCosts / timePeriodMonths);
+  
+  // Update Monthly KPIs
   $('#inputs-kpi-monthly-revenue').textContent = fmtUSD.format(out.monthlyRevenue);
-  $('#inputs-kpi-monthly-cost').textContent = fmtUSD.format(out.monthlyBurn);
+  $('#inputs-kpi-monthly-cost').textContent = fmtUSD.format(recurringMonthlyCost);
+  $('#inputs-kpi-broker-costs').textContent = fmtUSD.format(totalBrokerCosts);
+  
+  // Update Monthly Profit cards with color coding
+  $('#inputs-kpi-monthly-profit-recurring').textContent = fmtUSD.format(monthlyProfitRecurring);
+  $('#inputs-kpi-monthly-profit-recurring').className = `value mono ${monthlyProfitRecurring >= 0 ? 'profit-positive' : 'profit-negative'}`;
+  
+  $('#inputs-kpi-monthly-profit-total').textContent = fmtUSD.format(monthlyProfitTotal);
+  $('#inputs-kpi-monthly-profit-total').className = `value mono ${monthlyProfitTotal >= 0 ? 'profit-positive' : 'profit-negative'}`;
 
   // Activity
   $('#inputs-ob-visitors').textContent = fmt0.format(out.perRetailerVisitors);
@@ -344,25 +363,6 @@ function updateInputsTabOutputs(out) {
   $('#inputs-ob-monthly-revenue').textContent = fmtUSD.format(out.monthlyRevenue);
   $('#inputs-ob-monthly-profit').textContent = fmtUSD.format(out.monthlyProfit);
 
-  if(out.mode==='A'){
-    $('#inputs-ob-max-retailers').textContent = fmt0.format(out.retailers);
-    $('#inputs-ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
-    $('#inputs-ob-total-cost').textContent = fmtUSD.format(out.totalCost);
-    $('#inputs-ob-remaining').textContent = fmtUSD.format(out.remaining);
-    $('#inputs-ob-exceed').innerHTML = out.exceed ? '<span class="state-bad">Yes</span>' : '<span class="state-ok">No</span>';
-    $('#inputs-ob-runway').textContent = '—'; 
-    $('#inputs-ob-exhaust').textContent = '—';
-    $('#inputs-mode-context').textContent = `Retailer Optimization: With ${fmt0.format(out.retailers)} retailers for ${fmt0.format(Math.max(1,Math.floor(state.targetMonths||0)))} months, total cost is ${fmtUSD.format(out.totalCost)} (monthly burn ${fmtUSD.format(out.monthlyBurn)}).`;
-  }else{
-    $('#inputs-ob-runway').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months (floor ${fmt0.format(out.runwayFloor)})` : '∞';
-    $('#inputs-ob-monthly-burn').textContent = fmtUSD.format(out.monthlyBurn);
-    $('#inputs-ob-total-cost').textContent = '—'; 
-    $('#inputs-ob-remaining').textContent='—'; 
-    $('#inputs-ob-exceed').textContent='—';
-    $('#inputs-ob-max-retailers').textContent = '—';
-    $('#inputs-ob-exhaust').textContent = isFinite(out.runwayExact) ? `${out.runwayExact.toFixed(2)} months` : 'Never';
-    $('#inputs-mode-context').textContent = `Runway Optimization: With ${fmt0.format(out.retailers)} retailers, monthly burn is ${fmtUSD.format(out.monthlyBurn)} and runway is ~${out.runwayExact.toFixed(2)} months.`;
-  }
 }
 
 /* ---------------- Accordion Functions ---------------- */
