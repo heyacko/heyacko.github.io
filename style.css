@@ -64,7 +64,7 @@ html, body {
     radial-gradient(circle at 80% 20%, rgba(126, 211, 33, 0.1) 0%, transparent 50%);
   background-size: 100% 100%, 100% 100%, 100% 100%;
   color: var(--ink);
-  font: 16px/1.5 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font: 16px/1.5 'Lucida Console', Monaco, 'Courier New', monospace;
   font-weight: 400;
   min-height: 100vh;
   position: relative;
@@ -104,10 +104,10 @@ html::before {
   background-position: 0 calc(var(--scroll-y, 0px) * 0.3);
   transform: perspective(1200px) rotateX(65deg) rotateY(0deg) rotateZ(12deg);
   transform-origin: center center;
-  opacity: 0.5;
+  opacity: 0.3;
   z-index: 1;
   pointer-events: none;
-  filter: blur(0.5px);
+  filter: blur(0.3px);
   mask-image: 
     radial-gradient(ellipse at center, black 60%, transparent 100%),
     linear-gradient(black, black);
