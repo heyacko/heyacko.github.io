@@ -9,6 +9,166 @@
     <style>
         /* Gaming ROI Calculator specific styles */
         /* Custom styles for gaming calculator specific elements */
+        
+        /* Add proper spacing between cards */
+        .shared-card + .shared-card {
+            margin-top: 25px;
+        }
+
+        /* Layout for primary metrics side by side */
+        .primary-metrics {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .primary-metrics .primary-metric {
+            flex: 1;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .primary-metrics {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+
+        /* Game list styling */
+        .games-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .game-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .game-info {
+            flex: 1;
+        }
+
+        .game-name {
+            font-weight: 600;
+            color: #2c5aa0;
+            margin-bottom: 2px;
+        }
+
+        .game-details {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .remove-game-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .remove-game-btn:hover {
+            background: #ff5252;
+        }
+
+        /* Individual game metrics table styling */
+        .games-metrics {
+            margin-bottom: 25px;
+        }
+
+        .games-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .games-table th,
+        .games-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .games-table th {
+            background: rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+            color: #2c5aa0;
+            font-family: 'Lucida Console', Monaco, 'Courier New', monospace;
+        }
+
+        .games-table td {
+            color: #333;
+        }
+
+        .games-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .games-table .game-name {
+            font-weight: 600;
+            color: #2c5aa0;
+        }
+
+        .games-table .metric-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .games-table .cost-per-hour {
+            text-align: right;
+        }
+
+        .games-table .hours-work {
+            text-align: right;
+        }
+
+        /* Color coding for metrics based on verdict bins */
+        .metric-legendary { color: #4CAF50 !important; } /* Green - $0-1/hr */
+        .metric-elite { color: #8BC34A !important; } /* Light Green - $1-3/hr */
+        .metric-solid { color: #2196F3 !important; } /* Blue - $3-8/hr */
+        .metric-reasonable { color: #FF9800 !important; } /* Orange - $8-15/hr */
+        .metric-premium { color: #FF5722 !important; } /* Deep Orange - $15-30/hr */
+        .metric-yikes { color: #F44336 !important; } /* Red - $30+/hr */
+
+        /* Apply color coding to primary metrics */
+        .primary-metric .value.legendary { color: #4CAF50; }
+        .primary-metric .value.elite { color: #8BC34A; }
+        .primary-metric .value.solid { color: #2196F3; }
+        .primary-metric .value.reasonable { color: #FF9800; }
+        .primary-metric .value.premium { color: #FF5722; }
+        .primary-metric .value.yikes { color: #F44336; }
+
+        .add-game-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            align-self: flex-end;
+            margin-top: 30px; /* Match the label height to align with input fields */
+        }
+
+        .add-game-btn:hover {
+            background: #4a90e2;
+            transform: translateY(-2px);
+        }
 
         .input-section {
             margin-bottom: 25px;
@@ -348,9 +508,14 @@
             <h1 class="shared-h1">Gaming ROI Calculator</h1>
             <p class="shared-sub">Calculate the true cost of your gaming habit and see how it stacks up against other entertainment.</p>
             <a href="index.html" class="shared-btn-ghost">🏠 Home</a>
-            <h3>Game Details</h3>
+            <h3>Add Game</h3>
             <div class="input-section">
                 <div class="input-row">
+                    <div class="input-group">
+                        <label for="gameName">Game name *</label>
+                        <input type="text" id="gameName" placeholder="e.g., Elden Ring">
+                        <div class="error-message" id="gameNameError"></div>
+                    </div>
                     <div class="input-group">
                         <label for="gameCost">Cost of game ($) *</label>
                         <input type="number" id="gameCost" placeholder="60" min="0" step="0.01">
@@ -360,15 +525,23 @@
                         <label for="dlcCost">DLC cost ($)</label>
                         <input type="number" id="dlcCost" placeholder="0" min="0" step="0.01">
                     </div>
-                </div>
-                <div class="input-group">
-                    <label for="hoursPlayed">Hours played *</label>
-                    <input type="number" id="hoursPlayed" placeholder="40" min="0.1" step="0.1">
-                    <div class="error-message" id="hoursPlayedError"></div>
+                    <div class="input-group">
+                        <label for="hoursPlayed">Hours played *</label>
+                        <input type="number" id="hoursPlayed" placeholder="40" min="0" step="0.1">
+                        <div class="error-message" id="hoursPlayedError"></div>
+                    </div>
+                    <div class="input-group">
+                        <button type="button" class="add-game-btn" id="addGameBtn">Add Game</button>
+                    </div>
                 </div>
             </div>
 
-            <h3>Your Income</h3>
+            <div class="games-list-section" id="gamesListSection" style="display: none;">
+                <h3>Your Games</h3>
+                <div class="games-list" id="gamesList"></div>
+            </div>
+
+            <h3>Your Income (Optional)</h3>
             <div class="input-section">
                 <div class="radio-group">
                     <div class="radio-option">
@@ -382,12 +555,12 @@
                 </div>
                 <div class="input-row">
                     <div class="input-group" id="hourlyInput">
-                        <label for="hourlyRateValue">Hourly rate ($) *</label>
+                        <label for="hourlyRateValue">Hourly rate ($)</label>
                         <input type="number" id="hourlyRateValue" placeholder="25" min="0" step="0.01">
                         <div class="error-message" id="hourlyRateError"></div>
                     </div>
                     <div class="input-group" id="annualInput" style="display: none;">
-                        <label for="annualSalaryValue">Annual salary ($) *</label>
+                        <label for="annualSalaryValue">Annual salary ($)</label>
                         <input type="number" id="annualSalaryValue" placeholder="52000" min="0" step="0.01">
                         <div class="error-message" id="annualSalaryError"></div>
                     </div>
@@ -402,25 +575,29 @@
         </div>
 
         <div class="shared-card results" id="resultsCard">
-            <div class="primary-metric">
-                <div class="value" id="costPerHour">$0.00/hr</div>
-                <div class="label">Cost per hour of entertainment</div>
-            </div>
-
-            <div class="secondary-metrics">
-                <div class="metric">
-                    <div class="value" id="costPercentage">0.0%</div>
-                    <div class="label">Game cost as % of your hourly income</div>
+            <div class="primary-metrics">
+                <div class="primary-metric">
+                    <div class="value" id="aggregateCostPerHour">$0.00/hr</div>
+                    <div class="label">Aggregate cost per hour of gaming</div>
                 </div>
-                <div class="metric">
-                    <div class="value" id="hoursOfWork">0.0</div>
-                    <div class="label">Hours of work to pay for this game</div>
+                <div class="primary-metric">
+                    <div class="value" id="aggregateHoursOfWork">0.0</div>
+                    <div class="label">Total hours of work to pay for all games</div>
                 </div>
             </div>
 
             <div class="verdict">
                 <div class="verdict-text" id="verdictText">Ready to calculate!</div>
-                <div class="verdict-subtext" id="verdictSubtext">Click the calculate button to see your gaming ROI verdict.</div>
+                <div class="verdict-subtext" id="verdictSubtext">Add games and calculate to see your gaming ROI verdict.</div>
+            </div>
+
+            <div class="individual-games-section" id="individualGamesSection" style="display: none;">
+                <h3>Individual Game Metrics</h3>
+                <div class="games-metrics" id="gamesMetrics"></div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="scatterChart"></canvas>
             </div>
 
             <div class="chart-container">
@@ -482,6 +659,38 @@
                         <span>hours/month</span>
                     </div>
                     
+                    <div class="assumption-item">
+                        <label>Concert Ticket:</label>
+                        <input type="number" id="concertPrice" value="100" min="0" step="0.01">
+                        <span>over</span>
+                        <input type="number" id="concertHours" value="3" min="0.1" step="0.1">
+                        <span>hours</span>
+                    </div>
+                    
+                    <div class="assumption-item">
+                        <label>Basketball Ticket:</label>
+                        <input type="number" id="basketballPrice" value="120" min="0" step="0.01">
+                        <span>over</span>
+                        <input type="number" id="basketballHours" value="3" min="0.1" step="0.1">
+                        <span>hours</span>
+                    </div>
+                    
+                    <div class="assumption-item">
+                        <label>Gym Membership:</label>
+                        <input type="number" id="gymPrice" value="60" min="0" step="0.01">
+                        <span>per month over</span>
+                        <input type="number" id="gymHours" value="12" min="0.1" step="0.1">
+                        <span>hours/month</span>
+                    </div>
+                    
+                    <div class="assumption-item">
+                        <label>Spotify Premium:</label>
+                        <input type="number" id="spotifyPrice" value="11" min="0" step="0.01">
+                        <span>per month over</span>
+                        <input type="number" id="spotifyHours" value="60" min="0.1" step="0.1">
+                        <span>hours/month</span>
+                    </div>
+                    
                     <button class="reset-btn" id="resetBtn">Reset to Defaults</button>
                 </div>
             </div>
@@ -490,9 +699,14 @@
 
     <script>
         // DOM elements
+        const gameNameInput = document.getElementById('gameName');
         const gameCostInput = document.getElementById('gameCost');
         const dlcCostInput = document.getElementById('dlcCost');
         const hoursPlayedInput = document.getElementById('hoursPlayed');
+        const addGameBtn = document.getElementById('addGameBtn');
+        const gamesListSection = document.getElementById('gamesListSection');
+        const gamesList = document.getElementById('gamesList');
+        
         const hourlyRateRadio = document.getElementById('hourlyRate');
         const annualSalaryRadio = document.getElementById('annualSalary');
         const hourlyRateInput = document.getElementById('hourlyRateValue');
@@ -502,14 +716,19 @@
         const resultsCard = document.getElementById('resultsCard');
         
         // Results elements
-        const costPerHourEl = document.getElementById('costPerHour');
-        const costPercentageEl = document.getElementById('costPercentage');
-        const hoursOfWorkEl = document.getElementById('hoursOfWork');
+        const aggregateCostPerHourEl = document.getElementById('aggregateCostPerHour');
+        const aggregateHoursOfWorkEl = document.getElementById('aggregateHoursOfWork');
         const verdictTextEl = document.getElementById('verdictText');
         const verdictSubtextEl = document.getElementById('verdictSubtext');
+        const individualGamesSection = document.getElementById('individualGamesSection');
+        const gamesMetrics = document.getElementById('gamesMetrics');
         
-        // Chart
+        // Charts
         let comparisonChart = null;
+        let scatterChart = null;
+        
+        // Data storage
+        let games = [];
         
         // Advanced assumptions
         const accordionHeader = document.getElementById('accordionHeader');
@@ -532,11 +751,14 @@
             hourlyRateRadio.addEventListener('change', toggleIncomeInputs);
             annualSalaryRadio.addEventListener('change', toggleIncomeInputs);
             
+            // Game management
+            addGameBtn.addEventListener('click', addGame);
+            
             // Calculate button
             calculateBtn.addEventListener('click', calculateROI);
             
             // Auto-calculate on input change (after first calculation)
-            const inputs = [gameCostInput, dlcCostInput, hoursPlayedInput, hourlyRateInput, annualSalaryInput, hoursWorkedInput];
+            const inputs = [hourlyRateInput, annualSalaryInput, hoursWorkedInput];
             inputs.forEach(input => {
                 input.addEventListener('input', () => {
                     if (resultsCard.style.display !== 'none') {
@@ -551,8 +773,10 @@
             
             const assumptionInputs = [
                 'moviePrice', 'movieHours', 'disneyPrice', 'disneyHours',
+                'concertPrice', 'concertHours', 'basketballPrice', 'basketballHours',
                 'netflixPrice', 'netflixHours', 'maxPrice', 'maxHours',
-                'youtubePrice', 'youtubeHours'
+                'youtubePrice', 'youtubeHours', 'gymPrice', 'gymHours',
+                'spotifyPrice', 'spotifyHours'
             ];
             assumptionInputs.forEach(id => {
                 document.getElementById(id).addEventListener('input', () => {
@@ -566,6 +790,88 @@
             shareBtn.addEventListener('click', copySummary);
         }
 
+        function addGame() {
+            const gameName = gameNameInput.value.trim();
+            const gameCost = parseFloat(gameCostInput.value);
+            const dlcCost = parseFloat(dlcCostInput.value) || 0;
+            const hoursPlayed = parseFloat(hoursPlayedInput.value);
+            
+            // Validate inputs
+            if (!gameName) {
+                showError('gameNameError', 'Please enter a game name');
+                return;
+            }
+            if (isNaN(gameCost) || gameCost < 0) {
+                showError('gameCostError', 'Please enter a valid game cost');
+                return;
+            }
+            if (isNaN(hoursPlayed) || hoursPlayed < 0) {
+                showError('hoursPlayedError', 'Please enter valid hours played (≥ 0)');
+                return;
+            }
+            
+            // Clear errors
+            hideError('gameNameError');
+            hideError('gameCostError');
+            hideError('hoursPlayedError');
+            
+            // Add game to array
+            const game = {
+                id: Date.now(), // Simple ID generation
+                name: gameName,
+                cost: gameCost,
+                dlcCost: dlcCost,
+                hoursPlayed: hoursPlayed,
+                totalCost: gameCost + dlcCost,
+                costPerHour: hoursPlayed > 0 ? (gameCost + dlcCost) / hoursPlayed : 0
+            };
+            
+            games.push(game);
+            
+            // Clear inputs
+            gameNameInput.value = '';
+            gameCostInput.value = '';
+            dlcCostInput.value = '';
+            hoursPlayedInput.value = '';
+            
+            // Update UI
+            updateGamesList();
+            gamesListSection.style.display = 'block';
+            
+            // Auto-calculate if income is set
+            if (hourlyRateInput.value || annualSalaryInput.value) {
+                calculateROI();
+            }
+        }
+        
+        function removeGame(gameId) {
+            games = games.filter(game => game.id !== gameId);
+            updateGamesList();
+            
+            if (games.length === 0) {
+                gamesListSection.style.display = 'none';
+                resultsCard.style.display = 'none';
+            } else if (hourlyRateInput.value || annualSalaryInput.value) {
+                calculateROI();
+            }
+        }
+        
+        function updateGamesList() {
+            gamesList.innerHTML = '';
+            games.forEach(game => {
+                const gameItem = document.createElement('div');
+                gameItem.className = 'game-item';
+                gameItem.innerHTML = `
+                    <div class="game-info">
+                        <div class="game-name">${game.name}</div>
+                        <div class="game-details">$${game.totalCost.toFixed(2)} • ${game.hoursPlayed} hours • $${game.costPerHour.toFixed(2)}/hr</div>
+                    </div>
+                    <button class="remove-game-btn" onclick="removeGame(${game.id})">Remove</button>
+                `;
+                gamesList.appendChild(gameItem);
+            });
+        }
+
         function toggleIncomeInputs() {
             const isHourly = hourlyRateRadio.checked;
             document.getElementById('hourlyInput').style.display = isHourly ? 'block' : 'none';
@@ -573,31 +879,13 @@
             document.getElementById('hoursWorkedInput').style.display = isHourly ? 'none' : 'block';
         }
 
-        function validateInputs() {
+        function validateIncomeInputs() {
             let isValid = true;
             
-            // Game cost validation
-            const gameCost = parseFloat(gameCostInput.value);
-            if (isNaN(gameCost) || gameCost < 0) {
-                showError('gameCostError', 'Please enter a valid game cost');
-                isValid = false;
-            } else {
-                hideError('gameCostError');
-            }
-            
-            // Hours played validation
-            const hoursPlayed = parseFloat(hoursPlayedInput.value);
-            if (isNaN(hoursPlayed) || hoursPlayed <= 0) {
-                showError('hoursPlayedError', 'Please enter valid hours played (> 0)');
-                isValid = false;
-            } else {
-                hideError('hoursPlayedError');
-            }
-            
-            // Income validation
+            // Income validation - now optional
             if (hourlyRateRadio.checked) {
                 const hourlyRate = parseFloat(hourlyRateInput.value);
-                if (isNaN(hourlyRate) || hourlyRate < 0) {
+                if (hourlyRateInput.value && (isNaN(hourlyRate) || hourlyRate < 0)) {
                     showError('hourlyRateError', 'Please enter a valid hourly rate');
                     isValid = false;
                 } else {
@@ -605,7 +893,7 @@
                 }
             } else {
                 const annualSalary = parseFloat(annualSalaryInput.value);
-                if (isNaN(annualSalary) || annualSalary < 0) {
+                if (annualSalaryInput.value && (isNaN(annualSalary) || annualSalary < 0)) {
                     showError('annualSalaryError', 'Please enter a valid annual salary');
                     isValid = false;
                 } else {
@@ -630,78 +918,148 @@
         }
 
         function calculateROI() {
-            if (!validateInputs()) {
+            if (games.length === 0) {
+                alert('Please add at least one game before calculating.');
                 return;
             }
             
-            const gameCost = parseFloat(gameCostInput.value) || 0;
-            const dlcCost = parseFloat(dlcCostInput.value) || 0;
-            const hoursPlayed = parseFloat(hoursPlayedInput.value);
+            if (!validateIncomeInputs()) {
+                return;
+            }
             
-            const totalCost = gameCost + dlcCost;
-            const costPerHour = totalCost / hoursPlayed;
-            
-            // Calculate hourly income
-            let hourlyIncome;
-            if (hourlyRateRadio.checked) {
+            // Calculate hourly income (optional)
+            let hourlyIncome = null;
+            if (hourlyRateRadio.checked && hourlyRateInput.value) {
                 hourlyIncome = parseFloat(hourlyRateInput.value);
-            } else {
+            } else if (!hourlyRateRadio.checked && annualSalaryInput.value) {
                 const annualSalary = parseFloat(annualSalaryInput.value);
                 const hoursWorkedPerYear = parseFloat(hoursWorkedInput.value) || 2080;
                 hourlyIncome = annualSalary / hoursWorkedPerYear;
             }
             
-            const gameCostPercentage = (costPerHour / hourlyIncome) * 100;
-            const hoursOfWorkToPay = totalCost / hourlyIncome;
+            // Calculate aggregate metrics
+            const totalCost = games.reduce((sum, game) => sum + game.totalCost, 0);
+            const totalHours = games.reduce((sum, game) => sum + game.hoursPlayed, 0);
+            const aggregateCostPerHour = totalHours > 0 ? totalCost / totalHours : 0;
+            const aggregateHoursOfWork = hourlyIncome && hourlyIncome > 0 ? totalCost / hourlyIncome : null;
             
             // Update results display
-            updateResults(costPerHour, gameCostPercentage, hoursOfWorkToPay);
+            updateResults(aggregateCostPerHour, aggregateHoursOfWork);
             
             // Generate verdict
-            generateVerdict(costPerHour, hoursOfWorkToPay);
+            generateVerdict(aggregateCostPerHour, aggregateHoursOfWork);
             
-            // Update chart
-            updateChart();
+            // Update charts
+            updateScatterChart();
+            updateComparisonChart();
             
             // Show results
             resultsCard.style.display = 'block';
-            
-            // Update URL
-            updateURL();
+            individualGamesSection.style.display = 'block';
+            updateIndividualGamesMetrics(hourlyIncome);
         }
 
-        function updateResults(costPerHour, gameCostPercentage, hoursOfWorkToPay) {
-            costPerHourEl.textContent = `$${costPerHour.toFixed(2)}/hr`;
-            costPercentageEl.textContent = `${gameCostPercentage.toFixed(1)}%`;
+        function updateResults(costPerHour, hoursOfWorkToPay) {
+            // Update cost per hour with color coding
+            aggregateCostPerHourEl.textContent = `$${costPerHour.toFixed(2)}/hr`;
+            aggregateCostPerHourEl.className = 'value ' + getCostPerHourColorClass(costPerHour);
             
-            if (hoursOfWorkToPay < 10) {
-                hoursOfWorkEl.textContent = hoursOfWorkToPay.toFixed(2);
+            // Update hours of work with color coding (handle null case)
+            if (hoursOfWorkToPay === null) {
+                aggregateHoursOfWorkEl.textContent = 'N/A';
+                aggregateHoursOfWorkEl.className = 'value';
             } else {
-                hoursOfWorkEl.textContent = hoursOfWorkToPay.toFixed(1);
+                if (hoursOfWorkToPay < 10) {
+                    aggregateHoursOfWorkEl.textContent = hoursOfWorkToPay.toFixed(2);
+                } else {
+                    aggregateHoursOfWorkEl.textContent = hoursOfWorkToPay.toFixed(1);
+                }
+                aggregateHoursOfWorkEl.className = 'value ' + getHoursOfWorkColorClass(hoursOfWorkToPay);
             }
+        }
+
+        function getCostPerHourColorClass(costPerHour) {
+            if (costPerHour <= 1.00) return 'legendary';
+            if (costPerHour <= 3.00) return 'elite';
+            if (costPerHour <= 8.00) return 'solid';
+            if (costPerHour <= 15.00) return 'reasonable';
+            if (costPerHour <= 30.00) return 'premium';
+            return 'yikes';
+        }
+
+        function getHoursOfWorkColorClass(hoursOfWork) {
+            if (hoursOfWork <= 1) return 'legendary';
+            if (hoursOfWork <= 3) return 'elite';
+            if (hoursOfWork <= 8) return 'solid';
+            if (hoursOfWork <= 15) return 'reasonable';
+            if (hoursOfWork <= 30) return 'premium';
+            return 'yikes';
+        }
+        
+        function updateIndividualGamesMetrics(hourlyIncome) {
+            gamesMetrics.innerHTML = '';
+            
+            const table = document.createElement('table');
+            table.className = 'games-table';
+            
+            // Create table header
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `
+                <th>Game</th>
+                <th class="cost-per-hour">Cost per Hour</th>
+                <th class="hours-work">Hours of Work</th>
+            `;
+            table.appendChild(headerRow);
+            
+            // Create table rows for each game
+            games.forEach(game => {
+                const hoursOfWork = hourlyIncome && hourlyIncome > 0 ? game.totalCost / hourlyIncome : null;
+                const costPerHourClass = getCostPerHourColorClass(game.costPerHour);
+                const hoursWorkClass = hoursOfWork !== null ? getHoursOfWorkColorClass(hoursOfWork) : '';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="game-name">${game.name}</td>
+                    <td class="cost-per-hour">
+                        <span class="metric-value metric-${costPerHourClass}">$${game.costPerHour.toFixed(2)}/hr</span>
+                    </td>
+                    <td class="hours-work">
+                        <span class="metric-value ${hoursWorkClass ? 'metric-' + hoursWorkClass : ''}">${hoursOfWork !== null ? (hoursOfWork < 10 ? hoursOfWork.toFixed(2) : hoursOfWork.toFixed(1)) : 'N/A'}</span>
+                    </td>
+                `;
+                table.appendChild(row);
+            });
+            
+            gamesMetrics.appendChild(table);
         }
 
         function generateVerdict(costPerHour, hoursOfWorkToPay) {
             let verdict, subtext;
             
-            // Primary verdict based on cost per hour
-            if (costPerHour <= 0.50) {
+            // Primary verdict based on cost per hour - more generous thresholds
+            if (costPerHour <= 1.00) {
                 verdict = "Legendary ROI. You basically got paid to have fun.";
-            } else if (costPerHour <= 1.50) {
-                verdict = "Elite value. Cheaper than most subscriptions per hour.";
-            } else if (costPerHour <= 3) {
-                verdict = "Solid deal. Your wallet nods in approval.";
-            } else if (costPerHour <= 6) {
-                verdict = "Borderline. Maybe finish your backlog first.";
+            } else if (costPerHour <= 3.00) {
+                verdict = "Elite value. Beats most entertainment options per hour.";
+            } else if (costPerHour <= 8.00) {
+                verdict = "Solid deal. Competitive with premium entertainment.";
+            } else if (costPerHour <= 15.00) {
+                verdict = "Reasonable. Still cheaper than a concert or sports ticket.";
+            } else if (costPerHour <= 30.00) {
+                verdict = "Premium pricing. You're paying for the experience.";
             } else {
                 verdict = "Yikes. You funded a CEO yacht per hour.";
             }
             
             // Secondary punchline based on hours of work
-            if (hoursOfWorkToPay <= 1) {
+            if (hoursOfWorkToPay === null) {
+                subtext = "Add your income to see work hours analysis.";
+            } else if (hoursOfWorkToPay <= 1) {
                 subtext = "Your boss won't even notice.";
-            } else if (hoursOfWorkToPay <= 5) {
+            } else if (hoursOfWorkToPay <= 3) {
                 subtext = "That's a couple meetings you were going to hate anyway.";
+            } else if (hoursOfWorkToPay <= 8) {
+                subtext = "A solid work shift for months of entertainment.";
             } else {
                 subtext = "This is a part-time job in disguise.";
             }
@@ -710,53 +1068,140 @@
             verdictSubtextEl.textContent = subtext;
         }
 
-        function updateChart() {
-            const gameCost = parseFloat(gameCostInput.value) || 0;
-            const dlcCost = parseFloat(dlcCostInput.value) || 0;
-            const hoursPlayed = parseFloat(hoursPlayedInput.value);
+        function updateScatterChart() {
+            const ctx = document.getElementById('scatterChart').getContext('2d');
+            if (scatterChart) {
+                scatterChart.destroy();
+            }
             
-            if (!hoursPlayed || hoursPlayed <= 0) return;
+            const scatterData = games.map(game => ({
+                x: Math.max(game.hoursPlayed, 0.1), // Ensure minimum value for chart display
+                y: Math.max(game.totalCost, 0.01), // Ensure minimum value for chart display
+                label: game.name
+            }));
             
-            const totalCost = gameCost + dlcCost;
-            const gameCostPerHour = totalCost / hoursPlayed;
+            scatterChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Games',
+                        data: scatterData,
+                        backgroundColor: 'rgba(74, 144, 226, 0.8)',
+                        borderColor: 'rgba(74, 144, 226, 1)',
+                        borderWidth: 2,
+                        pointRadius: 8,
+                        pointHoverRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Cost vs Hours Played',
+                            font: {
+                                size: 16,
+                                family: 'Lucida Console, Monaco, Courier New, monospace'
+                            },
+                            color: '#2c5aa0'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const point = context.raw;
+                                    return `${point.label}: $${point.y.toFixed(2)} for ${point.x} hours`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Hours Played',
+                                font: {
+                                    family: 'Lucida Console, Monaco, Courier New, monospace'
+                                },
+                                color: '#2c5aa0'
+                            },
+                            grid: {
+                                color: 'rgba(74, 144, 226, 0.2)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Total Cost ($)',
+                                font: {
+                                    family: 'Lucida Console, Monaco, Courier New, monospace'
+                                },
+                                color: '#2c5aa0'
+                            },
+                            grid: {
+                                color: 'rgba(74, 144, 226, 0.2)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateComparisonChart() {
+            if (games.length === 0) return;
+            
+            // Calculate aggregate cost per hour
+            const totalCost = games.reduce((sum, game) => sum + game.totalCost, 0);
+            const totalHours = games.reduce((sum, game) => sum + game.hoursPlayed, 0);
+            const aggregateCostPerHour = totalHours > 0 ? totalCost / totalHours : 0;
             
             // Get assumption values
             const assumptions = {
                 movie: parseFloat(document.getElementById('moviePrice').value) / parseFloat(document.getElementById('movieHours').value),
                 disney: parseFloat(document.getElementById('disneyPrice').value) / parseFloat(document.getElementById('disneyHours').value),
+                concert: parseFloat(document.getElementById('concertPrice').value) / parseFloat(document.getElementById('concertHours').value),
+                basketball: parseFloat(document.getElementById('basketballPrice').value) / parseFloat(document.getElementById('basketballHours').value),
                 netflix: parseFloat(document.getElementById('netflixPrice').value) / parseFloat(document.getElementById('netflixHours').value),
                 max: parseFloat(document.getElementById('maxPrice').value) / parseFloat(document.getElementById('maxHours').value),
-                youtube: parseFloat(document.getElementById('youtubePrice').value) / parseFloat(document.getElementById('youtubeHours').value)
+                youtube: parseFloat(document.getElementById('youtubePrice').value) / parseFloat(document.getElementById('youtubeHours').value),
+                gym: parseFloat(document.getElementById('gymPrice').value) / parseFloat(document.getElementById('gymHours').value),
+                spotify: parseFloat(document.getElementById('spotifyPrice').value) / parseFloat(document.getElementById('spotifyHours').value)
             };
             
+            // Create array of all entertainment options with their data
+            const entertainmentOptions = [
+                { label: 'Your Gaming Collection', value: aggregateCostPerHour, isUserGame: true },
+                { label: 'Movie Ticket', value: assumptions.movie, isUserGame: false },
+                { label: 'Disneyland', value: assumptions.disney, isUserGame: false },
+                { label: 'Concert Ticket', value: assumptions.concert, isUserGame: false },
+                { label: 'Basketball Ticket', value: assumptions.basketball, isUserGame: false },
+                { label: 'Netflix', value: assumptions.netflix, isUserGame: false },
+                { label: 'Max', value: assumptions.max, isUserGame: false },
+                { label: 'YouTube Premium', value: assumptions.youtube, isUserGame: false },
+                { label: 'Gym Membership', value: assumptions.gym, isUserGame: false },
+                { label: 'Spotify Premium', value: assumptions.spotify, isUserGame: false }
+            ];
+            
+            // Sort by cost per hour in descending order (highest to lowest)
+            entertainmentOptions.sort((a, b) => b.value - a.value);
+            
+            // Extract sorted data for chart
+            const sortedLabels = entertainmentOptions.map(option => option.label);
+            const sortedData = entertainmentOptions.map(option => option.value);
+            const sortedBackgroundColors = entertainmentOptions.map(option => 
+                option.isUserGame ? 'rgba(74, 144, 226, 0.8)' : 'rgba(126, 211, 33, 0.6)'
+            );
+            const sortedBorderColors = entertainmentOptions.map(option => 
+                option.isUserGame ? 'rgba(74, 144, 226, 1)' : 'rgba(126, 211, 33, 1)'
+            );
+            
             const chartData = {
-                labels: ['Your Game', 'Movie Ticket', 'Disneyland', 'Netflix', 'Max', 'YouTube Premium'],
+                labels: sortedLabels,
                 datasets: [{
                     label: 'Cost per Hour ($)',
-                    data: [
-                        gameCostPerHour,
-                        assumptions.movie,
-                        assumptions.disney,
-                        assumptions.netflix,
-                        assumptions.max,
-                        assumptions.youtube
-                    ],
-                    backgroundColor: [
-                        'rgba(74, 144, 226, 0.8)',
-                        'rgba(126, 211, 33, 0.6)',
-                        'rgba(126, 211, 33, 0.6)',
-                        'rgba(126, 211, 33, 0.6)',
-                        'rgba(126, 211, 33, 0.6)',
-                        'rgba(126, 211, 33, 0.6)'
-                    ],
-                    borderColor: [
-                        'rgba(74, 144, 226, 1)',
-                        'rgba(126, 211, 33, 1)',
-                        'rgba(126, 211, 33, 1)',
-                        'rgba(126, 211, 33, 1)',
-                        'rgba(126, 211, 33, 1)',
-                        'rgba(126, 211, 33, 1)'
-                    ],
+                    data: sortedData,
+                    backgroundColor: sortedBackgroundColors,
+                    borderColor: sortedBorderColors,
                     borderWidth: 2
                 }]
             };
@@ -834,6 +1279,14 @@
             document.getElementById('maxHours').value = 25;
             document.getElementById('youtubePrice').value = 14;
             document.getElementById('youtubeHours').value = 60;
+            document.getElementById('concertPrice').value = 100;
+            document.getElementById('concertHours').value = 3;
+            document.getElementById('basketballPrice').value = 120;
+            document.getElementById('basketballHours').value = 3;
+            document.getElementById('gymPrice').value = 60;
+            document.getElementById('gymHours').value = 12;
+            document.getElementById('spotifyPrice').value = 11;
+            document.getElementById('spotifyHours').value = 60;
             
             if (resultsCard.style.display !== 'none') {
                 updateChart();
@@ -841,19 +1294,31 @@
         }
 
         function copySummary() {
-            const gameCost = parseFloat(gameCostInput.value) || 0;
-            const dlcCost = parseFloat(dlcCostInput.value) || 0;
-            const hoursPlayed = parseFloat(hoursPlayedInput.value);
-            const totalCost = gameCost + dlcCost;
-            const costPerHour = totalCost / hoursPlayed;
+            if (games.length === 0) {
+                alert('No games to summarize.');
+                return;
+            }
+            
+            const totalCost = games.reduce((sum, game) => sum + game.totalCost, 0);
+            const totalHours = games.reduce((sum, game) => sum + game.hoursPlayed, 0);
+            const aggregateCostPerHour = totalCost / totalHours;
             
             const movieCostPerHour = parseFloat(document.getElementById('moviePrice').value) / parseFloat(document.getElementById('movieHours').value);
             const netflixCostPerHour = parseFloat(document.getElementById('netflixPrice').value) / parseFloat(document.getElementById('netflixHours').value);
             
-            const movieComparison = costPerHour < movieCostPerHour ? 'better' : 'worse';
-            const netflixComparison = costPerHour < netflixCostPerHour ? 'better' : 'worse';
+            const movieComparison = aggregateCostPerHour < movieCostPerHour ? 'better' : 'worse';
+            const netflixComparison = aggregateCostPerHour < netflixCostPerHour ? 'better' : 'worse';
             
-            const summary = `I spent $${totalCost.toFixed(2)} on this game, played ${hoursPlayed} hours → $${costPerHour.toFixed(2)}/hr. That's ${netflixComparison} than Netflix and ${movieComparison} than a movie ticket.`;
+            let summary = `I spent $${totalCost.toFixed(2)} on ${games.length} game${games.length > 1 ? 's' : ''}, played ${totalHours} hours total → $${aggregateCostPerHour.toFixed(2)}/hr. That's ${netflixComparison} than Netflix and ${movieComparison} than a movie ticket.`;
+            
+            // Add work hours info if income is available
+            const hourlyIncome = hourlyRateRadio.checked && hourlyRateInput.value ? parseFloat(hourlyRateInput.value) : 
+                                (!hourlyRateRadio.checked && annualSalaryInput.value ? parseFloat(annualSalaryInput.value) / (parseFloat(hoursWorkedInput.value) || 2080) : null);
+            
+            if (hourlyIncome) {
+                const totalWorkHours = totalCost / hourlyIncome;
+                summary += ` That's ${totalWorkHours < 10 ? totalWorkHours.toFixed(2) : totalWorkHours.toFixed(1)} hours of work to pay for it all.`;
+            }
             
             navigator.clipboard.writeText(summary).then(() => {
                 shareStatus.textContent = 'Copied to clipboard!';
