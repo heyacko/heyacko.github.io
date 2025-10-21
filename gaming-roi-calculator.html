@@ -6,6 +6,7 @@
     <title>Gaming ROI Calculator</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <style>
         /* Gaming ROI Calculator specific styles */
         /* Custom styles for gaming calculator specific elements */
@@ -17,21 +18,20 @@
 
         /* Layout for primary metrics side by side */
         .primary-metrics {
-            display: flex;
-            gap: 30px;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
             margin-bottom: 25px;
         }
 
         .primary-metrics .primary-metric {
-            flex: 1;
             text-align: center;
         }
 
         @media (max-width: 768px) {
             .primary-metrics {
-                flex-direction: column;
-                gap: 20px;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
             }
         }
 
@@ -121,6 +121,16 @@
         .games-table .game-name {
             font-weight: 600;
             color: #2c5aa0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .game-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            object-fit: cover;
         }
 
         .games-table .metric-value {
@@ -241,6 +251,145 @@
             background: rgba(33, 150, 243, 0.1);
             color: #2196F3;
             border: 1px solid rgba(33, 150, 243, 0.3);
+        }
+
+        /* Loading bar styling - file download style */
+        .loading-bar-container {
+            width: 100%;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 12px;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .loading-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4a90e2, #2196F3, #64b5f6);
+            transition: width 0.3s ease;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.6) 50%,
+                transparent 100%
+            );
+            animation: shimmer 1.2s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% { 
+                transform: translateX(-100%); 
+            }
+            100% { 
+                transform: translateX(200%); 
+            }
+        }
+
+        .loading-bar-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #2c5aa0;
+            z-index: 1;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .steam-message {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        /* Two-column layout for Steam and Income */
+        .two-column-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 25px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .column h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .column-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .two-column-layout {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+        }
+
+        /* Add game section styling */
+        .add-game-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .add-game-section h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c5aa0;
+            font-size: 1rem;
+        }
+
+        #gamesListContent {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Inline input row for Steam connection */
+        .input-row-inline {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .flex-grow {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .input-row-inline {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .input-row-inline .input-group label {
+                display: block;
+            }
         }
 
         /* Game list enhancements for Steam integration */
@@ -672,86 +821,103 @@
             <h1 class="shared-h1">Gaming ROI Calculator</h1>
             <p class="shared-sub">Calculate the true cost of your gaming habit and see how it stacks up against other entertainment.</p>
             <a href="index.html" class="shared-btn-ghost">🏠 Home</a>
-            <h3>Add Game</h3>
-            <div class="input-section">
-                <div class="input-row">
-                    <div class="input-group">
-                        <label for="gameName">Game name *</label>
-                        <input type="text" id="gameName" placeholder="e.g., Elden Ring">
-                        <div class="error-message" id="gameNameError"></div>
-                    </div>
-                    <div class="input-group">
-                        <label for="gameCost">Cost of game ($) *</label>
-                        <input type="number" id="gameCost" placeholder="60" min="0" step="0.01">
-                        <div class="error-message" id="gameCostError"></div>
-                    </div>
-                    <div class="input-group">
-                        <label for="dlcCost">DLC cost ($)</label>
-                        <input type="number" id="dlcCost" placeholder="0" min="0" step="0.01">
-                    </div>
-                    <div class="input-group">
-                        <label for="hoursPlayed">Hours played *</label>
-                        <input type="number" id="hoursPlayed" placeholder="40" min="0" step="0.1">
-                        <div class="error-message" id="hoursPlayedError"></div>
-                    </div>
-                    <div class="input-group">
-                        <button type="button" class="add-game-btn" id="addGameBtn">Add Game</button>
+        </div>
+
+        <div class="shared-card">
+            <div class="two-column-layout">
+                <!-- Left Column: Steam Connection -->
+                <div class="column">
+                    <h3>Connect Steam Account</h3>
+                    <p class="steam-description">Connect your Steam account to automatically import your game library and hours played.</p>
+                    <div class="input-section">
+                        <div class="input-row-inline">
+                            <div class="input-group flex-grow">
+                                <label for="steamId">Steam ID or Profile URL</label>
+                                <input type="text" id="steamId" placeholder="e.g., 76561198000000000 or https://steamcommunity.com/id/username">
+                                <div class="error-message" id="steamIdError"></div>
+                            </div>
+                            <div class="input-group">
+                                <label>&nbsp;</label>
+                                <button type="button" class="steam-connect-btn" id="steamConnectBtn">Connect Steam</button>
+                            </div>
+                        </div>
+                        <div class="steam-status" id="steamStatus" style="display: none;"></div>
                     </div>
                 </div>
-            </div>
 
-            <div class="steam-connection-section">
-                <h3>Connect Steam Account (Optional)</h3>
-                <p class="steam-description">Connect your Steam account to automatically import your game library and hours played.</p>
-                <div class="steam-input-row">
-                    <div class="input-group">
-                        <label for="steamId">Steam ID or Profile URL</label>
-                        <input type="text" id="steamId" placeholder="e.g., 76561198000000000 or https://steamcommunity.com/id/username">
-                        <div class="error-message" id="steamIdError"></div>
-                    </div>
-                    <div class="input-group">
-                        <button type="button" class="steam-connect-btn" id="steamConnectBtn">Connect Steam</button>
-                    </div>
-                </div>
-                <div class="steam-status" id="steamStatus" style="display: none;"></div>
-            </div>
-
-            <div class="games-list-section" id="gamesListSection" style="display: none;">
-                <h3>Your Games</h3>
-                <div class="games-list" id="gamesList"></div>
-            </div>
-
-            <h3>Your Income (Optional)</h3>
-            <div class="input-section">
-                <div class="radio-group">
-                    <div class="radio-option">
-                        <input type="radio" id="hourlyRate" name="incomeType" value="hourly" checked>
-                        <label for="hourlyRate">Hourly rate</label>
-                    </div>
-                    <div class="radio-option">
-                        <input type="radio" id="annualSalary" name="incomeType" value="annual">
-                        <label for="annualSalary">Annual salary</label>
-                    </div>
-                </div>
-                <div class="input-row">
-                    <div class="input-group" id="hourlyInput">
-                        <label for="hourlyRateValue">Hourly rate ($)</label>
-                        <input type="number" id="hourlyRateValue" placeholder="25" min="0" step="0.01">
-                        <div class="error-message" id="hourlyRateError"></div>
-                    </div>
-                    <div class="input-group" id="annualInput" style="display: none;">
-                        <label for="annualSalaryValue">Annual salary ($)</label>
-                        <input type="number" id="annualSalaryValue" placeholder="52000" min="0" step="0.01">
-                        <div class="error-message" id="annualSalaryError"></div>
-                    </div>
-                    <div class="input-group" id="hoursWorkedInput" style="display: none;">
-                        <label for="hoursWorkedPerYear">Hours worked per year</label>
-                        <input type="number" id="hoursWorkedPerYear" placeholder="2080" min="1" step="1">
+                <!-- Right Column: Income -->
+                <div class="column">
+                    <h3>Your Income (Optional)</h3>
+                    <p class="column-description">Enter your income to calculate hours of work needed to pay for your games.</p>
+                    <div class="input-section">
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" id="hourlyRate" name="incomeType" value="hourly" checked>
+                                <label for="hourlyRate">Hourly rate</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="annualSalary" name="incomeType" value="annual">
+                                <label for="annualSalary">Annual salary</label>
+                            </div>
+                        </div>
+                        <div class="input-group" id="hourlyInput">
+                            <label for="hourlyRateValue">Hourly rate ($)</label>
+                            <input type="number" id="hourlyRateValue" placeholder="25" min="0" step="0.01">
+                            <div class="error-message" id="hourlyRateError"></div>
+                        </div>
+                        <div class="input-group" id="annualInput" style="display: none;">
+                            <label for="annualSalaryValue">Annual salary ($)</label>
+                            <input type="number" id="annualSalaryValue" placeholder="52000" min="0" step="0.01">
+                            <div class="error-message" id="annualSalaryError"></div>
+                        </div>
+                        <div class="input-group" id="hoursWorkedInput" style="display: none;">
+                            <label for="hoursWorkedPerYear">Hours worked per year</label>
+                            <input type="number" id="hoursWorkedPerYear" placeholder="2080" min="1" step="1">
+                        </div>
                     </div>
                 </div>
             </div>
 
             <button class="calculate-btn" id="calculateBtn">Calculate ROI</button>
+
+            <div class="games-list-section" id="gamesListSection">
+                <h3 class="games-list-header" id="gamesListHeader" style="cursor: pointer;">
+                    Your Games <span id="gamesListToggle">▼</span>
+                </h3>
+                <div class="games-list" id="gamesList">
+                    <!-- Add Game Section (always visible in dropdown) -->
+                    <div class="add-game-section">
+                        <h4>Add Game Manually</h4>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="gameName">Game name *</label>
+                                <input type="text" id="gameName" placeholder="e.g., Elden Ring">
+                                <div class="error-message" id="gameNameError"></div>
+                            </div>
+                            <div class="input-group">
+                                <label for="gameCost">Cost of game ($) *</label>
+                                <input type="number" id="gameCost" placeholder="60" min="0" step="0.01">
+                                <div class="error-message" id="gameCostError"></div>
+                            </div>
+                            <div class="input-group">
+                                <label for="dlcCost">DLC cost ($)</label>
+                                <input type="number" id="dlcCost" placeholder="0" min="0" step="0.01">
+                            </div>
+                            <div class="input-group">
+                                <label for="hoursPlayed">Hours played *</label>
+                                <input type="number" id="hoursPlayed" placeholder="40" min="0" step="0.1">
+                                <div class="error-message" id="hoursPlayedError"></div>
+                            </div>
+                            <div class="input-group">
+                                <button type="button" class="add-game-btn" id="addGameBtn">Add Game</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Games will be listed here -->
+                    <div id="gamesListContent"></div>
+                </div>
+            </div>
         </div>
 
         <div class="shared-card results" id="resultsCard">
@@ -759,6 +925,14 @@
                 <div class="primary-metric">
                     <div class="value" id="aggregateCostPerHour">$0.00/hr</div>
                     <div class="label">Aggregate cost per hour of gaming</div>
+                </div>
+                <div class="primary-metric">
+                    <div class="value" id="totalGamingHours">0</div>
+                    <div class="label">Total Gaming Hours</div>
+                </div>
+                <div class="primary-metric">
+                    <div class="value" id="totalCostOfGaming">$0.00</div>
+                    <div class="label">Total Cost of Gaming</div>
                 </div>
                 <div class="primary-metric">
                     <div class="value" id="aggregateHoursOfWork">0.0</div>
@@ -771,17 +945,17 @@
                 <div class="verdict-subtext" id="verdictSubtext">Add games and calculate to see your gaming ROI verdict.</div>
             </div>
 
-            <div class="individual-games-section" id="individualGamesSection" style="display: none;">
-                <h3>Individual Game Metrics</h3>
-                <div class="games-metrics" id="gamesMetrics"></div>
+            <div class="chart-container">
+                <canvas id="comparisonChart"></canvas>
             </div>
 
             <div class="chart-container">
                 <canvas id="scatterChart"></canvas>
             </div>
 
-            <div class="chart-container">
-                <canvas id="comparisonChart"></canvas>
+            <div class="individual-games-section" id="individualGamesSection" style="display: none;">
+                <h3>Individual Game Metrics</h3>
+                <div class="games-metrics" id="gamesMetrics"></div>
             </div>
 
             <div class="share-section">
@@ -878,6 +1052,21 @@
     </div>
 
     <script>
+        // Suppress browser extension errors that don't affect functionality
+        window.addEventListener('error', function(event) {
+            if (event.message && event.message.includes('message channel closed')) {
+                event.preventDefault();
+                return true;
+            }
+        });
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            if (event.reason && event.reason.message && event.reason.message.includes('message channel closed')) {
+                event.preventDefault();
+                return true;
+            }
+        });
+        
         // DOM elements
         const gameNameInput = document.getElementById('gameName');
         const gameCostInput = document.getElementById('gameCost');
@@ -886,6 +1075,7 @@
         const addGameBtn = document.getElementById('addGameBtn');
         const gamesListSection = document.getElementById('gamesListSection');
         const gamesList = document.getElementById('gamesList');
+        const gamesListContent = document.getElementById('gamesListContent');
         
         // Steam API elements
         const steamIdInput = document.getElementById('steamId');
@@ -930,6 +1120,10 @@
         // Share functionality
         const shareBtn = document.getElementById('shareBtn');
         const shareStatus = document.getElementById('shareStatus');
+        
+        // Games list toggle
+        const gamesListHeader = document.getElementById('gamesListHeader');
+        const gamesListToggle = document.getElementById('gamesListToggle');
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -982,6 +1176,9 @@
             
             // Share button
             shareBtn.addEventListener('click', copySummary);
+            
+            // Games list toggle
+            gamesListHeader.addEventListener('click', toggleGamesList);
         }
 
         function addGame() {
@@ -1030,12 +1227,7 @@
             
             // Update UI
             updateGamesList();
-            gamesListSection.style.display = 'block';
-            
-            // Auto-calculate if income is set
-            if (hourlyRateInput.value || annualSalaryInput.value) {
-                calculateROI();
-            }
+            // Section is always visible now (contains add game form)
         }
         
         function removeGame(gameId) {
@@ -1043,15 +1235,13 @@
             updateGamesList();
             
             if (games.length === 0) {
-                gamesListSection.style.display = 'none';
+                // Games section stays visible (contains add game form)
                 resultsCard.style.display = 'none';
-            } else if (hourlyRateInput.value || annualSalaryInput.value) {
-                calculateROI();
             }
         }
         
         function updateGamesList() {
-            gamesList.innerHTML = '';
+            gamesListContent.innerHTML = '';
             games.forEach(game => {
                 const gameItem = document.createElement('div');
                 gameItem.className = 'game-item';
@@ -1096,7 +1286,7 @@
                         <button class="remove-game-btn" onclick="removeGame(${game.id})">Remove</button>
                     </div>
                 `;
-                gamesList.appendChild(gameItem);
+                gamesListContent.appendChild(gameItem);
             });
         }
 
@@ -1134,19 +1324,13 @@
                     return;
                 }
 
-                // Import games (without prices - user will need to add those)
-                const importedCount = await importSteamGames(ownedGames);
+                // Import games (with fetched prices)
+                const result = await importSteamGames(ownedGames);
                 
-                showSteamStatus('success', `Successfully imported ${importedCount} games from Steam! Please add prices for games you want to analyze.`);
+                showSteamStatus('success', `Successfully imported ${result.importedCount} games from Steam!${result.limitNote}`);
                 
-                // Show games list and update UI
-                gamesListSection.style.display = 'block';
+                // Update games list UI
                 updateGamesList();
-                
-                // Auto-calculate if income is set
-                if (hourlyRateInput.value || annualSalaryInput.value) {
-                    calculateROI();
-                }
 
             } catch (error) {
                 console.error('Steam API Error:', error);
@@ -1218,12 +1402,15 @@
             let importedCount = 0;
             let skippedCount = 0;
             
-            for (const game of ownedGames) {
-                // Skip games with 0 playtime
-                if (!game.playtime_forever || game.playtime_forever === 0) {
-                    skippedCount++;
-                    continue;
-                }
+            // Limit to 100 games to prevent overwhelming the API and UI
+            const gamesToImport = ownedGames.slice(0, 100);
+            const totalGames = gamesToImport.length;
+            
+            // Show initial progress message
+            showSteamStatus('loading', `Importing ${totalGames} games and fetching prices... 0%`);
+            
+            for (let i = 0; i < totalGames; i++) {
+                const game = gamesToImport[i];
                 
                 // Skip hidden games (Steam API usually doesn't return these, but double-check)
                 // Games marked as hidden or private won't have certain properties
@@ -1232,8 +1419,8 @@
                     continue;
                 }
                 
-                // Convert playtime from minutes to hours
-                const hoursPlayed = Math.round((game.playtime_forever / 60) * 10) / 10; // Round to 1 decimal
+                // Convert playtime from minutes to hours (keep 0 hour games)
+                const hoursPlayed = game.playtime_forever ? Math.round((game.playtime_forever / 60) * 10) / 10 : 0; // Round to 1 decimal
                 
                 // Check if game already exists
                 const existingGame = games.find(g => g.name === game.name);
@@ -1247,25 +1434,75 @@
                     continue;
                 }
                 
-                // Add new game (without price - user will need to add this)
+                // Fetch price from Steam Store API
+                let gamePrice = 0;
+                try {
+                    gamePrice = await fetchGamePrice(game.appid);
+                    // Small delay to avoid rate limiting and show progress
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                } catch (error) {
+                    console.warn(`Could not fetch price for ${game.name}:`, error);
+                }
+                
+                // Add new game with price
                 const newGame = {
                     id: Date.now() + importedCount, // Simple ID generation
                     name: game.name,
-                    cost: 0, // User needs to add price
+                    cost: gamePrice,
                     dlcCost: 0,
                     hoursPlayed: hoursPlayed,
-                    totalCost: 0,
-                    costPerHour: 0,
+                    totalCost: gamePrice,
+                    costPerHour: gamePrice > 0 && hoursPlayed > 0 ? gamePrice / hoursPlayed : 0,
                     fromSteam: true, // Flag to indicate this came from Steam
-                    appId: game.appid // Store Steam app ID for reference
+                    appId: game.appid, // Store Steam app ID for reference
+                    iconUrl: game.img_icon_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_icon_url}.jpg` : null
                 };
                 
                 games.push(newGame);
                 importedCount++;
+                
+                // Update progress percentage
+                const progress = Math.round(((i + 1) / totalGames) * 100);
+                showSteamStatus('loading', `Importing ${totalGames} games and fetching prices... ${progress}%`);
             }
             
-            console.log(`Imported ${importedCount} games, skipped ${skippedCount} games (0 hours or hidden)`);
-            return importedCount;
+            console.log(`Imported ${importedCount} games, skipped ${skippedCount} games (hidden or duplicates)`);
+            
+            // Show note if user had more than 100 games
+            if (ownedGames.length > 100) {
+                const limitNote = ` (Limited to first 100 games from your ${ownedGames.length} game library)`;
+                return { importedCount, limitNote };
+            }
+            
+            return { importedCount, limitNote: '' };
+        }
+
+        async function fetchGamePrice(appId) {
+            try {
+                const apiUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}&filters=price_overview&cc=US`;
+                const url = `${CORS_PROXY}${encodeURIComponent(apiUrl)}`;
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    return 0;
+                }
+                
+                const data = await response.json();
+                
+                // Check if the API returned valid data
+                if (data[appId] && data[appId].success && data[appId].data) {
+                    const priceData = data[appId].data.price_overview;
+                    if (priceData && priceData.initial) {
+                        // Steam API returns price in cents, convert to dollars
+                        return priceData.initial / 100;
+                    }
+                }
+                
+                return 0; // Free game or price not available
+            } catch (error) {
+                console.warn(`Error fetching price for app ${appId}:`, error);
+                return 0;
+            }
         }
 
         function showSteamStatus(type, message) {
@@ -1299,11 +1536,6 @@
             
             // Update UI to reflect changes
             updateGamesList();
-            
-            // Auto-calculate if income is set
-            if (hourlyRateInput.value || annualSalaryInput.value) {
-                calculateROI();
-            }
         }
 
         function updateGameHours(gameId, newHours) {
@@ -1323,11 +1555,6 @@
             
             // Update UI to reflect changes
             updateGamesList();
-            
-            // Auto-calculate if income is set
-            if (hourlyRateInput.value || annualSalaryInput.value) {
-                calculateROI();
-            }
         }
 
         function validateIncomeInputs() {
@@ -1378,6 +1605,12 @@
                 return;
             }
             
+            // Collapse games list when calculating
+            if (gamesList.style.display !== 'none') {
+                gamesList.style.display = 'none';
+                gamesListToggle.textContent = '▶';
+            }
+            
             // Calculate hourly income (optional)
             let hourlyIncome = null;
             if (hourlyRateRadio.checked && hourlyRateInput.value) {
@@ -1395,7 +1628,7 @@
             const aggregateHoursOfWork = hourlyIncome && hourlyIncome > 0 ? totalCost / hourlyIncome : null;
             
             // Update results display
-            updateResults(aggregateCostPerHour, aggregateHoursOfWork);
+            updateResults(aggregateCostPerHour, aggregateHoursOfWork, totalHours, totalCost);
             
             // Generate verdict
             generateVerdict(aggregateCostPerHour, aggregateHoursOfWork);
@@ -1410,10 +1643,20 @@
             updateIndividualGamesMetrics(hourlyIncome);
         }
 
-        function updateResults(costPerHour, hoursOfWorkToPay) {
+        function updateResults(costPerHour, hoursOfWorkToPay, totalGamingHours, totalCost) {
             // Update cost per hour with color coding
             aggregateCostPerHourEl.textContent = `$${costPerHour.toFixed(2)}/hr`;
             aggregateCostPerHourEl.className = 'value ' + getCostPerHourColorClass(costPerHour);
+            
+            // Update total gaming hours
+            const totalGamingHoursEl = document.getElementById('totalGamingHours');
+            totalGamingHoursEl.textContent = totalGamingHours.toLocaleString('en-US', { maximumFractionDigits: 1 });
+            totalGamingHoursEl.className = 'value';
+            
+            // Update total cost of gaming
+            const totalCostOfGamingEl = document.getElementById('totalCostOfGaming');
+            totalCostOfGamingEl.textContent = `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            totalCostOfGamingEl.className = 'value';
             
             // Update hours of work with color coding (handle null case)
             if (hoursOfWorkToPay === null) {
@@ -1457,6 +1700,8 @@
             const headerRow = document.createElement('tr');
             headerRow.innerHTML = `
                 <th>Game</th>
+                <th class="cost-per-hour">Initial Cost</th>
+                <th class="hours-work">Total Hours</th>
                 <th class="cost-per-hour">Cost per Hour</th>
                 <th class="hours-work">Hours of Work</th>
             `;
@@ -1468,9 +1713,21 @@
                 const costPerHourClass = getCostPerHourColorClass(game.costPerHour);
                 const hoursWorkClass = hoursOfWork !== null ? getHoursOfWorkColorClass(hoursOfWork) : '';
                 
+                // Add game icon if available
+                const gameIcon = game.iconUrl ? `<img src="${game.iconUrl}" alt="${game.name}" class="game-icon" onerror="this.style.display='none'">` : '';
+                
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td class="game-name">${game.name}</td>
+                    <td class="game-name">
+                        ${gameIcon}
+                        <span>${game.name}</span>
+                    </td>
+                    <td class="cost-per-hour">
+                        <span class="metric-value">$${game.totalCost.toFixed(2)}</span>
+                    </td>
+                    <td class="hours-work">
+                        <span class="metric-value">${game.hoursPlayed.toFixed(1)}</span>
+                    </td>
                     <td class="cost-per-hour">
                         <span class="metric-value metric-${costPerHourClass}">$${game.costPerHour.toFixed(2)}/hr</span>
                     </td>
@@ -1525,11 +1782,59 @@
                 scatterChart.destroy();
             }
             
-            const scatterData = games.map(game => ({
-                x: Math.max(game.hoursPlayed, 0.1), // Ensure minimum value for chart display
-                y: Math.max(game.totalCost, 0.01), // Ensure minimum value for chart display
-                label: game.name
-            }));
+            // Prepare data with color coding based on CPH (for borders)
+            const scatterData = games.map(game => {
+                const costPerHour = game.costPerHour;
+                let borderColor;
+                
+                // Color code based on verdict bins (for borders)
+                if (costPerHour <= 1.00) {
+                    borderColor = 'rgb(76, 175, 80)'; // Legendary - Green
+                } else if (costPerHour <= 3.00) {
+                    borderColor = 'rgb(139, 195, 74)'; // Elite - Light Green
+                } else if (costPerHour <= 8.00) {
+                    borderColor = 'rgb(33, 150, 243)'; // Solid - Blue
+                } else if (costPerHour <= 15.00) {
+                    borderColor = 'rgb(255, 152, 0)'; // Reasonable - Orange
+                } else if (costPerHour <= 30.00) {
+                    borderColor = 'rgb(255, 87, 34)'; // Premium - Deep Orange
+                } else {
+                    borderColor = 'rgb(244, 67, 54)'; // Yikes - Red
+                }
+                
+                return {
+                    x: Math.max(game.hoursPlayed, 0.1),
+                    y: Math.max(game.totalCost, 0.01),
+                    label: game.name,
+                    costPerHour: costPerHour,
+                    borderColor: borderColor,
+                    iconUrl: game.iconUrl
+                };
+            });
+            
+            // Identify outliers for labeling (highest cost, most hours, highest CPH, lowest CPH with hours)
+            const sortedByCost = [...scatterData].sort((a, b) => b.y - a.y);
+            const sortedByHours = [...scatterData].sort((a, b) => b.x - a.x);
+            const sortedByCPH = [...scatterData].sort((a, b) => b.costPerHour - a.costPerHour);
+            const withHours = scatterData.filter(g => g.x > 0.1);
+            const sortedByLowCPH = [...withHours].sort((a, b) => a.costPerHour - b.costPerHour);
+            
+            // Mark outliers for labeling
+            const outliers = new Set();
+            if (sortedByCost.length > 0) outliers.add(sortedByCost[0].label); // Highest cost
+            if (sortedByHours.length > 0) outliers.add(sortedByHours[0].label); // Most hours
+            if (sortedByCPH.length > 0) outliers.add(sortedByCPH[0].label); // Highest CPH
+            if (sortedByLowCPH.length > 0) outliers.add(sortedByLowCPH[0].label); // Best value (lowest CPH with hours)
+            
+            // Load icons as images for points
+            const pointStyles = scatterData.map(d => {
+                if (d.iconUrl) {
+                    const img = new Image(32, 32);
+                    img.src = d.iconUrl;
+                    return img;
+                }
+                return 'circle';
+            });
             
             scatterChart = new Chart(ctx, {
                 type: 'scatter',
@@ -1537,11 +1842,13 @@
                     datasets: [{
                         label: 'Games',
                         data: scatterData,
-                        backgroundColor: 'rgba(74, 144, 226, 0.8)',
-                        borderColor: 'rgba(74, 144, 226, 1)',
-                        borderWidth: 2,
-                        pointRadius: 8,
-                        pointHoverRadius: 10
+                        pointStyle: pointStyles,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)', // Light background for icons
+                        borderColor: scatterData.map(d => d.borderColor),
+                        borderWidth: 3,
+                        pointRadius: 16,
+                        pointHoverRadius: 20,
+                        pointHoverBorderWidth: 4
                     }]
                 },
                 options: {
@@ -1557,13 +1864,38 @@
                             },
                             color: '#2c5aa0'
                         },
+                        legend: {
+                            display: false
+                        },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
                                     const point = context.raw;
-                                    return `${point.label}: $${point.y.toFixed(2)} for ${point.x} hours`;
+                                    const cph = point.costPerHour > 0 ? `$${point.costPerHour.toFixed(2)}/hr` : 'N/A';
+                                    return `${point.label}: $${point.y.toFixed(2)} for ${point.x} hours (${cph})`;
                                 }
                             }
+                        },
+                        datalabels: {
+                            display: function(context) {
+                                // Only show labels for outliers
+                                const point = context.dataset.data[context.dataIndex];
+                                return outliers.has(point.label);
+                            },
+                            formatter: function(value, context) {
+                                return value.label;
+                            },
+                            align: 'top',
+                            offset: 8,
+                            font: {
+                                size: 10,
+                                family: 'Lucida Console, Monaco, Courier New, monospace',
+                                weight: 'bold'
+                            },
+                            color: '#2c5aa0',
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            borderRadius: 4,
+                            padding: 4
                         }
                     },
                     scales: {
@@ -1716,6 +2048,16 @@
             } else {
                 accordionContent.classList.add('expanded');
                 accordionToggle.textContent = '▲';
+            }
+        }
+        
+        function toggleGamesList() {
+            if (gamesList.style.display === 'none') {
+                gamesList.style.display = 'flex';
+                gamesListToggle.textContent = '▼';
+            } else {
+                gamesList.style.display = 'none';
+                gamesListToggle.textContent = '▶';
             }
         }
 
