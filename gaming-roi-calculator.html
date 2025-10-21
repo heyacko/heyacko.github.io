@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaming ROI Calculator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Gaming ROI Calculator specific styles */
+        /* Custom styles for gaming calculator specific elements */
+
+        .input-section {
+            margin-bottom: 25px;
+        }
+
+        .input-section h3 {
+            font-family: 'Lucida Console', Monaco, 'Courier New', monospace;
+            color: #2c5aa0;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: flex-start;
+        }
+
+        .input-group {
+            flex: 1;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c5aa0;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        .input-group input.error {
+            border-color: #d0021b;
+        }
+
+        .error-message {
+            color: #d0021b;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radio-option input[type="radio"] {
+            margin: 0;
+        }
+
+        .radio-option label {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .calculate-btn {
+            appearance: none;
+            border: none;
+            background: linear-gradient(135deg, var(--accent), #5ba0f2);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .calculate-btn:hover {
+            background: linear-gradient(135deg, #5ba0f2, #6bb0ff);
+            box-shadow: 0 4px 16px rgba(74, 144, 226, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .calculate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .primary-metric {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .primary-metric .value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #2c5aa0;
+            margin-bottom: 5px;
+        }
+
+        .primary-metric .label {
+            color: #7a9cc6;
+            font-size: 1.1rem;
+        }
+
+        .secondary-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 15px;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+        }
+
+        .metric .value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c5aa0;
+            margin-bottom: 5px;
+        }
+
+        .metric .label {
+            color: #7a9cc6;
+            font-size: 0.9rem;
+        }
+
+        .verdict {
+            text-align: center;
+            padding: 20px;
+            background: rgba(74, 144, 226, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            border-radius: 12px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .verdict-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c5aa0;
+            margin-bottom: 5px;
+        }
+
+        .verdict-subtext {
+            color: #7a9cc6;
+            font-size: 0.9rem;
+        }
+
+        .chart-container {
+            height: 400px;
+            margin-top: 20px;
+        }
+
+        .accordion {
+            margin-top: 20px;
+        }
+
+        .accordion-header {
+            background: rgba(74, 144, 226, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .accordion-header:hover {
+            background: rgba(74, 144, 226, 0.15);
+        }
+
+        .accordion-header h4 {
+            margin: 0;
+            color: #2c5aa0;
+            font-family: 'Lucida Console', Monaco, 'Courier New', monospace;
+        }
+
+        .accordion-content {
+            display: none;
+            padding: 20px 0;
+        }
+
+        .accordion-content.expanded {
+            display: block;
+        }
+
+        .assumption-item {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+
+        .assumption-item label {
+            min-width: 120px;
+            font-weight: 600;
+            color: #2c5aa0;
+        }
+
+        .assumption-item input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .assumption-item input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+        }
+
+        .reset-btn {
+            appearance: none;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            color: var(--ink);
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .reset-btn:hover {
+            background: rgba(74, 144, 226, 0.1);
+            border-color: var(--accent);
+            box-shadow: 0 4px 16px rgba(74, 144, 226, 0.2);
+        }
+
+        .share-section {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .share-btn {
+            appearance: none;
+            border: 1px solid rgba(126, 211, 33, 0.3);
+            background: rgba(126, 211, 33, 0.1);
+            backdrop-filter: blur(10px);
+            color: var(--ok);
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .share-btn:hover {
+            background: rgba(126, 211, 33, 0.2);
+            border-color: var(--ok);
+            box-shadow: 0 4px 16px rgba(126, 211, 33, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .input-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .radio-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .secondary-metrics {
+                grid-template-columns: 1fr;
+            }
+            
+            .primary-metric .value {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shared-wrap">
+        <div class="shared-card">
+            <h1 class="shared-h1">Gaming ROI Calculator</h1>
+            <p class="shared-sub">Calculate the true cost of your gaming habit and see how it stacks up against other entertainment.</p>
+            <a href="index.html" class="shared-btn-ghost">🏠 Home</a>
+            <h3>Game Details</h3>
+            <div class="input-section">
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="gameCost">Cost of game ($) *</label>
+                        <input type="number" id="gameCost" placeholder="60" min="0" step="0.01">
+                        <div class="error-message" id="gameCostError"></div>
+                    </div>
+                    <div class="input-group">
+                        <label for="dlcCost">DLC cost ($)</label>
+                        <input type="number" id="dlcCost" placeholder="0" min="0" step="0.01">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="hoursPlayed">Hours played *</label>
+                    <input type="number" id="hoursPlayed" placeholder="40" min="0.1" step="0.1">
+                    <div class="error-message" id="hoursPlayedError"></div>
+                </div>
+            </div>
+
+            <h3>Your Income</h3>
+            <div class="input-section">
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="hourlyRate" name="incomeType" value="hourly" checked>
+                        <label for="hourlyRate">Hourly rate</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="annualSalary" name="incomeType" value="annual">
+                        <label for="annualSalary">Annual salary</label>
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group" id="hourlyInput">
+                        <label for="hourlyRateValue">Hourly rate ($) *</label>
+                        <input type="number" id="hourlyRateValue" placeholder="25" min="0" step="0.01">
+                        <div class="error-message" id="hourlyRateError"></div>
+                    </div>
+                    <div class="input-group" id="annualInput" style="display: none;">
+                        <label for="annualSalaryValue">Annual salary ($) *</label>
+                        <input type="number" id="annualSalaryValue" placeholder="52000" min="0" step="0.01">
+                        <div class="error-message" id="annualSalaryError"></div>
+                    </div>
+                    <div class="input-group" id="hoursWorkedInput" style="display: none;">
+                        <label for="hoursWorkedPerYear">Hours worked per year</label>
+                        <input type="number" id="hoursWorkedPerYear" placeholder="2080" min="1" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <button class="calculate-btn" id="calculateBtn">Calculate ROI</button>
+        </div>
+
+        <div class="shared-card results" id="resultsCard">
+            <div class="primary-metric">
+                <div class="value" id="costPerHour">$0.00/hr</div>
+                <div class="label">Cost per hour of entertainment</div>
+            </div>
+
+            <div class="secondary-metrics">
+                <div class="metric">
+                    <div class="value" id="costPercentage">0.0%</div>
+                    <div class="label">Game cost as % of your hourly income</div>
+                </div>
+                <div class="metric">
+                    <div class="value" id="hoursOfWork">0.0</div>
+                    <div class="label">Hours of work to pay for this game</div>
+                </div>
+            </div>
+
+            <div class="verdict">
+                <div class="verdict-text" id="verdictText">Ready to calculate!</div>
+                <div class="verdict-subtext" id="verdictSubtext">Click the calculate button to see your gaming ROI verdict.</div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+
+            <div class="share-section">
+                <button class="share-btn" id="shareBtn">Copy Summary</button>
+                <span id="shareStatus"></span>
+            </div>
+        </div>
+
+        <div class="shared-card">
+            <div class="accordion">
+                <div class="accordion-header" id="accordionHeader">
+                    <h4>Advanced Assumptions</h4>
+                    <span id="accordionToggle">▼</span>
+                </div>
+                <div class="accordion-content" id="accordionContent">
+                    <p>Edit these benchmark assumptions to customize your comparison chart:</p>
+                    
+                    <div class="assumption-item">
+                        <label>Movie ticket:</label>
+                        <input type="number" id="moviePrice" value="15" min="0" step="0.01">
+                        <span>over</span>
+                        <input type="number" id="movieHours" value="2.5" min="0.1" step="0.1">
+                        <span>hours</span>
+                    </div>
+                    
+                    <div class="assumption-item">
+                        <label>Disneyland:</label>
+                        <input type="number" id="disneyPrice" value="160" min="0" step="0.01">
+                        <span>over</span>
+                        <input type="number" id="disneyHours" value="12" min="0.1" step="0.1">
+                        <span>hours</span>
+                    </div>
+                    
+                    <div class="assumption-item">
+                        <label>Netflix:</label>
+                        <input type="number" id="netflixPrice" value="16" min="0" step="0.01">
+                        <span>per month over</span>
+                        <input type="number" id="netflixHours" value="40" min="0.1" step="0.1">
+                        <span>hours/month</span>
+                    </div>
+                    
+                    <div class="assumption-item">
+                        <label>Max:</label>
+                        <input type="number" id="maxPrice" value="16" min="0" step="0.01">
+                        <span>per month over</span>
+                        <input type="number" id="maxHours" value="25" min="0.1" step="0.1">
+                        <span>hours/month</span>
+                    </div>
+                    
+                    <div class="assumption-item">
+                        <label>YouTube Premium:</label>
+                        <input type="number" id="youtubePrice" value="14" min="0" step="0.01">
+                        <span>per month over</span>
+                        <input type="number" id="youtubeHours" value="60" min="0.1" step="0.1">
+                        <span>hours/month</span>
+                    </div>
+                    
+                    <button class="reset-btn" id="resetBtn">Reset to Defaults</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const gameCostInput = document.getElementById('gameCost');
+        const dlcCostInput = document.getElementById('dlcCost');
+        const hoursPlayedInput = document.getElementById('hoursPlayed');
+        const hourlyRateRadio = document.getElementById('hourlyRate');
+        const annualSalaryRadio = document.getElementById('annualSalary');
+        const hourlyRateInput = document.getElementById('hourlyRateValue');
+        const annualSalaryInput = document.getElementById('annualSalaryValue');
+        const hoursWorkedInput = document.getElementById('hoursWorkedPerYear');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resultsCard = document.getElementById('resultsCard');
+        
+        // Results elements
+        const costPerHourEl = document.getElementById('costPerHour');
+        const costPercentageEl = document.getElementById('costPercentage');
+        const hoursOfWorkEl = document.getElementById('hoursOfWork');
+        const verdictTextEl = document.getElementById('verdictText');
+        const verdictSubtextEl = document.getElementById('verdictSubtext');
+        
+        // Chart
+        let comparisonChart = null;
+        
+        // Advanced assumptions
+        const accordionHeader = document.getElementById('accordionHeader');
+        const accordionContent = document.getElementById('accordionContent');
+        const accordionToggle = document.getElementById('accordionToggle');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        // Share functionality
+        const shareBtn = document.getElementById('shareBtn');
+        const shareStatus = document.getElementById('shareStatus');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadFromURL();
+        });
+
+        function setupEventListeners() {
+            // Income type toggle
+            hourlyRateRadio.addEventListener('change', toggleIncomeInputs);
+            annualSalaryRadio.addEventListener('change', toggleIncomeInputs);
+            
+            // Calculate button
+            calculateBtn.addEventListener('click', calculateROI);
+            
+            // Auto-calculate on input change (after first calculation)
+            const inputs = [gameCostInput, dlcCostInput, hoursPlayedInput, hourlyRateInput, annualSalaryInput, hoursWorkedInput];
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    if (resultsCard.style.display !== 'none') {
+                        calculateROI();
+                    }
+                });
+            });
+            
+            // Advanced assumptions
+            accordionHeader.addEventListener('click', toggleAccordion);
+            resetBtn.addEventListener('click', resetAssumptions);
+            
+            const assumptionInputs = [
+                'moviePrice', 'movieHours', 'disneyPrice', 'disneyHours',
+                'netflixPrice', 'netflixHours', 'maxPrice', 'maxHours',
+                'youtubePrice', 'youtubeHours'
+            ];
+            assumptionInputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    if (resultsCard.style.display !== 'none') {
+                        updateChart();
+                    }
+                });
+            });
+            
+            // Share button
+            shareBtn.addEventListener('click', copySummary);
+        }
+
+        function toggleIncomeInputs() {
+            const isHourly = hourlyRateRadio.checked;
+            document.getElementById('hourlyInput').style.display = isHourly ? 'block' : 'none';
+            document.getElementById('annualInput').style.display = isHourly ? 'none' : 'block';
+            document.getElementById('hoursWorkedInput').style.display = isHourly ? 'none' : 'block';
+        }
+
+        function validateInputs() {
+            let isValid = true;
+            
+            // Game cost validation
+            const gameCost = parseFloat(gameCostInput.value);
+            if (isNaN(gameCost) || gameCost < 0) {
+                showError('gameCostError', 'Please enter a valid game cost');
+                isValid = false;
+            } else {
+                hideError('gameCostError');
+            }
+            
+            // Hours played validation
+            const hoursPlayed = parseFloat(hoursPlayedInput.value);
+            if (isNaN(hoursPlayed) || hoursPlayed <= 0) {
+                showError('hoursPlayedError', 'Please enter valid hours played (> 0)');
+                isValid = false;
+            } else {
+                hideError('hoursPlayedError');
+            }
+            
+            // Income validation
+            if (hourlyRateRadio.checked) {
+                const hourlyRate = parseFloat(hourlyRateInput.value);
+                if (isNaN(hourlyRate) || hourlyRate < 0) {
+                    showError('hourlyRateError', 'Please enter a valid hourly rate');
+                    isValid = false;
+                } else {
+                    hideError('hourlyRateError');
+                }
+            } else {
+                const annualSalary = parseFloat(annualSalaryInput.value);
+                if (isNaN(annualSalary) || annualSalary < 0) {
+                    showError('annualSalaryError', 'Please enter a valid annual salary');
+                    isValid = false;
+                } else {
+                    hideError('annualSalaryError');
+                }
+            }
+            
+            return isValid;
+        }
+
+        function showError(errorId, message) {
+            const errorEl = document.getElementById(errorId);
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            errorEl.previousElementSibling.classList.add('error');
+        }
+
+        function hideError(errorId) {
+            const errorEl = document.getElementById(errorId);
+            errorEl.style.display = 'none';
+            errorEl.previousElementSibling.classList.remove('error');
+        }
+
+        function calculateROI() {
+            if (!validateInputs()) {
+                return;
+            }
+            
+            const gameCost = parseFloat(gameCostInput.value) || 0;
+            const dlcCost = parseFloat(dlcCostInput.value) || 0;
+            const hoursPlayed = parseFloat(hoursPlayedInput.value);
+            
+            const totalCost = gameCost + dlcCost;
+            const costPerHour = totalCost / hoursPlayed;
+            
+            // Calculate hourly income
+            let hourlyIncome;
+            if (hourlyRateRadio.checked) {
+                hourlyIncome = parseFloat(hourlyRateInput.value);
+            } else {
+                const annualSalary = parseFloat(annualSalaryInput.value);
+                const hoursWorkedPerYear = parseFloat(hoursWorkedInput.value) || 2080;
+                hourlyIncome = annualSalary / hoursWorkedPerYear;
+            }
+            
+            const gameCostPercentage = (costPerHour / hourlyIncome) * 100;
+            const hoursOfWorkToPay = totalCost / hourlyIncome;
+            
+            // Update results display
+            updateResults(costPerHour, gameCostPercentage, hoursOfWorkToPay);
+            
+            // Generate verdict
+            generateVerdict(costPerHour, hoursOfWorkToPay);
+            
+            // Update chart
+            updateChart();
+            
+            // Show results
+            resultsCard.style.display = 'block';
+            
+            // Update URL
+            updateURL();
+        }
+
+        function updateResults(costPerHour, gameCostPercentage, hoursOfWorkToPay) {
+            costPerHourEl.textContent = `$${costPerHour.toFixed(2)}/hr`;
+            costPercentageEl.textContent = `${gameCostPercentage.toFixed(1)}%`;
+            
+            if (hoursOfWorkToPay < 10) {
+                hoursOfWorkEl.textContent = hoursOfWorkToPay.toFixed(2);
+            } else {
+                hoursOfWorkEl.textContent = hoursOfWorkToPay.toFixed(1);
+            }
+        }
+
+        function generateVerdict(costPerHour, hoursOfWorkToPay) {
+            let verdict, subtext;
+            
+            // Primary verdict based on cost per hour
+            if (costPerHour <= 0.50) {
+                verdict = "Legendary ROI. You basically got paid to have fun.";
+            } else if (costPerHour <= 1.50) {
+                verdict = "Elite value. Cheaper than most subscriptions per hour.";
+            } else if (costPerHour <= 3) {
+                verdict = "Solid deal. Your wallet nods in approval.";
+            } else if (costPerHour <= 6) {
+                verdict = "Borderline. Maybe finish your backlog first.";
+            } else {
+                verdict = "Yikes. You funded a CEO yacht per hour.";
+            }
+            
+            // Secondary punchline based on hours of work
+            if (hoursOfWorkToPay <= 1) {
+                subtext = "Your boss won't even notice.";
+            } else if (hoursOfWorkToPay <= 5) {
+                subtext = "That's a couple meetings you were going to hate anyway.";
+            } else {
+                subtext = "This is a part-time job in disguise.";
+            }
+            
+            verdictTextEl.textContent = verdict;
+            verdictSubtextEl.textContent = subtext;
+        }
+
+        function updateChart() {
+            const gameCost = parseFloat(gameCostInput.value) || 0;
+            const dlcCost = parseFloat(dlcCostInput.value) || 0;
+            const hoursPlayed = parseFloat(hoursPlayedInput.value);
+            
+            if (!hoursPlayed || hoursPlayed <= 0) return;
+            
+            const totalCost = gameCost + dlcCost;
+            const gameCostPerHour = totalCost / hoursPlayed;
+            
+            // Get assumption values
+            const assumptions = {
+                movie: parseFloat(document.getElementById('moviePrice').value) / parseFloat(document.getElementById('movieHours').value),
+                disney: parseFloat(document.getElementById('disneyPrice').value) / parseFloat(document.getElementById('disneyHours').value),
+                netflix: parseFloat(document.getElementById('netflixPrice').value) / parseFloat(document.getElementById('netflixHours').value),
+                max: parseFloat(document.getElementById('maxPrice').value) / parseFloat(document.getElementById('maxHours').value),
+                youtube: parseFloat(document.getElementById('youtubePrice').value) / parseFloat(document.getElementById('youtubeHours').value)
+            };
+            
+            const chartData = {
+                labels: ['Your Game', 'Movie Ticket', 'Disneyland', 'Netflix', 'Max', 'YouTube Premium'],
+                datasets: [{
+                    label: 'Cost per Hour ($)',
+                    data: [
+                        gameCostPerHour,
+                        assumptions.movie,
+                        assumptions.disney,
+                        assumptions.netflix,
+                        assumptions.max,
+                        assumptions.youtube
+                    ],
+                    backgroundColor: [
+                        'rgba(74, 144, 226, 0.8)',
+                        'rgba(126, 211, 33, 0.6)',
+                        'rgba(126, 211, 33, 0.6)',
+                        'rgba(126, 211, 33, 0.6)',
+                        'rgba(126, 211, 33, 0.6)',
+                        'rgba(126, 211, 33, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(74, 144, 226, 1)',
+                        'rgba(126, 211, 33, 1)',
+                        'rgba(126, 211, 33, 1)',
+                        'rgba(126, 211, 33, 1)',
+                        'rgba(126, 211, 33, 1)',
+                        'rgba(126, 211, 33, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            };
+            
+            const chartConfig = {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Cost per Hour Comparison',
+                            font: {
+                                size: 16,
+                                family: 'Lucida Console, Monaco, Courier New, monospace'
+                            },
+                            color: '#2c5aa0'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Cost per hour ($)',
+                                font: {
+                                    family: 'Lucida Console, Monaco, Courier New, monospace'
+                                },
+                                color: '#2c5aa0'
+                            },
+                            grid: {
+                                color: 'rgba(74, 144, 226, 0.2)'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(74, 144, 226, 0.2)'
+                            }
+                        }
+                    }
+                }
+            };
+            
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+            comparisonChart = new Chart(ctx, chartConfig);
+        }
+
+        function toggleAccordion() {
+            const isExpanded = accordionContent.classList.contains('expanded');
+            if (isExpanded) {
+                accordionContent.classList.remove('expanded');
+                accordionToggle.textContent = '▼';
+            } else {
+                accordionContent.classList.add('expanded');
+                accordionToggle.textContent = '▲';
+            }
+        }
+
+        function resetAssumptions() {
+            document.getElementById('moviePrice').value = 15;
+            document.getElementById('movieHours').value = 2.5;
+            document.getElementById('disneyPrice').value = 160;
+            document.getElementById('disneyHours').value = 12;
+            document.getElementById('netflixPrice').value = 16;
+            document.getElementById('netflixHours').value = 40;
+            document.getElementById('maxPrice').value = 16;
+            document.getElementById('maxHours').value = 25;
+            document.getElementById('youtubePrice').value = 14;
+            document.getElementById('youtubeHours').value = 60;
+            
+            if (resultsCard.style.display !== 'none') {
+                updateChart();
+            }
+        }
+
+        function copySummary() {
+            const gameCost = parseFloat(gameCostInput.value) || 0;
+            const dlcCost = parseFloat(dlcCostInput.value) || 0;
+            const hoursPlayed = parseFloat(hoursPlayedInput.value);
+            const totalCost = gameCost + dlcCost;
+            const costPerHour = totalCost / hoursPlayed;
+            
+            const movieCostPerHour = parseFloat(document.getElementById('moviePrice').value) / parseFloat(document.getElementById('movieHours').value);
+            const netflixCostPerHour = parseFloat(document.getElementById('netflixPrice').value) / parseFloat(document.getElementById('netflixHours').value);
+            
+            const movieComparison = costPerHour < movieCostPerHour ? 'better' : 'worse';
+            const netflixComparison = costPerHour < netflixCostPerHour ? 'better' : 'worse';
+            
+            const summary = `I spent $${totalCost.toFixed(2)} on this game, played ${hoursPlayed} hours → $${costPerHour.toFixed(2)}/hr. That's ${netflixComparison} than Netflix and ${movieComparison} than a movie ticket.`;
+            
+            navigator.clipboard.writeText(summary).then(() => {
+                shareStatus.textContent = 'Copied to clipboard!';
+                setTimeout(() => {
+                    shareStatus.textContent = '';
+                }, 2000);
+            });
+        }
+
+        function updateURL() {
+            const params = new URLSearchParams();
+            params.set('gameCost', gameCostInput.value);
+            params.set('dlcCost', dlcCostInput.value);
+            params.set('hoursPlayed', hoursPlayedInput.value);
+            params.set('incomeType', hourlyRateRadio.checked ? 'hourly' : 'annual');
+            params.set('hourlyRate', hourlyRateInput.value);
+            params.set('annualSalary', annualSalaryInput.value);
+            params.set('hoursWorked', hoursWorkedInput.value);
+            
+            const newURL = `${window.location.pathname}?${params.toString()}`;
+            window.history.replaceState({}, '', newURL);
+        }
+
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            
+            if (params.has('gameCost')) {
+                gameCostInput.value = params.get('gameCost');
+                dlcCostInput.value = params.get('dlcCost') || '';
+                hoursPlayedInput.value = params.get('hoursPlayed');
+                
+                const incomeType = params.get('incomeType');
+                if (incomeType === 'annual') {
+                    annualSalaryRadio.checked = true;
+                    annualSalaryInput.value = params.get('annualSalary');
+                    hoursWorkedInput.value = params.get('hoursWorked') || '2080';
+                } else {
+                    hourlyRateRadio.checked = true;
+                    hourlyRateInput.value = params.get('hourlyRate');
+                }
+                
+                toggleIncomeInputs();
+                calculateROI();
+            }
+        }
+    </script>
+</body>
+</html>
