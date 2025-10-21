@@ -1866,52 +1866,70 @@
                 scatterChart.destroy();
             }
             
-            // Prepare data with color coding based on CPH (for borders)
-            const scatterData = games.map(game => {
-                const costPerHour = game.costPerHour;
-                let borderColor;
-                
-                // Color code based on verdict bins (for borders)
-                if (costPerHour <= 1.00) {
-                    borderColor = 'rgb(76, 175, 80)'; // Legendary - Green
-                } else if (costPerHour <= 3.00) {
-                    borderColor = 'rgb(139, 195, 74)'; // Elite - Light Green
-                } else if (costPerHour <= 8.00) {
-                    borderColor = 'rgb(33, 150, 243)'; // Solid - Blue
-                } else if (costPerHour <= 15.00) {
-                    borderColor = 'rgb(255, 152, 0)'; // Reasonable - Orange
-                } else if (costPerHour <= 30.00) {
-                    borderColor = 'rgb(255, 87, 34)'; // Premium - Deep Orange
-                } else {
-                    borderColor = 'rgb(244, 67, 54)'; // Yikes - Red
-                }
+            // Compute effectiveHours and CPH for each game
+            const computedData = games.map(game => {
+                const effectiveHours = Math.max(game.hoursPlayed, 0.5);
+                const cph = game.totalCost / effectiveHours;
+                const isNeverPlayed = game.hoursPlayed === 0;
                 
                 return {
-                    x: Math.max(game.hoursPlayed, 0.1),
-                    y: Math.max(game.totalCost, 0.01),
-                    label: game.name,
-                    costPerHour: costPerHour,
-                    borderColor: borderColor,
+                    name: game.name,
+                    x: effectiveHours,
+                    y: cph,
+                    costUsd: game.totalCost,
+                    hoursPlayed: game.hoursPlayed,
+                    isNeverPlayed: isNeverPlayed,
                     iconUrl: game.iconUrl
                 };
             });
             
-            // Identify outliers for labeling (highest cost, most hours, highest CPH, lowest CPH with hours)
-            const sortedByCost = [...scatterData].sort((a, b) => b.y - a.y);
-            const sortedByHours = [...scatterData].sort((a, b) => b.x - a.x);
-            const sortedByCPH = [...scatterData].sort((a, b) => b.costPerHour - a.costPerHour);
-            const withHours = scatterData.filter(g => g.x > 0.1);
-            const sortedByLowCPH = [...withHours].sort((a, b) => a.costPerHour - b.costPerHour);
+            // Compute medians
+            const effectiveHoursSorted = computedData.map(d => d.x).sort((a, b) => a - b);
+            const cphSorted = computedData.map(d => d.y).sort((a, b) => a - b);
             
-            // Mark outliers for labeling
-            const outliers = new Set();
-            if (sortedByCost.length > 0) outliers.add(sortedByCost[0].label); // Highest cost
-            if (sortedByHours.length > 0) outliers.add(sortedByHours[0].label); // Most hours
-            if (sortedByCPH.length > 0) outliers.add(sortedByCPH[0].label); // Highest CPH
-            if (sortedByLowCPH.length > 0) outliers.add(sortedByLowCPH[0].label); // Best value (lowest CPH with hours)
+            const medianHours = effectiveHoursSorted.length % 2 === 0
+                ? (effectiveHoursSorted[effectiveHoursSorted.length / 2 - 1] + effectiveHoursSorted[effectiveHoursSorted.length / 2]) / 2
+                : effectiveHoursSorted[Math.floor(effectiveHoursSorted.length / 2)];
             
-            // Load icons as images for points
-            const pointStyles = scatterData.map(d => {
+            const medianCph = cphSorted.length % 2 === 0
+                ? (cphSorted[cphSorted.length / 2 - 1] + cphSorted[cphSorted.length / 2]) / 2
+                : cphSorted[Math.floor(cphSorted.length / 2)];
+            
+            // Assign quadrant and color
+            const getQuadrant = (d) => {
+                const isLeft = d.x <= medianHours;
+                const isTop = d.y >= medianCph;
+                if (isLeft && isTop) return { label: 'Backlog shame', color: 'rgba(244, 67, 54, 0.7)' }; // Red
+                if (!isLeft && isTop) return { label: 'Luxury hobby', color: 'rgba(255, 152, 0, 0.7)' }; // Orange
+                if (isLeft && !isTop) return { label: 'Casual win', color: 'rgba(33, 150, 243, 0.7)' }; // Blue
+                return { label: 'Evergreen value', color: 'rgba(76, 175, 80, 0.7)' }; // Green
+            };
+            
+            // Map data for Chart.js
+            const scatterDataset = computedData.map(d => {
+                const quad = getQuadrant(d);
+                const radius = Math.max(3, Math.min(10, Math.sqrt(d.hoursPlayed) * 1.5));
+                const borderColor = d.isNeverPlayed ? 'rgba(150, 0, 0, 1)' : quad.color;
+                
+                return {
+                    x: d.x,
+                    y: d.y,
+                    label: d.name,
+                    costUsd: d.costUsd,
+                    hoursPlayed: d.hoursPlayed,
+                    cph: d.y,
+                    isNeverPlayed: d.isNeverPlayed,
+                    quadrant: quad.label,
+                    r: radius,
+                    backgroundColor: d.isNeverPlayed ? 'rgba(255, 200, 200, 0.9)' : quad.color,
+                    borderColor: borderColor,
+                    borderWidth: d.isNeverPlayed ? 3 : 2,
+                    iconUrl: d.iconUrl
+                };
+            });
+            
+            // Load icons as point styles
+            const pointStyles = scatterDataset.map(d => {
                 if (d.iconUrl) {
                     const img = new Image(32, 32);
                     img.src = d.iconUrl;
@@ -1920,94 +1938,128 @@
                 return 'circle';
             });
             
+            // Calculate dynamic axis ranges to ensure all games are visible
+            const xValues = scatterDataset.map(d => d.x).filter(x => x > 0);
+            const yValues = scatterDataset.map(d => d.y).filter(y => y > 0);
+            
+            const minX = Math.min(...xValues);
+            const maxX = Math.max(...xValues);
+            const minY = Math.min(...yValues);
+            const maxY = Math.max(...yValues);
+            
+            // Ensure xMax is greater than the maximum hours played by any game
+            const actualMaxHours = Math.max(...computedData.map(d => d.hoursPlayed));
+            const xMaxWithPadding = Math.max(maxX * 1.5, actualMaxHours * 1.2);
+            
+            // Add padding (50% margins) on log scale
+            const xMin = Math.max(0.3, minX / 1.5);
+            const xMax = xMaxWithPadding;
+            const yMin = 0;
+            const yMax = Math.min(100, maxY * 1.5);
+            
+            // Chart.js scatter with log scales
             scatterChart = new Chart(ctx, {
                 type: 'scatter',
                 data: {
-                    datasets: [{
-                        label: 'Games',
-                        data: scatterData,
-                        pointStyle: pointStyles,
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)', // Light background for icons
-                        borderColor: scatterData.map(d => d.borderColor),
-                        borderWidth: 3,
-                        pointRadius: 16,
-                        pointHoverRadius: 20,
-                        pointHoverBorderWidth: 4
-                    }]
+                    datasets: [
+                        // Main games dataset
+                        {
+                            label: 'Games',
+                            data: scatterDataset,
+                            pointStyle: pointStyles,
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            borderColor: scatterDataset.map(d => d.borderColor),
+                            borderWidth: scatterDataset.map(d => d.borderWidth),
+                            pointRadius: 16,
+                            pointHoverRadius: 20
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: { mode: 'nearest', intersect: false },
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Cost vs Hours Played',
-                            font: {
-                                size: 16,
-                                family: 'Lucida Console, Monaco, Courier New, monospace'
-                            },
+                            text: 'Gaming Efficiency: Investment vs Value',
+                            font: { size: 16, family: 'Lucida Console, Monaco, Courier New, monospace' },
                             color: '#2c5aa0'
                         },
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
-                                    const point = context.raw;
-                                    const cph = point.costPerHour > 0 ? `$${point.costPerHour.toFixed(2)}/hr` : 'N/A';
-                                    return `${point.label}: $${point.y.toFixed(2)} for ${point.x} hours (${cph})`;
+                                title: (ctx) => ctx[0]?.raw?.label || 'Unknown',
+                                label: (ctx) => {
+                                    const d = ctx.raw;
+                                    const lines = [
+                                        `Hours played: ${d.hoursPlayed.toFixed(1)}`,
+                                        `Total cost: $${d.costUsd.toFixed(2)}`,
+                                        `Cost per hour: $${d.cph.toFixed(2)}`,
+                                        `Quadrant: ${d.quadrant}`
+                                    ];
+                                    if (d.isNeverPlayed) lines.push('Status: Never played (cost per hour not meaningful)');
+                                    return lines;
                                 }
                             }
                         },
-                        datalabels: {
-                            display: function(context) {
-                                // Only show labels for outliers
-                                const point = context.dataset.data[context.dataIndex];
-                                return outliers.has(point.label);
-                            },
-                            formatter: function(value, context) {
-                                return value.label;
-                            },
-                            align: 'top',
-                            offset: 8,
-                            font: {
-                                size: 10,
-                                family: 'Lucida Console, Monaco, Courier New, monospace',
-                                weight: 'bold'
-                            },
-                            color: '#2c5aa0',
-                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                            borderRadius: 4,
-                            padding: 4
+                        annotation: {
+                            annotations: {
+                                medianVLine: {
+                                    type: 'line',
+                                    xMin: medianHours,
+                                    xMax: medianHours,
+                                    borderColor: 'rgba(100, 100, 100, 0.3)',
+                                    borderWidth: 2,
+                                    borderDash: [3, 3]
+                                },
+                                medianHLine: {
+                                    type: 'line',
+                                    yMin: medianCph,
+                                    yMax: medianCph,
+                                    borderColor: 'rgba(100, 100, 100, 0.3)',
+                                    borderWidth: 2,
+                                    borderDash: [3, 3]
+                                }
+                            }
                         }
                     },
                     scales: {
                         x: {
+                            type: 'logarithmic',
+                            min: xMin,
+                            max: xMax,
                             title: {
                                 display: true,
-                                text: 'Hours Played',
-                                font: {
-                                    family: 'Lucida Console, Monaco, Courier New, monospace'
-                                },
+                                text: 'Hours Played (log scale)',
+                                font: { family: 'Lucida Console, Monaco, Courier New, monospace' },
                                 color: '#2c5aa0'
                             },
-                            grid: {
-                                color: 'rgba(74, 144, 226, 0.2)'
-                            }
+                            ticks: {
+                                callback: (val) => {
+                                    const validTicks = [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500];
+                                    return validTicks.includes(val) ? val : '';
+                                }
+                            },
+                            grid: { display: false }
                         },
                         y: {
+                            type: 'logarithmic',
+                            min: yMin,
+                            max: yMax,
                             title: {
                                 display: true,
-                                text: 'Total Cost ($)',
-                                font: {
-                                    family: 'Lucida Console, Monaco, Courier New, monospace'
-                                },
+                                text: 'Cost per Hour ($/hr, log scale)',
+                                font: { family: 'Lucida Console, Monaco, Courier New, monospace' },
                                 color: '#2c5aa0'
                             },
-                            grid: {
-                                color: 'rgba(74, 144, 226, 0.2)'
-                            }
+                            ticks: {
+                                callback: (val) => {
+                                    const validTicks = [0.1, 0.5, 1, 2, 5, 10, 20, 50, 100];
+                                    return validTicks.includes(val) ? '$' + val : '';
+                                }
+                            },
+                            grid: { display: false }
                         }
                     }
                 }
