@@ -368,6 +368,18 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            /* Scrollable pane – default fallback; JS will refine height to ~10 rows */
+            max-height: 520px;
+            overflow-y: auto;
+            padding-right: 6px; /* room for scrollbar */
+        }
+
+        /* Metrics pane scroll container */
+        #gamesMetrics {
+            max-height: 520px; /* JS will refine to exactly ~10 rows incl. header */
+            overflow-y: auto;
+            display: block;
+            padding-right: 6px;
         }
 
         /* Inline input row for Steam connection */
@@ -379,6 +391,12 @@
 
         .flex-grow {
             flex: 1;
+        }
+
+        /* Constrain button width in inline row */
+        .input-row-inline .input-group:last-child {
+            flex: 0.02 0 auto;
+            min-width: fit-content;
         }
 
         @media (max-width: 768px) {
@@ -665,8 +683,54 @@
         }
 
         .chart-container {
-            height: 400px;
             margin-top: 20px;
+        }
+
+        /* Make scatter chart wrapper square and full width */
+        .scatter-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+        }
+
+        #scatterChart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Crosshair lines for quadrants */
+        .scatter-crosshair {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .crosshair-h {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: rgba(80, 80, 80, 0.7);
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+
+        .crosshair-v {
+            position: absolute;
+            width: 3px;
+            height: 100%;
+            background: rgba(80, 80, 80, 0.7);
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+        }
+
+        .crosshair-arrow {
+            display: none;
         }
 
         .accordion {
@@ -950,7 +1014,17 @@
             </div>
 
             <div class="chart-container">
-                <canvas id="scatterChart"></canvas>
+                <div class="scatter-wrapper">
+                    <canvas id="scatterChart"></canvas>
+                    <div class="scatter-crosshair">
+                        <div class="crosshair-h"></div>
+                        <div class="crosshair-v"></div>
+                        <div class="crosshair-arrow arrow-up"></div>
+                        <div class="crosshair-arrow arrow-down"></div>
+                        <div class="crosshair-arrow arrow-left"></div>
+                        <div class="crosshair-arrow arrow-right"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="individual-games-section" id="individualGamesSection" style="display: none;">
@@ -1129,6 +1203,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
             loadFromURL();
+            // Apply initial scroll sizing if content exists
+            setTimeout(applyScrollableHeights, 0);
         });
 
         function setupEventListeners() {
@@ -1288,6 +1364,8 @@
                 `;
                 gamesListContent.appendChild(gameItem);
             });
+            // Ensure scroll height shows ~10 rows
+            applyScrollableHeights();
         }
 
         function toggleIncomeInputs() {
@@ -1403,7 +1481,7 @@
             let skippedCount = 0;
             
             // Limit to 100 games to prevent overwhelming the API and UI
-            const gamesToImport = ownedGames.slice(0, 100);
+            const gamesToImport = ownedGames.slice(0, 200);
             const totalGames = gamesToImport.length;
             
             // Show initial progress message
@@ -1439,7 +1517,7 @@
                 try {
                     gamePrice = await fetchGamePrice(game.appid);
                     // Small delay to avoid rate limiting and show progress
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(resolve => setTimeout(resolve, 20));
                 } catch (error) {
                     console.warn(`Could not fetch price for ${game.name}:`, error);
                 }
@@ -1468,9 +1546,9 @@
             
             console.log(`Imported ${importedCount} games, skipped ${skippedCount} games (hidden or duplicates)`);
             
-            // Show note if user had more than 100 games
+            // Show note if user had more than 200 games
             if (ownedGames.length > 100) {
-                const limitNote = ` (Limited to first 100 games from your ${ownedGames.length} game library)`;
+                const limitNote = ` (Limited to first 200 games from your ${ownedGames.length} game library)`;
                 return { importedCount, limitNote };
             }
             
@@ -1739,6 +1817,8 @@
             });
             
             gamesMetrics.appendChild(table);
+            // Ensure scroll height shows header + ~10 data rows
+            applyScrollableHeights();
         }
 
         function generateVerdict(costPerHour, hoursOfWorkToPay) {
@@ -2060,6 +2140,39 @@
                 gamesListToggle.textContent = '▶';
             }
         }
+
+        // Dynamically size scroll panes to show ~10 items
+        function applyScrollableHeights() {
+            try {
+                // Games list: measure first .game-item
+                const listPane = document.getElementById('gamesListContent');
+                if (listPane) {
+                    const firstItem = listPane.querySelector('.game-item');
+                    if (firstItem) {
+                        const itemH = firstItem.offsetHeight || 56; // fallback
+                        listPane.style.maxHeight = (itemH * 10) + 'px';
+                        listPane.style.overflowY = 'auto';
+                    }
+                }
+                // Metrics table: include header + 10 data rows
+                const metricsPane = document.getElementById('gamesMetrics');
+                if (metricsPane) {
+                    const headerRow = metricsPane.querySelector('table tr');
+                    const dataRow = metricsPane.querySelector('table tr:nth-child(2)');
+                    if (headerRow && dataRow) {
+                        const h = headerRow.offsetHeight || 32;
+                        const r = dataRow.offsetHeight || 40;
+                        metricsPane.style.maxHeight = (h + r * 10) + 'px';
+                        metricsPane.style.overflowY = 'auto';
+                        metricsPane.style.display = 'block';
+                    }
+                }
+            } catch (e) {
+                // no-op
+            }
+        }
+
+        window.addEventListener('resize', applyScrollableHeights);
 
         function resetAssumptions() {
             document.getElementById('moviePrice').value = 15;
