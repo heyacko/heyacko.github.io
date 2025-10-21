@@ -314,6 +314,12 @@ document.addEventListener('keydown',(e)=>{
 
 // Init
 render();
+
+// Parallax grid effect on scroll
+window.addEventListener('scroll', function() {
+  const scrolled = window.pageYOffset;
+  document.documentElement.style.setProperty('--scroll-y', scrolled + 'px');
+});
 </script>
 </body>
 </html>

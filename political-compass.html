@@ -402,6 +402,12 @@ document.addEventListener('keydown', (e)=>{
   if (e.key==='ArrowLeft' && !backBtn.disabled) backBtn.click();
   if (e.key==='ArrowRight' && !nextBtn.disabled) nextBtn.click();
 });
+
+/* ========= PARALLAX GRID EFFECT ========= */
+window.addEventListener('scroll', function() {
+  const scrolled = window.pageYOffset;
+  document.documentElement.style.setProperty('--scroll-y', scrolled + 'px');
+});
 </script>
 </body>
 </html>

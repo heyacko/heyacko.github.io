@@ -399,6 +399,36 @@
             min-width: fit-content;
         }
 
+        /* Sortable table headers */
+        .games-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 20px;
+        }
+
+        .games-table th.sortable:hover {
+            background: rgba(44, 90, 160, 0.15);
+        }
+
+        .games-table th.sortable::after {
+            content: '⇅';
+            position: absolute;
+            right: 8px;
+            opacity: 0.3;
+            font-size: 12px;
+        }
+
+        .games-table th.sortable.sort-asc::after {
+            content: '▲';
+            opacity: 0.8;
+        }
+
+        .games-table th.sortable.sort-desc::after {
+            content: '▼';
+            opacity: 0.8;
+        }
+
         @media (max-width: 768px) {
             .input-row-inline {
                 flex-direction: column;
@@ -586,17 +616,20 @@
             border: none;
             background: linear-gradient(135deg, var(--accent), #5ba0f2);
             color: white;
-            padding: 12px 20px;
+            padding: 18px 32px;
             border-radius: 12px;
-            font-size: 14px;
+            font-size: 18px;
             font-weight: 600;
-            min-height: 44px;
+            min-height: 56px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s ease;
             margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
         }
 
         .calculate-btn:hover {
@@ -609,6 +642,32 @@
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+
+        /* Shiny animation when games are populated */
+        .calculate-btn.shiny::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            animation: shine 2.5s infinite;
+        }
+
+        @keyframes shine {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            }
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+            }
         }
 
         .results {
@@ -686,8 +745,37 @@
             margin-top: 20px;
         }
 
+        /* Two-chart row layout */
+        .two-chart-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .two-chart-row .chart-container {
+            margin-top: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .two-chart-row .chart-container canvas {
+            max-height: 350px;
+        }
+
+        @media (max-width: 1024px) {
+            .two-chart-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .two-chart-row .chart-container canvas {
+                max-height: none;
+            }
+        }
+
         #comparisonChart {
-            height: 400px !important;
+            height: 350px !important;
         }
 
         /* Make scatter chart wrapper square and full width */
@@ -700,6 +788,8 @@
         #scatterChart {
             width: 100% !important;
             height: 100% !important;
+            position: relative;
+            z-index: 10;
         }
 
         /* Crosshair lines for quadrants */
@@ -735,6 +825,91 @@
 
         .crosshair-arrow {
             display: none;
+        }
+
+        /* Quadrant background colors */
+        .scatter-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            background: 
+                linear-gradient(to right, 
+                    rgba(244, 67, 54, 0.08) 0%, 
+                    rgba(244, 67, 54, 0.08) 50%, 
+                    rgba(255, 152, 0, 0.08) 50%, 
+                    rgba(255, 152, 0, 0.08) 100%
+                ),
+                linear-gradient(to bottom, 
+                    transparent 0%, 
+                    transparent 50%, 
+                    rgba(0, 0, 0, 0.05) 50%, 
+                    rgba(0, 0, 0, 0.05) 100%
+                );
+        }
+
+        /* Individual quadrant backgrounds using separate approach */
+        .scatter-wrapper::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50%;
+            height: 50%;
+            background: rgba(33, 150, 243, 0.08); /* Blue - Casual win */
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .scatter-wrapper .scatter-crosshair::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 50%;
+            height: 50%;
+            background: rgba(76, 175, 80, 0.08); /* Green - Evergreen value */
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Quadrant labels */
+        .quadrant-label {
+            position: absolute;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Lucida Console', Monaco, 'Courier New', monospace;
+            opacity: 0.6;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .quadrant-tl {
+            top: 10px;
+            left: 10px;
+            color: rgba(244, 67, 54, 1); /* Red - Backlog shame */
+        }
+
+        .quadrant-tr {
+            top: 10px;
+            right: 10px;
+            color: rgba(255, 152, 0, 1); /* Orange - Luxury hobby */
+        }
+
+        .quadrant-bl {
+            bottom: 10px;
+            left: 10px;
+            color: rgba(33, 150, 243, 1); /* Blue - Casual win */
+        }
+
+        .quadrant-br {
+            bottom: 10px;
+            right: 10px;
+            color: rgba(76, 175, 80, 1); /* Green - Evergreen value */
         }
 
         .accordion {
@@ -881,6 +1056,40 @@
                 font-size: 2.5rem;
             }
         }
+
+        /* Card movement animations */
+        @keyframes slideUp {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes slideIn {
+            0% {
+                transform: translateY(-30px) scale(0.95);
+                opacity: 0;
+            }
+            60% {
+                transform: translateY(5px) scale(1.02);
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .card-slide-up {
+            animation: slideUp 0.4s ease-out forwards;
+        }
+
+        .card-slide-in {
+            animation: slideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
     </style>
 </head>
 <body>
@@ -891,59 +1100,22 @@
             <a href="index.html" class="shared-btn-ghost">🏠 Home</a>
         </div>
 
-        <div class="shared-card">
-            <div class="two-column-layout">
-                <!-- Left Column: Steam Connection -->
-                <div class="column">
-                    <h3>Connect Steam Account</h3>
-                    <p class="steam-description">Connect your Steam account to automatically import your game library and hours played.</p>
-                    <div class="input-section">
-                        <div class="input-row-inline">
-                            <div class="input-group flex-grow">
-                                <label for="steamId">Steam ID or Profile URL</label>
-                                <input type="text" id="steamId" placeholder="e.g., 76561198000000000 or https://steamcommunity.com/id/username">
-                                <div class="error-message" id="steamIdError"></div>
-                            </div>
-                            <div class="input-group">
-                                <label>&nbsp;</label>
-                                <button type="button" class="steam-connect-btn" id="steamConnectBtn">Connect Steam</button>
-                            </div>
-                        </div>
-                        <div class="steam-status" id="steamStatus" style="display: none;"></div>
+        <div class="shared-card" id="inputCard">
+            <h3>Connect Steam Account</h3>
+            <p class="steam-description">Connect your Steam account to automatically import your game library and hours played.</p>
+            <div class="input-section">
+                <div class="input-row-inline">
+                    <div class="input-group flex-grow">
+                        <label for="steamId">Steam ID or Profile URL</label>
+                        <input type="text" id="steamId" placeholder="e.g., 76561198000000000 or https://steamcommunity.com/id/username">
+                        <div class="error-message" id="steamIdError"></div>
+                    </div>
+                    <div class="input-group">
+                        <label>&nbsp;</label>
+                        <button type="button" class="steam-connect-btn" id="steamConnectBtn">Connect Steam</button>
                     </div>
                 </div>
-
-                <!-- Right Column: Income -->
-                <div class="column">
-                    <h3>Your Income (Optional)</h3>
-                    <p class="column-description">Enter your income to calculate hours of work needed to pay for your games.</p>
-                    <div class="input-section">
-                        <div class="radio-group">
-                            <div class="radio-option">
-                                <input type="radio" id="hourlyRate" name="incomeType" value="hourly" checked>
-                                <label for="hourlyRate">Hourly rate</label>
-                            </div>
-                            <div class="radio-option">
-                                <input type="radio" id="annualSalary" name="incomeType" value="annual">
-                                <label for="annualSalary">Annual salary</label>
-                            </div>
-                        </div>
-                        <div class="input-group" id="hourlyInput">
-                            <label for="hourlyRateValue">Hourly rate ($)</label>
-                            <input type="number" id="hourlyRateValue" placeholder="25" min="0" step="0.01">
-                            <div class="error-message" id="hourlyRateError"></div>
-                        </div>
-                        <div class="input-group" id="annualInput" style="display: none;">
-                            <label for="annualSalaryValue">Annual salary ($)</label>
-                            <input type="number" id="annualSalaryValue" placeholder="52000" min="0" step="0.01">
-                            <div class="error-message" id="annualSalaryError"></div>
-                        </div>
-                        <div class="input-group" id="hoursWorkedInput" style="display: none;">
-                            <label for="hoursWorkedPerYear">Hours worked per year</label>
-                            <input type="number" id="hoursWorkedPerYear" placeholder="2080" min="1" step="1">
-                        </div>
-                    </div>
-                </div>
+                <div class="steam-status" id="steamStatus" style="display: none;"></div>
             </div>
 
             <button class="calculate-btn" id="calculateBtn">Calculate ROI</button>
@@ -988,6 +1160,13 @@
             </div>
         </div>
 
+        <div class="shared-card verdict-card" id="verdictCard" style="display: none;">
+            <div class="verdict">
+                <div class="verdict-text" id="verdictText">Ready to calculate!</div>
+                <div class="verdict-subtext" id="verdictSubtext">Add games and calculate to see your gaming ROI verdict.</div>
+            </div>
+        </div>
+
         <div class="shared-card results" id="resultsCard">
             <div class="primary-metrics">
                 <div class="primary-metric">
@@ -1003,30 +1182,35 @@
                     <div class="label">Total Cost of Gaming</div>
                 </div>
                 <div class="primary-metric">
-                    <div class="value" id="aggregateHoursOfWork">0.0</div>
-                    <div class="label">Total hours of work to pay for all games</div>
+                    <div class="value" id="neverPlayedCost">$0.00</div>
+                    <div class="label">Money spent on games you never played</div>
                 </div>
             </div>
 
-            <div class="verdict">
-                <div class="verdict-text" id="verdictText">Ready to calculate!</div>
-                <div class="verdict-subtext" id="verdictSubtext">Add games and calculate to see your gaming ROI verdict.</div>
+            <div class="two-chart-row">
+                <div class="chart-container">
+                    <h3 style="text-align: center; margin-bottom: 20px; color: #2c5aa0; font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Gaming Spend Breakdown</h3>
+                    <canvas id="spendPieChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3 style="text-align: center; margin-bottom: 20px; color: #2c5aa0; font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Cost Per Hour Comparison</h3>
+                    <canvas id="comparisonChart"></canvas>
+                </div>
             </div>
 
             <div class="chart-container">
-                <canvas id="comparisonChart"></canvas>
-            </div>
-
-            <div class="chart-container">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #2c5aa0; font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Gaming Efficiency: Investment vs Value</h3>
                 <div class="scatter-wrapper">
                     <canvas id="scatterChart"></canvas>
                     <div class="scatter-crosshair">
                         <div class="crosshair-h"></div>
                         <div class="crosshair-v"></div>
-                        <div class="crosshair-arrow arrow-up"></div>
-                        <div class="crosshair-arrow arrow-down"></div>
-                        <div class="crosshair-arrow arrow-left"></div>
-                        <div class="crosshair-arrow arrow-right"></div>
+                        <!-- Quadrant labels -->
+                        <div class="quadrant-label quadrant-tl">Backlog shame</div>
+                        <div class="quadrant-label quadrant-tr">Luxury hobby</div>
+                        <div class="quadrant-label quadrant-bl">Casual win</div>
+                        <div class="quadrant-label quadrant-br">Evergreen value</div>
                     </div>
                 </div>
             </div>
@@ -1160,17 +1344,13 @@
         const steamConnectBtn = document.getElementById('steamConnectBtn');
         const steamStatus = document.getElementById('steamStatus');
         
-        const hourlyRateRadio = document.getElementById('hourlyRate');
-        const annualSalaryRadio = document.getElementById('annualSalary');
-        const hourlyRateInput = document.getElementById('hourlyRateValue');
-        const annualSalaryInput = document.getElementById('annualSalaryValue');
-        const hoursWorkedInput = document.getElementById('hoursWorkedPerYear');
         const calculateBtn = document.getElementById('calculateBtn');
+        const verdictCard = document.getElementById('verdictCard');
         const resultsCard = document.getElementById('resultsCard');
         
         // Results elements
         const aggregateCostPerHourEl = document.getElementById('aggregateCostPerHour');
-        const aggregateHoursOfWorkEl = document.getElementById('aggregateHoursOfWork');
+        const neverPlayedCostEl = document.getElementById('neverPlayedCost');
         const verdictTextEl = document.getElementById('verdictText');
         const verdictSubtextEl = document.getElementById('verdictSubtext');
         const individualGamesSection = document.getElementById('individualGamesSection');
@@ -1179,6 +1359,7 @@
         // Charts
         let comparisonChart = null;
         let scatterChart = null;
+        let spendPieChart = null;
         
         // Data storage
         let games = [];
@@ -1211,11 +1392,16 @@
             setTimeout(applyScrollableHeights, 0);
         });
 
+        function updateCalculateButtonState() {
+            // Add shiny animation when games are populated
+            if (games.length > 0) {
+                calculateBtn.classList.add('shiny');
+            } else {
+                calculateBtn.classList.remove('shiny');
+            }
+        }
+
         function setupEventListeners() {
-            // Income type toggle
-            hourlyRateRadio.addEventListener('change', toggleIncomeInputs);
-            annualSalaryRadio.addEventListener('change', toggleIncomeInputs);
-            
             // Game management
             addGameBtn.addEventListener('click', addGame);
             
@@ -1224,16 +1410,6 @@
             
             // Calculate button
             calculateBtn.addEventListener('click', calculateROI);
-            
-            // Auto-calculate on input change (after first calculation)
-            const inputs = [hourlyRateInput, annualSalaryInput, hoursWorkedInput];
-            inputs.forEach(input => {
-                input.addEventListener('input', () => {
-                    if (resultsCard.style.display !== 'none') {
-                        calculateROI();
-                    }
-                });
-            });
             
             // Advanced assumptions
             accordionHeader.addEventListener('click', toggleAccordion);
@@ -1307,15 +1483,18 @@
             
             // Update UI
             updateGamesList();
+            updateCalculateButtonState();
             // Section is always visible now (contains add game form)
         }
         
         function removeGame(gameId) {
             games = games.filter(game => game.id !== gameId);
             updateGamesList();
+            updateCalculateButtonState();
             
             if (games.length === 0) {
                 // Games section stays visible (contains add game form)
+                verdictCard.style.display = 'none';
                 resultsCard.style.display = 'none';
             }
         }
@@ -1372,13 +1551,6 @@
             applyScrollableHeights();
         }
 
-        function toggleIncomeInputs() {
-            const isHourly = hourlyRateRadio.checked;
-            document.getElementById('hourlyInput').style.display = isHourly ? 'block' : 'none';
-            document.getElementById('annualInput').style.display = isHourly ? 'none' : 'block';
-            document.getElementById('hoursWorkedInput').style.display = isHourly ? 'none' : 'block';
-        }
-
         // Steam API functions
         async function connectSteam() {
             const steamId = steamIdInput.value.trim();
@@ -1413,6 +1585,7 @@
                 
                 // Update games list UI
                 updateGamesList();
+                updateCalculateButtonState();
 
             } catch (error) {
                 console.error('Steam API Error:', error);
@@ -1521,7 +1694,7 @@
                 try {
                     gamePrice = await fetchGamePrice(game.appid);
                     // Small delay to avoid rate limiting and show progress
-                    await new Promise(resolve => setTimeout(resolve, 20));
+                    await new Promise(resolve => setTimeout(resolve, 200));
                 } catch (error) {
                     console.warn(`Could not fetch price for ${game.name}:`, error);
                 }
@@ -1639,30 +1812,6 @@
             updateGamesList();
         }
 
-        function validateIncomeInputs() {
-            let isValid = true;
-            
-            // Income validation - now optional
-            if (hourlyRateRadio.checked) {
-                const hourlyRate = parseFloat(hourlyRateInput.value);
-                if (hourlyRateInput.value && (isNaN(hourlyRate) || hourlyRate < 0)) {
-                    showError('hourlyRateError', 'Please enter a valid hourly rate');
-                    isValid = false;
-                } else {
-                    hideError('hourlyRateError');
-                }
-            } else {
-                const annualSalary = parseFloat(annualSalaryInput.value);
-                if (annualSalaryInput.value && (isNaN(annualSalary) || annualSalary < 0)) {
-                    showError('annualSalaryError', 'Please enter a valid annual salary');
-                    isValid = false;
-                } else {
-                    hideError('annualSalaryError');
-                }
-            }
-            
-            return isValid;
-        }
 
         function showError(errorId, message) {
             const errorEl = document.getElementById(errorId);
@@ -1683,8 +1832,28 @@
                 return;
             }
             
-            if (!validateIncomeInputs()) {
-                return;
+            // Remove shiny animation from calculate button
+            calculateBtn.classList.remove('shiny');
+            
+            // Animate card movement
+            const inputCard = document.getElementById('inputCard');
+            const advancedCard = document.querySelector('.shared-card:last-of-type'); // Advanced Assumptions card
+            
+            if (inputCard && advancedCard && advancedCard.parentNode) {
+                // Add slide-up animation class
+                inputCard.classList.add('card-slide-up');
+                
+                // Wait for animation to complete, then move the card
+                setTimeout(() => {
+                    advancedCard.parentNode.insertBefore(inputCard, advancedCard);
+                    inputCard.classList.remove('card-slide-up');
+                    inputCard.classList.add('card-slide-in');
+                    
+                    // Remove animation class after completion
+                    setTimeout(() => {
+                        inputCard.classList.remove('card-slide-in');
+                    }, 600);
+                }, 400);
             }
             
             // Collapse games list when calculating
@@ -1693,39 +1862,31 @@
                 gamesListToggle.textContent = '▶';
             }
             
-            // Calculate hourly income (optional)
-            let hourlyIncome = null;
-            if (hourlyRateRadio.checked && hourlyRateInput.value) {
-                hourlyIncome = parseFloat(hourlyRateInput.value);
-            } else if (!hourlyRateRadio.checked && annualSalaryInput.value) {
-                const annualSalary = parseFloat(annualSalaryInput.value);
-                const hoursWorkedPerYear = parseFloat(hoursWorkedInput.value) || 2080;
-                hourlyIncome = annualSalary / hoursWorkedPerYear;
-            }
-            
             // Calculate aggregate metrics
             const totalCost = games.reduce((sum, game) => sum + game.totalCost, 0);
             const totalHours = games.reduce((sum, game) => sum + game.hoursPlayed, 0);
             const aggregateCostPerHour = totalHours > 0 ? totalCost / totalHours : 0;
-            const aggregateHoursOfWork = hourlyIncome && hourlyIncome > 0 ? totalCost / hourlyIncome : null;
+            const neverPlayedCost = games.reduce((sum, game) => game.hoursPlayed === 0 ? sum + game.totalCost : sum, 0);
             
             // Update results display
-            updateResults(aggregateCostPerHour, aggregateHoursOfWork, totalHours, totalCost);
+            updateResults(aggregateCostPerHour, neverPlayedCost, totalHours, totalCost);
             
             // Generate verdict
-            generateVerdict(aggregateCostPerHour, aggregateHoursOfWork);
+            generateVerdict(aggregateCostPerHour);
             
             // Update charts
+            updateSpendPieChart(neverPlayedCost, totalCost);
             updateScatterChart();
             updateComparisonChart();
             
             // Show results
+            verdictCard.style.display = 'block';
             resultsCard.style.display = 'block';
             individualGamesSection.style.display = 'block';
-            updateIndividualGamesMetrics(hourlyIncome);
+            updateIndividualGamesMetrics();
         }
 
-        function updateResults(costPerHour, hoursOfWorkToPay, totalGamingHours, totalCost) {
+        function updateResults(costPerHour, neverPlayedCost, totalGamingHours, totalCost) {
             // Update cost per hour with color coding
             aggregateCostPerHourEl.textContent = `$${costPerHour.toFixed(2)}/hr`;
             aggregateCostPerHourEl.className = 'value ' + getCostPerHourColorClass(costPerHour);
@@ -1740,17 +1901,13 @@
             totalCostOfGamingEl.textContent = `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             totalCostOfGamingEl.className = 'value';
             
-            // Update hours of work with color coding (handle null case)
-            if (hoursOfWorkToPay === null) {
-                aggregateHoursOfWorkEl.textContent = 'N/A';
-                aggregateHoursOfWorkEl.className = 'value';
+            // Update never-played cost with conditional red color coding
+            neverPlayedCostEl.textContent = `$${neverPlayedCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            // Color code red if never-played cost > half of total cost
+            if (neverPlayedCost > (totalCost / 2)) {
+                neverPlayedCostEl.className = 'value yikes'; // Red
             } else {
-                if (hoursOfWorkToPay < 10) {
-                    aggregateHoursOfWorkEl.textContent = hoursOfWorkToPay.toFixed(2);
-                } else {
-                    aggregateHoursOfWorkEl.textContent = hoursOfWorkToPay.toFixed(1);
-                }
-                aggregateHoursOfWorkEl.className = 'value ' + getHoursOfWorkColorClass(hoursOfWorkToPay);
+                neverPlayedCostEl.className = 'value';
             }
         }
 
@@ -1772,28 +1929,72 @@
             return 'yikes';
         }
         
-        function updateIndividualGamesMetrics(hourlyIncome) {
+        // Global sort state for table
+        let currentSortColumn = null;
+        let currentSortDirection = 'asc';
+
+        function updateIndividualGamesMetrics() {
             gamesMetrics.innerHTML = '';
             
             const table = document.createElement('table');
             table.className = 'games-table';
             
-            // Create table header
+            // Create table header with sortable columns
             const headerRow = document.createElement('tr');
             headerRow.innerHTML = `
-                <th>Game</th>
-                <th class="cost-per-hour">Initial Cost</th>
-                <th class="hours-work">Total Hours</th>
-                <th class="cost-per-hour">Cost per Hour</th>
-                <th class="hours-work">Hours of Work</th>
+                <th class="sortable" data-column="name">Game</th>
+                <th class="sortable cost-per-hour" data-column="totalCost">Initial Cost</th>
+                <th class="sortable hours-work" data-column="hoursPlayed">Total Hours</th>
+                <th class="sortable cost-per-hour" data-column="costPerHour">Cost per Hour</th>
             `;
             table.appendChild(headerRow);
             
+            // Add click handlers to sortable headers
+            headerRow.querySelectorAll('th.sortable').forEach(th => {
+                th.addEventListener('click', () => {
+                    const column = th.dataset.column;
+                    if (currentSortColumn === column) {
+                        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSortColumn = column;
+                        currentSortDirection = 'asc';
+                    }
+                    updateIndividualGamesMetrics();
+                });
+                
+                // Add sort indicators
+                if (th.dataset.column === currentSortColumn) {
+                    th.classList.add(currentSortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+            
+            // Sort games based on current column and direction
+            let sortedGames = [...games];
+            if (currentSortColumn) {
+                sortedGames.sort((a, b) => {
+                    let aVal, bVal;
+                    
+                    if (currentSortColumn === 'name') {
+                        aVal = a.name.toLowerCase();
+                        bVal = b.name.toLowerCase();
+                        return currentSortDirection === 'asc' 
+                            ? aVal.localeCompare(bVal) 
+                            : bVal.localeCompare(aVal);
+                    } else if (currentSortColumn === 'hoursOfWork') {
+                        aVal = hourlyIncome && hourlyIncome > 0 ? a.totalCost / hourlyIncome : 0;
+                        bVal = hourlyIncome && hourlyIncome > 0 ? b.totalCost / hourlyIncome : 0;
+                    } else {
+                        aVal = a[currentSortColumn] || 0;
+                        bVal = b[currentSortColumn] || 0;
+                    }
+                    
+                    return currentSortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                });
+            }
+            
             // Create table rows for each game
-            games.forEach(game => {
-                const hoursOfWork = hourlyIncome && hourlyIncome > 0 ? game.totalCost / hourlyIncome : null;
+            sortedGames.forEach(game => {
                 const costPerHourClass = getCostPerHourColorClass(game.costPerHour);
-                const hoursWorkClass = hoursOfWork !== null ? getHoursOfWorkColorClass(hoursOfWork) : '';
                 
                 // Add game icon if available
                 const gameIcon = game.iconUrl ? `<img src="${game.iconUrl}" alt="${game.name}" class="game-icon" onerror="this.style.display='none'">` : '';
@@ -1813,9 +2014,6 @@
                     <td class="cost-per-hour">
                         <span class="metric-value metric-${costPerHourClass}">$${game.costPerHour.toFixed(2)}/hr</span>
                     </td>
-                    <td class="hours-work">
-                        <span class="metric-value ${hoursWorkClass ? 'metric-' + hoursWorkClass : ''}">${hoursOfWork !== null ? (hoursOfWork < 10 ? hoursOfWork.toFixed(2) : hoursOfWork.toFixed(1)) : 'N/A'}</span>
-                    </td>
                 `;
                 table.appendChild(row);
             });
@@ -1825,10 +2023,10 @@
             applyScrollableHeights();
         }
 
-        function generateVerdict(costPerHour, hoursOfWorkToPay) {
-            let verdict, subtext;
+        function generateVerdict(costPerHour) {
+            let verdict;
             
-            // Primary verdict based on cost per hour - more generous thresholds
+            // Verdict based on cost per hour - more generous thresholds
             if (costPerHour <= 1.00) {
                 verdict = "Legendary ROI. You basically got paid to have fun.";
             } else if (costPerHour <= 3.00) {
@@ -1843,21 +2041,89 @@
                 verdict = "Yikes. You funded a CEO yacht per hour.";
             }
             
-            // Secondary punchline based on hours of work
-            if (hoursOfWorkToPay === null) {
-                subtext = "Add your income to see work hours analysis.";
-            } else if (hoursOfWorkToPay <= 1) {
-                subtext = "Your boss won't even notice.";
-            } else if (hoursOfWorkToPay <= 3) {
-                subtext = "That's a couple meetings you were going to hate anyway.";
-            } else if (hoursOfWorkToPay <= 8) {
-                subtext = "A solid work shift for months of entertainment.";
-            } else {
-                subtext = "This is a part-time job in disguise.";
+            verdictTextEl.textContent = verdict;
+            verdictSubtextEl.textContent = ''; // Clear subtext since we removed income-based punchlines
+        }
+
+        function updateSpendPieChart(neverPlayedCost, totalCost) {
+            const ctx = document.getElementById('spendPieChart').getContext('2d');
+            if (spendPieChart) {
+                spendPieChart.destroy();
             }
             
-            verdictTextEl.textContent = verdict;
-            verdictSubtextEl.textContent = subtext;
+            const playedCost = totalCost - neverPlayedCost;
+            
+            spendPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Games Played', 'Games Never Played'],
+                    datasets: [{
+                        data: [playedCost, neverPlayedCost],
+                        backgroundColor: [
+                            'rgba(76, 175, 80, 0.7)',  // Green for played games
+                            'rgba(244, 67, 54, 0.7)'   // Red for never played
+                        ],
+                        borderColor: [
+                            'rgba(76, 175, 80, 1)',
+                            'rgba(244, 67, 54, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 1,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: 'Yu Gothic UI, sans-serif',
+                                    size: 14
+                                },
+                                color: '#2c5aa0',
+                                padding: 15,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#2c5aa0',
+                            bodyColor: '#2c5aa0',
+                            borderColor: '#2c5aa0',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const percentage = ((value / totalCost) * 100).toFixed(1);
+                                    return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            color: '#fff',
+                            font: {
+                                family: 'Yu Gothic UI, sans-serif',
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            formatter: function(value, context) {
+                                const percentage = ((value / totalCost) * 100).toFixed(1);
+                                return '$' + value.toFixed(2) + '\n(' + percentage + '%)';
+                            },
+                            textAlign: 'center'
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
         }
 
         function updateScatterChart() {
@@ -1866,139 +2132,295 @@
                 scatterChart.destroy();
             }
             
+            // Configuration: Hours cap for outlier detection
+            const H_CAP = 200;
+            
             // Compute effectiveHours and CPH for each game
             const computedData = games.map(game => {
-                const effectiveHours = Math.max(game.hoursPlayed, 0.5);
-                const cph = game.totalCost / effectiveHours;
                 const isNeverPlayed = game.hoursPlayed === 0;
+                // Check outlier status BEFORE applying effectiveHours logic
+                const isOutlier = !isNeverPlayed && game.hoursPlayed > H_CAP;
+                
+                // Calculate effectiveHours for CPH calculation
+                let effectiveHours;
+                if (isNeverPlayed) {
+                    effectiveHours = 0.1;  // Never-played games
+                } else if (isOutlier) {
+                    effectiveHours = game.hoursPlayed;  // Use true hours for CPH calculation
+                } else {
+                    effectiveHours = Math.max(game.hoursPlayed, 0.5);  // Normal games
+                }
+                
+                const cph = game.totalCost / effectiveHours;
+                const plotHours = isOutlier ? H_CAP : effectiveHours;
                 
                 return {
                     name: game.name,
-                    x: effectiveHours,
-                    y: cph,
+                    effectiveHours: effectiveHours,
+                    plotHours: plotHours,
+                    cph: cph,
                     costUsd: game.totalCost,
                     hoursPlayed: game.hoursPlayed,
                     isNeverPlayed: isNeverPlayed,
+                    isOutlier: isOutlier,
                     iconUrl: game.iconUrl
                 };
             });
             
-            // Compute medians
-            const effectiveHoursSorted = computedData.map(d => d.x).sort((a, b) => a - b);
-            const cphSorted = computedData.map(d => d.y).sort((a, b) => a - b);
+            // Split data into main points and outliers
+            const mainPoints = computedData.filter(d => !d.isOutlier);
+            const outlierPoints = computedData.filter(d => d.isOutlier);
             
-            const medianHours = effectiveHoursSorted.length % 2 === 0
-                ? (effectiveHoursSorted[effectiveHoursSorted.length / 2 - 1] + effectiveHoursSorted[effectiveHoursSorted.length / 2]) / 2
-                : effectiveHoursSorted[Math.floor(effectiveHoursSorted.length / 2)];
+            // Debug logging
+            console.log(`Total games: ${computedData.length}, Main: ${mainPoints.length}, Outliers: ${outlierPoints.length}`);
+            console.log('All computed data:', computedData.map(d => `${d.name}: ${d.hoursPlayed}h, isOutlier: ${d.isOutlier}`));
+            if (outlierPoints.length > 0) {
+                console.log('Outlier games (>200h):', outlierPoints.map(d => `${d.name}: ${d.hoursPlayed}h → plotted at ${d.plotHours}h, CPH: $${d.cph.toFixed(2)}`));
+            }
             
-            const medianCph = cphSorted.length % 2 === 0
-                ? (cphSorted[cphSorted.length / 2 - 1] + cphSorted[cphSorted.length / 2]) / 2
-                : cphSorted[Math.floor(cphSorted.length / 2)];
+            // Compute medians on main points only (for quadrant division)
+            const mainHoursSorted = mainPoints.map(d => d.plotHours).sort((a, b) => a - b);
+            const mainCphSorted = mainPoints.map(d => d.cph).sort((a, b) => a - b);
             
-            // Assign quadrant and color
-            const getQuadrant = (d) => {
-                const isLeft = d.x <= medianHours;
-                const isTop = d.y >= medianCph;
+            const medianHours = mainHoursSorted.length > 0
+                ? (mainHoursSorted.length % 2 === 0
+                    ? (mainHoursSorted[mainHoursSorted.length / 2 - 1] + mainHoursSorted[mainHoursSorted.length / 2]) / 2
+                    : mainHoursSorted[Math.floor(mainHoursSorted.length / 2)])
+                : H_CAP / 2;
+            
+            const medianCph = mainCphSorted.length > 0
+                ? (mainCphSorted.length % 2 === 0
+                    ? (mainCphSorted[mainCphSorted.length / 2 - 1] + mainCphSorted[mainCphSorted.length / 2]) / 2
+                    : mainCphSorted[Math.floor(mainCphSorted.length / 2)])
+                : 1;
+            
+            // Assign quadrant and color based on plot position
+            const getQuadrant = (plotHours, cph) => {
+                const isLeft = plotHours <= medianHours;
+                const isTop = cph >= medianCph;
                 if (isLeft && isTop) return { label: 'Backlog shame', color: 'rgba(244, 67, 54, 0.7)' }; // Red
                 if (!isLeft && isTop) return { label: 'Luxury hobby', color: 'rgba(255, 152, 0, 0.7)' }; // Orange
                 if (isLeft && !isTop) return { label: 'Casual win', color: 'rgba(33, 150, 243, 0.7)' }; // Blue
                 return { label: 'Evergreen value', color: 'rgba(76, 175, 80, 0.7)' }; // Green
             };
             
-            // Map data for Chart.js
-            const scatterDataset = computedData.map(d => {
-                const quad = getQuadrant(d);
-                const radius = Math.max(3, Math.min(10, Math.sqrt(d.hoursPlayed) * 1.5));
-                const borderColor = d.isNeverPlayed ? 'rgba(150, 0, 0, 1)' : quad.color;
+            // Create main dataset
+            const mainDataset = mainPoints.map(d => {
+                const quad = getQuadrant(d.plotHours, d.cph);
+                const radius = 16;
                 
                 return {
-                    x: d.x,
-                    y: d.y,
+                    x: d.plotHours,
+                    y: d.cph,
                     label: d.name,
                     costUsd: d.costUsd,
                     hoursPlayed: d.hoursPlayed,
-                    cph: d.y,
+                    effectiveHours: d.effectiveHours,
+                    cph: d.cph,
                     isNeverPlayed: d.isNeverPlayed,
+                    isOutlier: false,
                     quadrant: quad.label,
-                    r: radius,
-                    backgroundColor: d.isNeverPlayed ? 'rgba(255, 200, 200, 0.9)' : quad.color,
-                    borderColor: borderColor,
+                    borderColor: d.isNeverPlayed ? 'rgba(150, 0, 0, 1)' : quad.color,
                     borderWidth: d.isNeverPlayed ? 3 : 2,
                     iconUrl: d.iconUrl
                 };
             });
             
-            // Load icons as point styles
-            const pointStyles = scatterDataset.map(d => {
+            // Create outlier dataset
+            const outlierDataset = outlierPoints.map(d => {
+                const quad = getQuadrant(d.plotHours, d.cph);
+                const radius = 16;
+                
+                return {
+                    x: d.plotHours,
+                    y: d.cph,
+                    label: d.name,
+                    costUsd: d.costUsd,
+                    hoursPlayed: d.hoursPlayed,
+                    effectiveHours: d.effectiveHours,
+                    cph: d.cph,
+                    isNeverPlayed: false,
+                    isOutlier: true,
+                    quadrant: quad.label,
+                    borderColor: quad.color,
+                    borderWidth: 3,
+                    iconUrl: d.iconUrl
+                };
+            });
+            
+            // Calculate axis ranges using logarithmic scale
+            const allPoints = [...mainDataset, ...outlierDataset];
+            const xValues = allPoints.map(d => d.x).filter(x => x > 0);
+            const yValues = allPoints.map(d => d.y).filter(y => y > 0);
+            
+            const xMin = 0.05;  // Log scale min
+            const xMax = H_CAP * 1.2;  // Slightly beyond cap
+            const yMin = Math.min(...yValues) * 0.5;  // Dynamic min with padding below lowest point
+            const yMax = Math.max(...yValues) * 2;  // Dynamic max with padding
+            
+            // Create icon images for both datasets
+            const mainIcons = mainDataset.map(d => {
                 if (d.iconUrl) {
                     const img = new Image(32, 32);
                     img.src = d.iconUrl;
+                    img.onload = () => {
+                        if (scatterChart) scatterChart.update('none');
+                    };
+                    return img;
+                }
+                return d.isNeverPlayed ? 'triangle' : 'circle';
+            });
+            
+            const outlierIcons = outlierDataset.map((d, idx) => {
+                if (d.iconUrl) {
+                    const img = new Image(32, 32);
+                    img.src = d.iconUrl;
+                    console.log(`Loading outlier icon ${idx}: ${d.label} from ${d.iconUrl}`);
+                    img.onload = () => {
+                        console.log(`Outlier icon ${idx} loaded: ${d.label}`);
+                        if (scatterChart) scatterChart.update('none');
+                    };
                     return img;
                 }
                 return 'circle';
             });
             
-            // Calculate dynamic axis ranges to ensure all games are visible
-            const xValues = scatterDataset.map(d => d.x).filter(x => x > 0);
-            const yValues = scatterDataset.map(d => d.y).filter(y => y > 0);
+            console.log('Outlier dataset:', outlierDataset.map(d => `${d.label}: x=${d.x}, y=${d.y.toFixed(2)}`));
             
-            const minX = Math.min(...xValues);
-            const maxX = Math.max(...xValues);
-            const minY = Math.min(...yValues);
-            const maxY = Math.max(...yValues);
-            
-            // Ensure xMax is greater than the maximum hours played by any game
-            const actualMaxHours = Math.max(...computedData.map(d => d.hoursPlayed));
-            const xMaxWithPadding = Math.max(maxX * 1.5, actualMaxHours * 1.2);
-            
-            // Add padding (50% margins) on log scale
-            const xMin = Math.max(0.3, minX / 1.5);
-            const xMax = xMaxWithPadding;
-            const yMin = 0;
-            const yMax = Math.min(100, maxY * 1.5);
-            
-            // Chart.js scatter with log scales
+            // Chart.js scatter with log scales and two datasets
             scatterChart = new Chart(ctx, {
                 type: 'scatter',
                 data: {
                     datasets: [
-                        // Main games dataset
+                        // Main points dataset
                         {
                             label: 'Games',
-                            data: scatterDataset,
-                            pointStyle: pointStyles,
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            borderColor: scatterDataset.map(d => d.borderColor),
-                            borderWidth: scatterDataset.map(d => d.borderWidth),
+                            data: mainDataset,
+                            pointStyle: 'circle',
+                            backgroundColor: 'transparent',
+                            borderColor: 'transparent',
+                            borderWidth: 0,
                             pointRadius: 16,
                             pointHoverRadius: 20
+                        },
+                        // Outliers dataset (200h+ capped)
+                        {
+                            label: '200h+ capped',
+                            data: outlierDataset,
+                            pointStyle: 'circle',
+                            backgroundColor: 'transparent',
+                            borderColor: 'transparent',
+                            borderWidth: 0,
+                            pointRadius: 16,
+                            pointHoverRadius: 20,
+                            borderDash: [5, 5]  // Dashed for distinction
                         }
                     ]
                 },
+                plugins: [{
+                    id: 'circularIcons',
+                    afterDatasetsDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        
+                        // Draw main dataset (dataset 0)
+                        const mainMeta = chart.getDatasetMeta(0);
+                        mainMeta.data.forEach((point, index) => {
+                            const d = mainDataset[index];
+                            const img = mainIcons[index];
+                            const x = point.x;
+                            const y = point.y;
+                            const radius = point.options.radius || 16;
+                            
+                            if (img instanceof Image && img.complete) {
+                                // Draw circular clipped image (no border)
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                                ctx.closePath();
+                                ctx.clip();
+                                ctx.drawImage(img, x - radius, y - radius, radius * 2, radius * 2);
+                                ctx.restore();
+                            } else {
+                                // Draw shape for never-played or no-icon games
+                                ctx.beginPath();
+                                if (d.isNeverPlayed) {
+                                    // Triangle for never-played
+                                    ctx.moveTo(x, y - radius);
+                                    ctx.lineTo(x + radius, y + radius);
+                                    ctx.lineTo(x - radius, y + radius);
+                                    ctx.closePath();
+                                } else {
+                                    // Circle
+                                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                                }
+                                ctx.fillStyle = d.borderColor; // Use the color but no border
+                                ctx.fill();
+                            }
+                        });
+                        
+                        // Draw outlier dataset (dataset 1) with dashed borders
+                        if (chart.data.datasets.length > 1) {
+                            const outlierMeta = chart.getDatasetMeta(1);
+                            console.log('Outlier meta points:', outlierMeta.data.length, 'Expected:', outlierDataset.length);
+                            outlierMeta.data.forEach((point, index) => {
+                                const d = outlierDataset[index];
+                                const img = outlierIcons[index];
+                                const x = point.x;
+                                const y = point.y;
+                                const radius = point.options.radius || 16;
+                                console.log(`Drawing outlier ${index}: ${d.label} at (${x}, ${y}), img loaded:`, img instanceof Image && img.complete);
+                                
+                                if (img instanceof Image && img.complete) {
+                                    // Draw circular clipped image (no border)
+                                    ctx.save();
+                                    ctx.beginPath();
+                                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                                    ctx.closePath();
+                                    ctx.clip();
+                                    ctx.drawImage(img, x - radius, y - radius, radius * 2, radius * 2);
+                                    ctx.restore();
+                                } else {
+                                    // Draw circle without border
+                                    ctx.beginPath();
+                                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                                    ctx.fillStyle = d.borderColor; // Use the color but no border
+                                    ctx.fill();
+                                }
+                            });
+                        }
+                    }
+                }],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: { mode: 'nearest', intersect: false },
+                    interaction: { 
+                        mode: 'point', 
+                        intersect: true,
+                        includeInvisible: false
+                    },
                     plugins: {
                         title: {
-                            display: true,
-                            text: 'Gaming Efficiency: Investment vs Value',
-                            font: { size: 16, family: 'Lucida Console, Monaco, Courier New, monospace' },
-                            color: '#2c5aa0'
+                            display: false  // Title moved to HTML element above chart
                         },
                         legend: { display: false },
                         tooltip: {
+                            enabled: true,
+                            displayColors: false,
                             callbacks: {
                                 title: (ctx) => ctx[0]?.raw?.label || 'Unknown',
                                 label: (ctx) => {
                                     const d = ctx.raw;
                                     const lines = [
-                                        `Hours played: ${d.hoursPlayed.toFixed(1)}`,
+                                        `Hours played: ${d.hoursPlayed.toFixed(1)}`,  // True hours
                                         `Total cost: $${d.costUsd.toFixed(2)}`,
-                                        `Cost per hour: $${d.cph.toFixed(2)}`,
-                                        `Quadrant: ${d.quadrant}`
+                                        `Cost per hour: $${d.cph.toFixed(2)}`
                                     ];
-                                    if (d.isNeverPlayed) lines.push('Status: Never played (cost per hour not meaningful)');
+                                    if (d.isNeverPlayed) {
+                                        lines.push('Status: Never played');
+                                    }
+                                    if (d.isOutlier) {
+                                        lines.push(`Note: Plotted at ${H_CAP}h cap (actual: ${d.hoursPlayed.toFixed(1)}h)`);
+                                    }
                                     return lines;
                                 }
                             }
@@ -2032,16 +2454,20 @@
                             title: {
                                 display: true,
                                 text: 'Hours Played (log scale)',
-                                font: { family: 'Lucida Console, Monaco, Courier New, monospace' },
-                                color: '#2c5aa0'
+                                font: { family: 'Lucida Console, Monaco, Courier New, monospace', size: 12 },
+                                color: '#2c5aa0',
+                                padding: { top: 10 }
                             },
                             ticks: {
-                                callback: (val) => {
-                                    const validTicks = [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500];
-                                    return validTicks.includes(val) ? val : '';
-                                }
+                                display: false  // Hide tick labels
                             },
-                            grid: { display: false }
+                            grid: { 
+                                display: false,
+                                drawBorder: false  // Hide axis line
+                            },
+                            border: {
+                                display: false  // Hide border
+                            }
                         },
                         y: {
                             type: 'logarithmic',
@@ -2050,16 +2476,20 @@
                             title: {
                                 display: true,
                                 text: 'Cost per Hour ($/hr, log scale)',
-                                font: { family: 'Lucida Console, Monaco, Courier New, monospace' },
-                                color: '#2c5aa0'
+                                font: { family: 'Lucida Console, Monaco, Courier New, monospace', size: 12 },
+                                color: '#2c5aa0',
+                                padding: { right: 10 }
                             },
                             ticks: {
-                                callback: (val) => {
-                                    const validTicks = [0.1, 0.5, 1, 2, 5, 10, 20, 50, 100];
-                                    return validTicks.includes(val) ? '$' + val : '';
-                                }
+                                display: false  // Hide tick labels
                             },
-                            grid: { display: false }
+                            grid: { 
+                                display: false,
+                                drawBorder: false  // Hide axis line
+                            },
+                            border: {
+                                display: false  // Hide border
+                            }
                         }
                     }
                 }
@@ -2134,13 +2564,7 @@
                     maintainAspectRatio: false,
                     plugins: {
                         title: {
-                            display: true,
-                            text: 'Cost per Hour Comparison',
-                            font: {
-                                size: 16,
-                                family: 'Lucida Console, Monaco, Courier New, monospace'
-                            },
-                            color: '#2c5aa0'
+                            display: false
                         },
                         legend: {
                             display: false
@@ -2326,6 +2750,14 @@
                 calculateROI();
             }
         }
+    </script>
+
+    <!-- Parallax grid effect on scroll -->
+    <script>
+      window.addEventListener('scroll', function() {
+        const scrolled = window.pageYOffset;
+        document.documentElement.style.setProperty('--scroll-y', scrolled + 'px');
+      });
     </script>
 </body>
 </html>
