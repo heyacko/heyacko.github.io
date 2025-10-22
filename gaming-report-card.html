@@ -32,8 +32,8 @@
             <div class="input-section">
                 <div class="input-row-inline">
                     <div class="input-group flex-grow">
-                        <label for="steamId">Steam ID or Profile URL</label>
-                        <input type="text" id="steamId" placeholder="e.g., 76561198000000000 or https://steamcommunity.com/id/username">
+                        <label for="steamId">Steam Username, ID, or Profile URL</label>
+                        <input type="text" id="steamId" placeholder="e.g., username or https://steamcommunity.com/id/username">
                         <div class="error-message" id="steamIdError"></div>
                     </div>
                     <div class="input-group">
@@ -115,9 +115,14 @@
                     <div class="label">Aggregate cost per hour of gaming</div>
                 </div>
                 <div class="primary-metric">
-                    <div class="value" id="refundableCost">$0.00</div>
-                    <div class="label">Refundability</div>
+                    <div class="value" id="refundableCost">0</div>
+                    <div class="label">Games you bought could have been refunded</div>
                 </div>
+            </div>
+
+            <div id="gameDistribution" style="text-align: center; margin: 30px auto; max-width: 900px; display: none;">
+                <p id="gameDistributionText" style="font-size: 1.2em; color: #2c5aa0; margin-bottom: 20px;"></p>
+                <div id="topGamesDisplay" style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;"></div>
             </div>
 
             <div class="two-chart-row">
@@ -362,6 +367,12 @@
             
             // Steam connection
             steamConnectBtn.addEventListener('click', connectSteam);
+            steamIdInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    connectSteam();
+                }
+            });
             
             // Calculate button
             calculateBtn.addEventListener('click', calculateROI);
@@ -942,6 +953,85 @@
             resultsCard.style.display = 'block';
             individualGamesSection.style.display = 'block';
             updateIndividualGamesMetrics();
+            updateGameDistribution(totalHours);
+        }
+
+        function updateGameDistribution(totalHours) {
+            // Sort games by hours played (descending)
+            const sortedGames = [...games].sort((a, b) => b.hoursPlayed - a.hoursPlayed);
+            
+            // Filter out games with 0 hours
+            const playedGames = sortedGames.filter(game => game.hoursPlayed > 0);
+            
+            if (playedGames.length === 0) {
+                document.getElementById('gameDistribution').style.display = 'none';
+                return;
+            }
+            
+            // Calculate cumulative hours until we reach 70% of total
+            let cumulativeHours = 0;
+            const threshold = totalHours * 0.7;
+            const topGames = [];
+            
+            for (const game of playedGames) {
+                topGames.push(game);
+                cumulativeHours += game.hoursPlayed;
+                if (cumulativeHours >= threshold) {
+                    break;
+                }
+            }
+            
+            // Only show if there are 5 or fewer top games (meaningful concentration)
+            if (topGames.length > 0 && topGames.length <= 5) {
+                const percentage = Math.round((cumulativeHours / totalHours) * 100);
+                const gameText = topGames.length === 1 ? 'game' : 'games';
+                
+                document.getElementById('gameDistributionText').textContent = 
+                    `Over ${percentage}% of your total game hours was spent playing ${topGames.length === 1 ? 'this' : 'these'} ${topGames.length} ${gameText}:`;
+                
+                // Build the top games display
+                const topGamesDisplay = document.getElementById('topGamesDisplay');
+                topGamesDisplay.innerHTML = '';
+                
+                topGames.forEach(game => {
+                    const gameDiv = document.createElement('div');
+                    gameDiv.style.textAlign = 'center';
+                    
+                    if (game.iconUrl) {
+                        const img = document.createElement('img');
+                        img.src = game.iconUrl;
+                        img.alt = game.name;
+                        img.style.width = '64px';
+                        img.style.height = '64px';
+                        img.style.borderRadius = '8px';
+                        img.style.marginBottom = '8px';
+                        img.style.display = 'block';
+                        img.style.margin = '0 auto 8px auto';
+                        gameDiv.appendChild(img);
+                    }
+                    
+                    const nameSpan = document.createElement('div');
+                    nameSpan.textContent = game.name;
+                    nameSpan.style.fontSize = '0.9em';
+                    nameSpan.style.color = '#2c5aa0';
+                    nameSpan.style.maxWidth = '120px';
+                    nameSpan.style.wordWrap = 'break-word';
+                    gameDiv.appendChild(nameSpan);
+                    
+                    const hoursSpan = document.createElement('div');
+                    hoursSpan.textContent = `${game.hoursPlayed.toFixed(1)} hrs`;
+                    hoursSpan.style.fontSize = '0.8em';
+                    hoursSpan.style.color = '#666';
+                    hoursSpan.style.marginTop = '4px';
+                    gameDiv.appendChild(hoursSpan);
+                    
+                    topGamesDisplay.appendChild(gameDiv);
+                });
+                
+                document.getElementById('gameDistribution').style.display = 'block';
+            } else {
+                document.getElementById('gameDistribution').style.display = 'none';
+            }
         }
 
         function updateResults(costPerHour, refundableCost, totalGamingHours, totalCost, totalFinalCost) {
@@ -976,28 +1066,22 @@
                 totalCostLabelEl.textContent = 'Total Cost of Gaming';
             }
             
-            // Update refundable cost with color coding
-            const refundablePercent = totalCost > 0 ? (refundableCost / totalCost) * 100 : 0;
+            // Update refundable games count with color coding
             const refundableCount = games.filter(game => game.hoursPlayed < 2).length;
+            const refundableGamesPercent = games.length > 0 ? (refundableCount / games.length) * 100 : 0;
             
-            // Update the value (just the dollar amount)
+            // Update the value (count of refundable games)
             const refundableValueEl = refundableCostEl;
-            refundableValueEl.textContent = `$${refundableCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            refundableValueEl.textContent = refundableCount.toLocaleString('en-US');
             
-            // Update the label (the count message)
-            const refundableLabelEl = refundableValueEl.nextElementSibling;
-            if (refundableLabelEl) {
-                refundableLabelEl.textContent = `${refundableCount} game${refundableCount !== 1 ? 's' : ''} you bought could have been refunded`;
-            }
-            
-            // Color code based on refundability percentage
-            if (refundablePercent < 10) {
+            // Color code based on percentage of games that are refundable
+            if (refundableGamesPercent < 10) {
                 refundableValueEl.className = 'value elite'; // Elite
-            } else if (refundablePercent < 25) {
+            } else if (refundableGamesPercent < 25) {
                 refundableValueEl.className = 'value solid'; // Solid
-            } else if (refundablePercent < 35) {
+            } else if (refundableGamesPercent < 35) {
                 refundableValueEl.className = 'value reasonable'; // Reasonable
-            } else if (refundablePercent < 50) {
+            } else if (refundableGamesPercent < 50) {
                 refundableValueEl.className = 'value premium'; // Premium
             } else {
                 refundableValueEl.className = 'value yikes'; // Yikes
@@ -1122,8 +1206,8 @@
             const neverPlayedPercent = totalCost > 0 ? (neverPlayedCost / totalCost) * 100 : 0;
             
             // Calculate refundability (games with < 2 hours)
-            const refundableCost = games.reduce((sum, game) => game.hoursPlayed < 2 ? sum + game.totalCost : sum, 0);
-            const refundablePercent = totalCost > 0 ? (refundableCost / totalCost) * 100 : 0;
+            const refundableCount = games.filter(game => game.hoursPlayed < 2).length;
+            const refundablePercent = games.length > 0 ? (refundableCount / games.length) * 100 : 0;
             
             // ==============================================
             // LETTER GRADE CALCULATION
@@ -1234,7 +1318,7 @@
             if (userName && avatarUrl) {
                 verdictHTML += '<div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">';
                 verdictHTML += `<img src="${avatarUrl}" alt="Steam Avatar" style="border-radius: 50%; width: 32px; height: 32px;">`;
-                verdictHTML += `<span style="font-size: 1.2em; color: #666;">${userName}</span>`;
+                verdictHTML += `<span style="font-size: 1.2em; color: #666;">${userName} | Gaming Report Card</span>`;
                 verdictHTML += '</div>';
             }
             
@@ -1269,7 +1353,7 @@
                 } else if (bestComponent.name === 'cph') {
                     feedbackMessage = `Your average cost is $${costPerHour.toFixed(2)} per hour of entertainment.`;
                 } else {
-                    feedbackMessage = `${(100 - refundablePercent).toFixed(0)}% of your spending went to games you kept past the refund window.`;
+                    feedbackMessage = `${(100 - refundablePercent).toFixed(0)}% of your games were kept past the refund window.`;
                 }
             }
             // Grade 84 and below - identify and describe worst component
@@ -1284,7 +1368,7 @@
                 } else if (worstComponent.name === 'cph') {
                     feedbackMessage = `Your cost per hour of $${costPerHour.toFixed(2)} is higher than average.`;
                 } else {
-                    feedbackMessage = `${refundablePercent.toFixed(0)}% of your spending went to games you could have refunded.`;
+                    feedbackMessage = `${refundablePercent.toFixed(0)}% of your games could have been refunded.`;
                 }
             }
             
