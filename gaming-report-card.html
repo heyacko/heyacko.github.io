@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaming ROI Calculator</title>
+    <title>Gaming Report Card</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -22,7 +22,7 @@
 <body>
     <div class="shared-wrap">
         <div class="shared-card">
-            <h1 class="shared-h1">Gaming ROI Calculator</h1>
+            <h1 class="shared-h1">Gaming Report Card</h1>
             <p class="shared-sub">Calculate the true cost of your gaming habit and see how it stacks up against other entertainment.</p>
             <a href="index.html" class="shared-btn-ghost">🏠 Home</a>
         </div>
@@ -1027,90 +1027,113 @@
         }
 
         function generateVerdict(costPerHour) {
-            // Calculate additional metrics for verdict
+            // Calculate additional metrics for grading
             const totalCost = games.reduce((sum, game) => sum + game.totalCost, 0);
             const totalHours = games.reduce((sum, game) => sum + game.hoursPlayed, 0);
             const neverPlayedCost = games.reduce((sum, game) => game.hoursPlayed === 0 ? sum + game.totalCost : sum, 0);
-            const neverPlayedCount = games.filter(game => game.hoursPlayed === 0).length;
-            const neverPlayedPercent = (neverPlayedCost / totalCost) * 100;
+            const neverPlayedPercent = totalCost > 0 ? (neverPlayedCost / totalCost) * 100 : 0;
             
-            // Find best and worst value games (excluding never-played)
-            const playedGames = games.filter(game => game.hoursPlayed > 0);
-            const bestGame = playedGames.reduce((best, game) => 
-                game.costPerHour < best.costPerHour ? game : best, playedGames[0]);
-            const worstGame = playedGames.reduce((worst, game) => 
-                game.costPerHour > worst.costPerHour ? game : worst, playedGames[0]);
-            
-            // Benchmark comparisons (Netflix ~$0.40/hr, Movie ~$6/hr)
-            const netflixCPH = 0.40;
-            const movieCPH = 6.00;
+            // Count free games that have been played
+            const freeGamesPlayed = games.filter(game => game.totalCost === 0 && game.hoursPlayed > 0).length;
+            const totalGamesPlayed = games.filter(game => game.hoursPlayed > 0).length;
+            const freeGamesPercent = totalGamesPlayed > 0 ? (freeGamesPlayed / totalGamesPlayed) * 100 : 0;
             
             // ==============================================
-            // VERDICT TEMPLATE - EASY TO CUSTOMIZE
-            // Structure: Bold claim first, then stats as justification
-            // Available variables: costPerHour, totalCost, totalHours, neverPlayedCost, 
-            // neverPlayedCount, neverPlayedPercent, bestGame, worstGame, games.length
+            // LETTER GRADE CALCULATION
+            // Based on: never-played spend %, cost per hour, and free games played
             // ==============================================
             
-            let verdict = '';
+            let score = 0;
             
-            // Lead with the spicy take, back it up with numbers
+            // Factor 1: Gaming spend breakdown (never played %) - 40 points
+            // <25% = excellent, >50% = failing
+            if (neverPlayedPercent < 10) {
+                score += 40;
+            } else if (neverPlayedPercent < 25) {
+                score += 35;
+            } else if (neverPlayedPercent < 35) {
+                score += 25;
+            } else if (neverPlayedPercent < 50) {
+                score += 15;
+            } else {
+                score += 0;
+            }
             
-            // Opening: Bold claim about value
+            // Factor 2: Cost per hour - 40 points
+            // Align with existing buckets
             if (costPerHour <= 1.00) {
-                verdict = `🎮 You're a gaming economics genius. Seriously—you're getting better value than Netflix at $${costPerHour.toFixed(2)}/hour. `;
+                score += 40; // Legendary
             } else if (costPerHour <= 3.00) {
-                verdict = `👍 Your gaming habit is actually a bargain. While others drop $15 on a 2-hour movie, you're cruising at $${costPerHour.toFixed(2)}/hour. `;
+                score += 35; // Elite
             } else if (costPerHour <= 8.00) {
-                verdict = `💰 You're in the sweet spot of responsible gaming. At $${costPerHour.toFixed(2)}/hour, you're paying movie ticket prices for way more entertainment. `;
+                score += 25; // Solid
             } else if (costPerHour <= 15.00) {
-                verdict = `🤔 Your wallet is feeling it, but you're not in danger zone yet. That $${costPerHour.toFixed(2)}/hour puts you between movie night and concert ticket territory. `;
+                score += 15; // Reasonable
+            } else if (costPerHour <= 30.00) {
+                score += 5; // Premium
             } else {
-                verdict = `😬 Let's be real—your gaming is expensive. At $${costPerHour.toFixed(2)}/hour, you could see a live concert or hit Disneyland instead. `;
+                score += 0; // Yikes
             }
             
-            // Never-played games: Lead with shame, justify with numbers
-            if (neverPlayedCount > 0) {
-                if (neverPlayedPercent > 50) {
-                    verdict += `🚨 But here's the embarrassing part: you've built a digital mausoleum. More than half your money is rotting in ${neverPlayedCount} unplayed games—that's $${neverPlayedCost.toFixed(2)} of pure regret. `;
-                } else if (neverPlayedPercent > 25) {
-                    verdict += `⚠️ You've got a backlog problem, friend. ${neverPlayedPercent.toFixed(0)}% of your gaming budget ($${neverPlayedCost.toFixed(2)}) is trapped in ${neverPlayedCount} games collecting dust. `;
-                } else if (neverPlayedPercent > 10) {
-                    verdict += `📦 Minor backlog alert: ${neverPlayedCount} games worth $${neverPlayedCost.toFixed(2)} are sitting there judging you. Not terrible, but it's adding up. `;
-                } else {
-                    verdict += `✅ Respect—you actually play what you buy. Only $${neverPlayedCost.toFixed(2)} sitting unplayed means you're not a Steam sale victim. `;
-                }
+            // Factor 3: Free games played - 20 points
+            // More free games with hours = better score
+            if (freeGamesPercent >= 30) {
+                score += 20;
+            } else if (freeGamesPercent >= 20) {
+                score += 15;
+            } else if (freeGamesPercent >= 10) {
+                score += 10;
+            } else if (freeGamesPercent > 0) {
+                score += 5;
             } else {
-                verdict += `🌟 Holy commitment, Batman! You've played every single game. ${games.length} games, zero backlog. That's dedication (or denial). `;
+                score += 0;
             }
             
-            // Best/worst game callouts: Lead with character judgment
-            if (playedGames.length > 1 && bestGame && worstGame) {
-                if (bestGame.costPerHour < netflixCPH) {
-                    verdict += `Your MVP "${bestGame.name}" is basically free at $${bestGame.costPerHour.toFixed(2)}/hour. Meanwhile, `;
-                } else {
-                    verdict += `"${bestGame.name}" is your best value at $${bestGame.costPerHour.toFixed(2)}/hour, but `;
-                }
-                
-                if (worstGame.costPerHour > movieCPH) {
-                    verdict += `"${worstGame.name}" at $${worstGame.costPerHour.toFixed(2)}/hour is looking like buyer's remorse in digital form. `;
-                } else {
-                    verdict += `even your weakest game "${worstGame.name}" ($${worstGame.costPerHour.toFixed(2)}/hour) isn't bleeding you dry. `;
-                }
-            }
-            
-            // Closing: Bold advice
-            if (neverPlayedPercent > 30) {
-                verdict += `🎯 Real talk: Stop buying and start playing. You've spent $${totalCost.toFixed(2)} across ${games.length} games—get your money's worth.`;
-            } else if (costPerHour > 10) {
-                verdict += `💡 Want cheaper gaming? Simple: play what you own longer. Those ${totalHours.toFixed(0)} hours across $${totalCost.toFixed(2)} could stretch further.`;
-            } else if (costPerHour < 3) {
-                verdict += `🎯 You've cracked the code. ${totalHours.toFixed(0)} hours from $${totalCost.toFixed(2)} is genuinely impressive—whatever you're doing, don't stop.`;
+            // Convert score to letter grade with +/- granularity and color coding
+            let letterGrade = '';
+            let gradeColor = '';
+            if (score >= 97) {
+                letterGrade = 'A+';
+                gradeColor = '#4CAF50'; // Green
+            } else if (score >= 93) {
+                letterGrade = 'A';
+                gradeColor = '#4CAF50'; // Green
+            } else if (score >= 90) {
+                letterGrade = 'A-';
+                gradeColor = '#4CAF50'; // Green
+            } else if (score >= 87) {
+                letterGrade = 'B+';
+                gradeColor = '#2196F3'; // Blue
+            } else if (score >= 83) {
+                letterGrade = 'B';
+                gradeColor = '#2196F3'; // Blue
+            } else if (score >= 80) {
+                letterGrade = 'B-';
+                gradeColor = '#2196F3'; // Blue
+            } else if (score >= 77) {
+                letterGrade = 'C+';
+                gradeColor = '#FFC107'; // Yellow/Amber
+            } else if (score >= 73) {
+                letterGrade = 'C';
+                gradeColor = '#FFC107'; // Yellow/Amber
+            } else if (score >= 70) {
+                letterGrade = 'C-';
+                gradeColor = '#FFC107'; // Yellow/Amber
+            } else if (score >= 67) {
+                letterGrade = 'D+';
+                gradeColor = '#FF9800'; // Orange
+            } else if (score >= 63) {
+                letterGrade = 'D';
+                gradeColor = '#FF9800'; // Orange
+            } else if (score >= 60) {
+                letterGrade = 'D-';
+                gradeColor = '#FF9800'; // Orange
             } else {
-                verdict += `📊 You're doing fine. ${games.length} games, ${totalHours.toFixed(0)} hours, $${totalCost.toFixed(2)} spent—nothing heroic, nothing tragic.`;
+                letterGrade = 'F';
+                gradeColor = '#F44336'; // Red
             }
             
-            verdictTextEl.textContent = verdict;
+            verdictTextEl.innerHTML = `<span style="font-size: 4em; font-weight: bold;">Gaming Report Card: <span style="color: ${gradeColor};">${letterGrade}</span></span>`;
             verdictSubtextEl.textContent = '';
         }
 

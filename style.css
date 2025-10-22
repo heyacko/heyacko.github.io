@@ -1,7 +1,7 @@
 /* 
 ================================================================================
                 HEYACKO.GITHUB.IO - MAIN STYLESHEET
-                "Frutiger Aero" Design System
+                "Windows Vista Aero Glass" Design System
 ================================================================================
 
 🎨 QUICK START: How to Change the Site's Color Theme
@@ -37,7 +37,7 @@ That's it! All alpha variants (opacity versions) automatically derive from these
   7. Feedback & Results Components
   8. Page-Specific Styles
      - Homepage (index.html)
-     - Gaming ROI Calculator
+     - Gaming Report Card
   9. Mobile Responsiveness
 
 HOW TO USE THIS STYLESHEET:
@@ -47,7 +47,7 @@ HOW TO USE THIS STYLESHEET:
 - Components are designed to be mixed and matched
 
 DESIGN PRINCIPLES:
-- Glassmorphism (frosted glass effects)
+- Windows Vista Aero Glass (transparent blurred glass with glossy highlights)
 - Soft animations (gentle, not distracting)
 - Accessibility-first (proper contrast, focus states)
 - Mobile-responsive by default
@@ -96,7 +96,7 @@ DESIGN PRINCIPLES:
   
   /* PRIMARY COLORS - Your brand color in 3 shades */
   --primary: #89b4d6;           /* 1. Main brand color (soft Wii blue) */
-  --primary-dark: #4a4f54;      /* 2. Darker shade for text & emphasis (charcoal gray) */
+  --primary-dark: #34383b;      /* 2. Darker shade for text & emphasis (charcoal gray) */
   --primary-light: #f0f2f5;     /* 3. Light tint for backgrounds (light gray) */
   --secondary: #5c9cd6;         /* 4. Secondary accent (brighter blue - use sparingly!) */
   
@@ -124,11 +124,15 @@ DESIGN PRINCIPLES:
   
   /* White color alpha variants - auto-derived from --white */
   --white-alpha-05: color-mix(in srgb, var(--white) 5%, transparent 95%);
+  --white-alpha-08: color-mix(in srgb, var(--white) 8%, transparent 92%);
   --white-alpha-10: color-mix(in srgb, var(--white) 10%, transparent 90%);
+  --white-alpha-12: color-mix(in srgb, var(--white) 12%, transparent 88%);
   --white-alpha-15: color-mix(in srgb, var(--white) 15%, transparent 85%);
   --white-alpha-20: color-mix(in srgb, var(--white) 20%, transparent 80%);
   --white-alpha-25: color-mix(in srgb, var(--white) 25%, transparent 75%);
   --white-alpha-30: color-mix(in srgb, var(--white) 30%, transparent 70%);
+  --white-alpha-35: color-mix(in srgb, var(--white) 35%, transparent 65%);
+  --white-alpha-40: color-mix(in srgb, var(--white) 40%, transparent 60%);
   --white-alpha-80: color-mix(in srgb, var(--white) 80%, transparent 20%);
   --white-alpha-90: color-mix(in srgb, var(--white) 90%, transparent 10%);
   
@@ -174,7 +178,8 @@ DESIGN PRINCIPLES:
   /* BACKGROUNDS */
   --bg-page: var(--primary-light);
   --bg-card: var(--white-alpha-80);
-  --bg-glass: var(--white-alpha-25);
+  --bg-glass: var(--white-alpha-08);  /* Vista Aero: Very transparent glass */
+  --bg-glass-hover: var(--white-alpha-12);  /* Slightly more opaque on hover */
   
   /* BORDERS & SHADOWS */
   --border-subtle: var(--primary-alpha-30);
@@ -262,12 +267,16 @@ html::before {
   0%, 100% { 
     box-shadow: 
       0 8px 32px var(--shadow-color),
-      inset 0 1px 0 var(--white-alpha-20);
+      0 4px 16px var(--black-alpha-05),
+      inset 0 1px 0 var(--white-alpha-40),
+      inset 0 -1px 0 var(--black-alpha-05);
   }
   50% { 
     box-shadow: 
       0 12px 40px var(--shadow-color-hover),
-      inset 0 1px 0 var(--white-alpha-30);
+      0 6px 20px var(--black-alpha-10),
+      inset 0 1px 0 var(--white-alpha-80),
+      inset 0 -1px 0 var(--black-alpha-10);
   }
 }
 
@@ -324,7 +333,7 @@ html::before {
   z-index: 10;
 }
 
-/* SHARED-CARD - Glassmorphism content card
+/* SHARED-CARD - Windows Vista Aero Glass content card
    Use this for all main content containers (quiz boxes, results, etc.)
    
    USAGE:
@@ -335,14 +344,22 @@ html::before {
    </div>
 */
 .shared-card {
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--white-alpha-30);
-  border-radius: 20px;
+  background: linear-gradient(180deg, 
+    var(--white-alpha-12) 0%,
+    var(--white-alpha-08) 50%,
+    var(--white-alpha-05) 100%);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--white-alpha-25);
+  border-top: 2px solid var(--white-alpha-40);  /* Vista top glossy edge */
+  border-bottom: 1px solid var(--black-alpha-10);  /* Subtle bottom shadow */
+  border-radius: 16px;
   padding: 30px;
   box-shadow: 
     0 8px 32px var(--shadow-color),
-    inset 0 1px 0 var(--white-alpha-20);
+    0 4px 16px var(--black-alpha-05),
+    inset 0 1px 0 var(--white-alpha-40),  /* Strong top highlight */
+    inset 0 -1px 0 var(--black-alpha-05);  /* Subtle bottom shadow */
   position: relative;
   overflow: hidden;
   animation: glass-glow 3s ease-in-out infinite;
@@ -355,8 +372,9 @@ html::before {
   top: 0;
   left: 0;
   right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--white-alpha-80), transparent);
+  height: 50%;
+  background: linear-gradient(180deg, var(--white-alpha-15) 0%, transparent 100%);
+  pointer-events: none;
 }
 
 /* Stack multiple cards with spacing */
@@ -497,8 +515,11 @@ a:hover {
    <a href="/" class="shared-btn-ghost">Home</a>
 */
 .shared-btn-ghost {
-  background: var(--bg-glass);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, 
+    var(--white-alpha-12) 0%,
+    var(--white-alpha-08) 100%);
+  backdrop-filter: blur(35px) saturate(180%);
+  -webkit-backdrop-filter: blur(35px) saturate(180%);
   color: var(--text-primary);
   border: 1px solid var(--primary-alpha-30);
   padding: 12px 20px;
@@ -632,12 +653,17 @@ input[type="radio"] {
 .shared-progress {
   height: 12px;
   border-radius: 20px;
-  background: var(--white-alpha-30);
-  border: 1px solid var(--primary-alpha-20);
+  background: linear-gradient(180deg, 
+    var(--black-alpha-10) 0%,
+    var(--white-alpha-10) 100%);
+  border: 1px solid var(--white-alpha-30);
+  border-top: 1px solid var(--black-alpha-05);
   overflow: hidden;
   margin: 15px 0 8px;
   position: relative;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: inset 0 1px 2px var(--black-alpha-10);
 }
 
 .shared-progress > span {
@@ -682,13 +708,21 @@ input[type="radio"] {
 .shared-qbox {
   margin-top: 20px;
   padding: 25px;
-  border-radius: 16px;
-  background: var(--bg-glass);
-  backdrop-filter: blur(15px);
-  border: 1px solid var(--white-alpha-30);
+  border-radius: 12px;
+  background: linear-gradient(180deg, 
+    var(--white-alpha-12) 0%,
+    var(--white-alpha-08) 50%,
+    var(--white-alpha-05) 100%);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--white-alpha-25);
+  border-top: 2px solid var(--white-alpha-40);
+  border-bottom: 1px solid var(--black-alpha-10);
   box-shadow: 
     0 4px 16px var(--primary-alpha-10),
-    inset 0 1px 0 var(--white-alpha-20);
+    0 2px 8px var(--black-alpha-05),
+    inset 0 1px 0 var(--white-alpha-40),
+    inset 0 -1px 0 var(--black-alpha-05);
 }
 
 /* Question text */
@@ -723,20 +757,36 @@ input[type="radio"] {
   display: flex;
   gap: 15px;
   align-items: flex-start;
-  background: var(--bg-glass);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--white-alpha-30);
+  background: linear-gradient(180deg, 
+    var(--white-alpha-12) 0%,
+    var(--white-alpha-08) 50%,
+    var(--white-alpha-05) 100%);
+  backdrop-filter: blur(35px) saturate(180%);
+  -webkit-backdrop-filter: blur(35px) saturate(180%);
+  border: 1px solid var(--white-alpha-25);
+  border-top: 1px solid var(--white-alpha-40);
+  border-bottom: 1px solid var(--black-alpha-05);
   padding: 15px;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
+  box-shadow: 
+    0 2px 8px var(--black-alpha-05),
+    inset 0 1px 0 var(--white-alpha-40);
 }
 
 .shared-opt:hover {
-  background: var(--primary-alpha-10);
-  border-color: var(--primary);
-  box-shadow: 0 4px 16px var(--primary-alpha-20);
+  background: linear-gradient(180deg, 
+    var(--white-alpha-20) 0%,
+    var(--white-alpha-15) 50%,
+    var(--white-alpha-12) 100%);
+  border-color: var(--secondary);
+  border-top-color: var(--white-alpha-80);
+  box-shadow: 
+    0 4px 16px var(--primary-alpha-20),
+    0 0 20px var(--secondary-alpha-20),
+    inset 0 1px 0 var(--white-alpha-80);
   transform: translateY(-2px);
 }
 
@@ -781,16 +831,25 @@ input[type="radio"] {
 }
 
 .shared-feedback-good {
-  background: var(--success-alpha-10);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, 
+    var(--success-alpha-20) 0%,
+    var(--success-alpha-10) 100%);
+  backdrop-filter: blur(25px) saturate(150%);
+  -webkit-backdrop-filter: blur(25px) saturate(150%);
   border-color: var(--success);
+  border-top-color: color-mix(in srgb, var(--success) 50%, white 50%);
   color: var(--success);
-  box-shadow: 0 4px 16px var(--success-alpha-20);
+  box-shadow: 
+    0 4px 16px var(--success-alpha-20),
+    inset 0 1px 0 color-mix(in srgb, var(--success) 30%, white 70%);
 }
 
 .shared-feedback-bad {
-  background: var(--error-alpha-10);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, 
+    var(--error-alpha-20) 0%,
+    var(--error-alpha-10) 100%);
+  backdrop-filter: blur(25px) saturate(150%);
+  -webkit-backdrop-filter: blur(25px) saturate(150%);
   border-color: var(--error);
   color: var(--error);
   box-shadow: 0 4px 16px var(--error-alpha-20);
@@ -877,7 +936,7 @@ input[type="radio"] {
 /* Clickable game cards */
 .grid-card {
   display: flex;
-    flex-direction: column;
+  flex-direction: column;
   width: 100%;
   height: 200px;
   margin: 0;
@@ -885,13 +944,21 @@ input[type="radio"] {
   box-sizing: border-box;
   position: relative;
   animation: glass-glow 4s ease-in-out infinite;
-  background: var(--white-alpha-15);
-  backdrop-filter: blur(30px);
-  border: 1px solid var(--white-alpha-20);
-  border-radius: 24px;
+  background: linear-gradient(180deg, 
+    var(--white-alpha-12) 0%,
+    var(--white-alpha-08) 50%,
+    var(--white-alpha-05) 100%);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--white-alpha-25);
+  border-top: 2px solid var(--white-alpha-40);
+  border-bottom: 1px solid var(--black-alpha-10);
+  border-radius: 20px;
   box-shadow: 
     0 8px 32px var(--primary-alpha-10),
-    inset 0 1px 0 var(--white-alpha-10);
+    0 4px 16px var(--black-alpha-05),
+    inset 0 1px 0 var(--white-alpha-40),
+    inset 0 -1px 0 var(--black-alpha-05);
   text-decoration: none;
   transition: all 0.4s ease;
 }
@@ -901,12 +968,18 @@ input[type="radio"] {
 }
 
 .grid-card:hover {
-  background: var(--white-alpha-20);
-  border-color: var(--secondary);  /* Secondary color border on hover */
+  background: linear-gradient(180deg, 
+    var(--white-alpha-20) 0%,
+    var(--white-alpha-15) 50%,
+    var(--white-alpha-12) 100%);
+  border-color: var(--secondary);
+  border-top-color: var(--white-alpha-80);  /* Brighter top edge on hover */
   box-shadow: 
-    0 8px 32px var(--primary-alpha-10),
-    0 0 40px var(--secondary-alpha-30),  /* Secondary color glow on hover */
-    inset 0 1px 0 var(--white-alpha-20);
+    0 12px 40px var(--primary-alpha-20),
+    0 0 40px var(--secondary-alpha-30),
+    0 4px 20px var(--black-alpha-10),
+    inset 0 1px 0 var(--white-alpha-80),
+    inset 0 -1px 0 var(--black-alpha-10);
   transition: all 0.4s ease;
 }
 
@@ -922,8 +995,12 @@ input[type="radio"] {
   padding: 30px;
   box-sizing: border-box;
   position: relative;
-  background: color-mix(in srgb, var(--neutral) 30%, var(--bg-glass) 70%);
-  backdrop-filter: blur(20px);
+  background: linear-gradient(180deg, 
+    var(--white-alpha-10) 0%,
+    var(--white-alpha-05) 50%,
+    transparent 100%);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
   border: 1px solid transparent;
   border-radius: 24px;
   cursor: default;
@@ -2016,7 +2093,7 @@ input[type="radio"] {
   }
 }
 
-/* Gaming ROI Calculator mobile adjustments */
+/* Gaming Report Card mobile adjustments */
 @media (max-width: 1024px) {
   .two-chart-row {
     grid-template-columns: 1fr;
