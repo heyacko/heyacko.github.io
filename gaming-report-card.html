@@ -94,22 +94,29 @@
         </div>
 
         <div class="shared-card results" id="resultsCard">
-            <div class="primary-metrics">
+            <div class="primary-metrics" style="grid-template-columns: repeat(3, 1fr); max-width: 1200px; margin-left: auto; margin-right: auto;">
                 <div class="primary-metric">
-                    <div class="value" id="aggregateCostPerHour">$0.00/hr</div>
-                    <div class="label">Aggregate cost per hour of gaming</div>
+                    <div class="value" id="totalGamesInLibrary">0</div>
+                    <div class="label">Total Games In Library</div>
                 </div>
                 <div class="primary-metric">
                     <div class="value" id="totalGamingHours">0</div>
                     <div class="label">Total Gaming Hours</div>
                 </div>
                 <div class="primary-metric">
-                    <div class="value" id="totalCostOfGaming">$0.00</div>
+                    <div class="value" id="totalCostOfGaming" style="white-space: nowrap;">$0.00</div>
                     <div class="label">Total Cost of Gaming</div>
                 </div>
+            </div>
+            
+            <div class="primary-metrics" style="grid-template-columns: repeat(2, 1fr); max-width: 900px; margin-left: auto; margin-right: auto;">
                 <div class="primary-metric">
-                    <div class="value" id="neverPlayedCost">$0.00</div>
-                    <div class="label">Money spent on games you never played</div>
+                    <div class="value" id="aggregateCostPerHour">$0.00/hr</div>
+                    <div class="label">Aggregate cost per hour of gaming</div>
+                </div>
+                <div class="primary-metric">
+                    <div class="value" id="refundableCost">$0.00</div>
+                    <div class="label">Refundability</div>
                 </div>
             </div>
 
@@ -277,7 +284,7 @@
         
         // Results elements
         const aggregateCostPerHourEl = document.getElementById('aggregateCostPerHour');
-        const neverPlayedCostEl = document.getElementById('neverPlayedCost');
+        const refundableCostEl = document.getElementById('refundableCost');
         const verdictTextEl = document.getElementById('verdictText');
         const verdictSubtextEl = document.getElementById('verdictSubtext');
         const individualGamesSection = document.getElementById('individualGamesSection');
@@ -290,6 +297,7 @@
         
         // Data storage
         let games = [];
+        let steamUserData = { personaname: '', avatarmedium: '' };
         
         // API configuration
         const STEAM_API_KEY = 'B82CDB439F57BD8533FB8A145A61E16F';
@@ -417,6 +425,7 @@
                 dlcCost: dlcCost,
                 hoursPlayed: hoursPlayed,
                 totalCost: gameCost + dlcCost,
+                totalFinalCost: gameCost + dlcCost, // For manual games, assume no discount
                 costPerHour: hoursPlayed > 0 ? (gameCost + dlcCost) / hoursPlayed : 0
             };
             
@@ -518,6 +527,12 @@
                     throw new Error('Invalid Steam ID format. Please use a Steam ID or profile URL.');
                 }
 
+                // Get user profile data first
+                const userData = await getSteamUserData(parsedSteamId);
+                if (userData) {
+                    steamUserData = userData;
+                }
+                
                 // Get owned games
                 const ownedGames = await getOwnedGames(parsedSteamId);
                 
@@ -606,6 +621,36 @@
             return data.response.steamid || null;
         }
 
+        async function getSteamUserData(steamId) {
+            // First, resolve custom Steam ID to numeric ID if needed
+            let numericSteamId = steamId;
+            if (!/^\d{17}$/.test(steamId)) {
+                numericSteamId = await resolveSteamId(steamId);
+                if (!numericSteamId) {
+                    return null;
+                }
+            }
+
+            // Get player summaries using CORS proxy
+            const apiUrl = `${STEAM_API_BASE}/ISteamUser/GetPlayerSummaries/v0002/?key=${STEAM_API_KEY}&steamids=${numericSteamId}`;
+            const url = `${CORS_PROXY}${encodeURIComponent(apiUrl)}`;
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                return null;
+            }
+            
+            const data = await response.json();
+            const players = data.response.players || [];
+            if (players.length > 0) {
+                return {
+                    personaname: players[0].personaname || '',
+                    avatarmedium: players[0].avatarmedium || ''
+                };
+            }
+            return null;
+        }
+
         async function importSteamGames(ownedGames) {
             let importedCount = 0;
             let skippedCount = 0;
@@ -655,17 +700,21 @@
             // Step 3: Add all games with their fetched prices
             
             for (const game of validGames) {
-                const gamePrice = gamePrices[game.appid] || 0;
+                const gamePriceData = gamePrices[game.appid] || { initial: 0, final: 0 };
+                const initialPrice = gamePriceData.initial || 0;
+                const finalPrice = gamePriceData.final || 0;
                 
-                // Add new game with price
+                // Add new game with both initial and discounted prices
                 const newGame = {
                     id: Date.now() + importedCount, // Simple ID generation
                     name: game.name,
-                    cost: gamePrice,
+                    cost: initialPrice,
+                    finalCost: finalPrice, // Discounted/current price
                     dlcCost: 0,
                     hoursPlayed: game.hoursPlayed,
-                    totalCost: gamePrice,
-                    costPerHour: gamePrice > 0 && game.hoursPlayed > 0 ? gamePrice / game.hoursPlayed : 0,
+                    totalCost: initialPrice,
+                    totalFinalCost: finalPrice,
+                    costPerHour: initialPrice > 0 && game.hoursPlayed > 0 ? initialPrice / game.hoursPlayed : 0,
                     fromSteam: true, // Flag to indicate this came from Steam
                     appId: game.appid, // Store Steam app ID for reference
                     iconUrl: game.img_icon_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_icon_url}.jpg` : null
@@ -717,22 +766,25 @@
                                 if (data[appId] && data[appId].success && data[appId].data) {
                                     const priceData = data[appId].data.price_overview;
                                     if (priceData && priceData.initial) {
-                                        allPrices[appId] = priceData.initial / 100;
+                                        allPrices[appId] = {
+                                            initial: priceData.initial / 100,
+                                            final: priceData.final / 100
+                                        };
                                     } else {
-                                        allPrices[appId] = 0; // Free game
+                                        allPrices[appId] = { initial: 0, final: 0 }; // Free game
                                     }
                                 } else {
-                                    allPrices[appId] = 0; // Price not available
+                                    allPrices[appId] = { initial: 0, final: 0 }; // Price not available
                                 }
                             }
                         } else {
                             // If batch fails, mark all as 0
-                            batch.forEach(appId => allPrices[appId] = 0);
+                            batch.forEach(appId => allPrices[appId] = { initial: 0, final: 0 });
                         }
                     } catch (error) {
                         console.warn(`Batch ${batchIndex + 1} failed:`, error);
                         // Mark failed batch games as 0
-                        batch.forEach(appId => allPrices[appId] = 0);
+                        batch.forEach(appId => allPrices[appId] = { initial: 0, final: 0 });
                     }
                     
                     // No delay needed - batching keeps us within rate limits
@@ -801,6 +853,7 @@
             if (field === 'price') {
                 game.cost = value;
                 game.totalCost = value;
+                game.totalFinalCost = value; // For manually updated prices, assume no discount
             } else {
                 game.hoursPlayed = value;
             }
@@ -868,18 +921,19 @@
             
             // Calculate aggregate metrics
             const totalCost = games.reduce((sum, game) => sum + game.totalCost, 0);
+            const totalFinalCost = games.reduce((sum, game) => sum + (game.totalFinalCost || game.totalCost), 0);
             const totalHours = games.reduce((sum, game) => sum + game.hoursPlayed, 0);
             const aggregateCostPerHour = totalHours > 0 ? totalCost / totalHours : 0;
-            const neverPlayedCost = games.reduce((sum, game) => game.hoursPlayed === 0 ? sum + game.totalCost : sum, 0);
+            const refundableCost = games.reduce((sum, game) => game.hoursPlayed < 2 ? sum + (game.totalFinalCost || game.totalCost) : sum, 0);
             
             // Update results display
-            updateResults(aggregateCostPerHour, neverPlayedCost, totalHours, totalCost);
+            updateResults(aggregateCostPerHour, refundableCost, totalHours, totalCost, totalFinalCost);
             
             // Generate verdict
             generateVerdict(aggregateCostPerHour);
             
             // Update charts
-            updateSpendPieChart(neverPlayedCost, totalCost);
+            updateSpendPieChart(refundableCost, totalCost);
             updateScatterChart();
             updateComparisonChart();
             
@@ -890,28 +944,63 @@
             updateIndividualGamesMetrics();
         }
 
-        function updateResults(costPerHour, neverPlayedCost, totalGamingHours, totalCost) {
-            // Update cost per hour with color coding
-            aggregateCostPerHourEl.textContent = `$${costPerHour.toFixed(2)}/hr`;
-            aggregateCostPerHourEl.className = 'value ' + getCostPerHourColorClass(costPerHour);
+        function updateResults(costPerHour, refundableCost, totalGamingHours, totalCost, totalFinalCost) {
+            // Update total games in library
+            const totalGamesInLibraryEl = document.getElementById('totalGamesInLibrary');
+            totalGamesInLibraryEl.textContent = games.length.toLocaleString('en-US');
+            totalGamesInLibraryEl.className = 'value';
             
             // Update total gaming hours
             const totalGamingHoursEl = document.getElementById('totalGamingHours');
             totalGamingHoursEl.textContent = totalGamingHours.toLocaleString('en-US', { maximumFractionDigits: 1 });
             totalGamingHoursEl.className = 'value';
             
-            // Update total cost of gaming
+            // Update cost per hour with color coding
+            aggregateCostPerHourEl.textContent = `$${costPerHour.toFixed(2)}/hr`;
+            aggregateCostPerHourEl.className = 'value ' + getCostPerHourColorClass(costPerHour);
+            
+            // Update total cost of gaming (show range if there are discounts)
             const totalCostOfGamingEl = document.getElementById('totalCostOfGaming');
-            totalCostOfGamingEl.textContent = `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            if (totalFinalCost < totalCost) {
+                totalCostOfGamingEl.textContent = `$${totalFinalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - $${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            } else {
+                totalCostOfGamingEl.textContent = `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
             totalCostOfGamingEl.className = 'value';
             
-            // Update never-played cost with conditional red color coding
-            neverPlayedCostEl.textContent = `$${neverPlayedCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            // Color code red if never-played cost > half of total cost
-            if (neverPlayedCost > (totalCost / 2)) {
-                neverPlayedCostEl.className = 'value yikes'; // Red
+            // Update the label
+            const totalCostLabelEl = totalCostOfGamingEl.nextElementSibling;
+            if (totalCostLabelEl && totalFinalCost < totalCost) {
+                totalCostLabelEl.textContent = 'Total Cost of Gaming (depending on discounts)';
+            } else if (totalCostLabelEl) {
+                totalCostLabelEl.textContent = 'Total Cost of Gaming';
+            }
+            
+            // Update refundable cost with color coding
+            const refundablePercent = totalCost > 0 ? (refundableCost / totalCost) * 100 : 0;
+            const refundableCount = games.filter(game => game.hoursPlayed < 2).length;
+            
+            // Update the value (just the dollar amount)
+            const refundableValueEl = refundableCostEl;
+            refundableValueEl.textContent = `$${refundableCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            
+            // Update the label (the count message)
+            const refundableLabelEl = refundableValueEl.nextElementSibling;
+            if (refundableLabelEl) {
+                refundableLabelEl.textContent = `${refundableCount} game${refundableCount !== 1 ? 's' : ''} you bought could have been refunded`;
+            }
+            
+            // Color code based on refundability percentage
+            if (refundablePercent < 10) {
+                refundableValueEl.className = 'value elite'; // Elite
+            } else if (refundablePercent < 25) {
+                refundableValueEl.className = 'value solid'; // Solid
+            } else if (refundablePercent < 35) {
+                refundableValueEl.className = 'value reasonable'; // Reasonable
+            } else if (refundablePercent < 50) {
+                refundableValueEl.className = 'value premium'; // Premium
             } else {
-                neverPlayedCostEl.className = 'value';
+                refundableValueEl.className = 'value yikes'; // Yikes
             }
         }
 
@@ -922,7 +1011,7 @@
             return index === -1 ? classes[classes.length - 1] : classes[index];
         }
 
-        const getCostPerHourColorClass = (cph) => getColorClass(cph, [1.00, 3.00, 8.00, 15.00, 30.00]);
+        const getCostPerHourColorClass = (cph) => getColorClass(cph, [0.40, 1.50, 3.50, 6.00, 10.00]);
         const getHoursOfWorkColorClass = (hours) => getColorClass(hours, [1, 3, 8, 15, 30]);
         
         // Global sort state for table - default to sorting by initial cost descending
@@ -1032,61 +1121,64 @@
             const neverPlayedCost = games.reduce((sum, game) => game.hoursPlayed === 0 ? sum + game.totalCost : sum, 0);
             const neverPlayedPercent = totalCost > 0 ? (neverPlayedCost / totalCost) * 100 : 0;
             
-            // Count free games that have been played
-            const freeGamesPlayed = games.filter(game => game.totalCost === 0 && game.hoursPlayed > 0).length;
-            const totalGamesPlayed = games.filter(game => game.hoursPlayed > 0).length;
-            const freeGamesPercent = totalGamesPlayed > 0 ? (freeGamesPlayed / totalGamesPlayed) * 100 : 0;
+            // Calculate refundability (games with < 2 hours)
+            const refundableCost = games.reduce((sum, game) => game.hoursPlayed < 2 ? sum + game.totalCost : sum, 0);
+            const refundablePercent = totalCost > 0 ? (refundableCost / totalCost) * 100 : 0;
             
             // ==============================================
             // LETTER GRADE CALCULATION
-            // Based on: never-played spend %, cost per hour, and free games played
+            // Weighted: CPH (60%), Refundability (30%), Backlog (10%)
             // ==============================================
             
-            let score = 0;
+            let backlogScore = 0;
+            let cphScore = 0;
+            let refundabilityScore = 0;
             
-            // Factor 1: Gaming spend breakdown (never played %) - 40 points
+            // Factor 1: Gaming spend breakdown (never played %) - 10 points
             // <25% = excellent, >50% = failing
             if (neverPlayedPercent < 10) {
-                score += 40;
+                backlogScore = 10;
             } else if (neverPlayedPercent < 25) {
-                score += 35;
+                backlogScore = 8;
             } else if (neverPlayedPercent < 35) {
-                score += 25;
+                backlogScore = 5;
             } else if (neverPlayedPercent < 50) {
-                score += 15;
+                backlogScore = 3;
             } else {
-                score += 0;
+                backlogScore = 0;
             }
             
-            // Factor 2: Cost per hour - 40 points
+            // Factor 2: Cost per hour - 60 points (MOST IMPORTANT)
             // Align with existing buckets
-            if (costPerHour <= 1.00) {
-                score += 40; // Legendary
-            } else if (costPerHour <= 3.00) {
-                score += 35; // Elite
-            } else if (costPerHour <= 8.00) {
-                score += 25; // Solid
-            } else if (costPerHour <= 15.00) {
-                score += 15; // Reasonable
-            } else if (costPerHour <= 30.00) {
-                score += 5; // Premium
+            if (costPerHour <= 0.40) {
+                cphScore = 60; // Legendary
+            } else if (costPerHour <= 1.50) {
+                cphScore = 52; // Elite
+            } else if (costPerHour <= 3.50) {
+                cphScore = 40; // Solid
+            } else if (costPerHour <= 6.00) {
+                cphScore = 25; // Reasonable
+            } else if (costPerHour <= 10.00) {
+                cphScore = 10; // Premium
             } else {
-                score += 0; // Yikes
+                cphScore = 0; // Yikes
             }
             
-            // Factor 3: Free games played - 20 points
-            // More free games with hours = better score
-            if (freeGamesPercent >= 30) {
-                score += 20;
-            } else if (freeGamesPercent >= 20) {
-                score += 15;
-            } else if (freeGamesPercent >= 10) {
-                score += 10;
-            } else if (freeGamesPercent > 0) {
-                score += 5;
+            // Factor 3: Refundability - 30 points
+            // Lower refundable % = better score
+            if (refundablePercent < 10) {
+                refundabilityScore = 30; // Elite
+            } else if (refundablePercent < 25) {
+                refundabilityScore = 25; // Solid
+            } else if (refundablePercent < 35) {
+                refundabilityScore = 18; // Reasonable
+            } else if (refundablePercent < 50) {
+                refundabilityScore = 10; // Premium
             } else {
-                score += 0;
+                refundabilityScore = 0; // Yikes
             }
+            
+            const score = backlogScore + cphScore + refundabilityScore;
             
             // Convert score to letter grade with +/- granularity and color coding
             let letterGrade = '';
@@ -1132,24 +1224,91 @@
                 gradeColor = '#F44336'; // Red
             }
             
-            verdictTextEl.innerHTML = `<span style="font-size: 4em; font-weight: bold;">Your Grade: <span style="color: ${gradeColor};">${letterGrade}</span></span>`;
-            verdictSubtextEl.textContent = '';
+            // Build verdict HTML with avatar and username above
+            const userName = steamUserData.personaname;
+            const avatarUrl = steamUserData.avatarmedium;
+            
+            let verdictHTML = '';
+            
+            // Add Steam ID line above if available
+            if (userName && avatarUrl) {
+                verdictHTML += '<div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">';
+                verdictHTML += `<img src="${avatarUrl}" alt="Steam Avatar" style="border-radius: 50%; width: 32px; height: 32px;">`;
+                verdictHTML += `<span style="font-size: 1.2em; color: #666;">${userName}</span>`;
+                verdictHTML += '</div>';
+            }
+            
+            // Main grade line
+            verdictHTML += `<span style="font-size: 4em; font-weight: bold;">Your Grade: <span style="color: ${gradeColor};">${letterGrade}</span></span>`;
+            
+            verdictTextEl.innerHTML = verdictHTML;
+            
+            // Generate feedback message based on grade and component scores
+            let feedbackMessage = '';
+            
+            // Normalize scores to percentages for comparison
+            const backlogPercent_normalized = (backlogScore / 10) * 100;
+            const cphPercent_normalized = (cphScore / 60) * 100;
+            const refundabilityPercent_normalized = (refundabilityScore / 30) * 100;
+            
+            const components = [
+                { name: 'backlog', percent: backlogPercent_normalized, score: backlogScore },
+                { name: 'cph', percent: cphPercent_normalized, score: cphScore },
+                { name: 'refundability', percent: refundabilityPercent_normalized, score: refundabilityScore }
+            ];
+            
+            // Grade 85+ - identify and describe best component
+            if (score >= 85) {
+                // Find best component
+                const bestComponent = components.reduce((best, current) => 
+                    current.percent > best.percent ? current : best
+                );
+                
+                if (bestComponent.name === 'backlog') {
+                    feedbackMessage = `You play ${(100 - neverPlayedPercent).toFixed(0)}% of the games you buy.`;
+                } else if (bestComponent.name === 'cph') {
+                    feedbackMessage = `Your average cost is $${costPerHour.toFixed(2)} per hour of entertainment.`;
+                } else {
+                    feedbackMessage = `${(100 - refundablePercent).toFixed(0)}% of your spending went to games you kept past the refund window.`;
+                }
+            }
+            // Grade 84 and below - identify and describe worst component
+            else {
+                // Find worst component
+                const worstComponent = components.reduce((worst, current) => 
+                    current.percent < worst.percent ? current : worst
+                );
+                
+                if (worstComponent.name === 'backlog') {
+                    feedbackMessage = `${neverPlayedPercent.toFixed(0)}% of your spending went to games you haven't played.`;
+                } else if (worstComponent.name === 'cph') {
+                    feedbackMessage = `Your cost per hour of $${costPerHour.toFixed(2)} is higher than average.`;
+                } else {
+                    feedbackMessage = `${refundablePercent.toFixed(0)}% of your spending went to games you could have refunded.`;
+                }
+            }
+            
+            if (feedbackMessage) {
+                verdictSubtextEl.innerHTML = `<span style="font-size: 1.2em; color: #666; margin-top: 15px; display: block;">${feedbackMessage}</span>`;
+            } else {
+                verdictSubtextEl.textContent = '';
+            }
         }
 
-        function updateSpendPieChart(neverPlayedCost, totalCost) {
+        function updateSpendPieChart(refundableCost, totalCost) {
             const ctx = getChartContext('spendPieChart', spendPieChart);
             
-            const playedCost = totalCost - neverPlayedCost;
+            const nonRefundableCost = totalCost - refundableCost;
             
             spendPieChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: ['Games Played', 'Games Never Played'],
+                    labels: ['Games Kept (>2hrs)', 'Games Refundable (<2hrs)'],
                     datasets: [{
-                        data: [playedCost, neverPlayedCost],
+                        data: [nonRefundableCost, refundableCost],
                         backgroundColor: [
-                            'rgba(76, 175, 80, 0.7)',  // Green for played games
-                            'rgba(244, 67, 54, 0.7)'   // Red for never played
+                            'rgba(76, 175, 80, 0.7)',  // Green for kept games
+                            'rgba(244, 67, 54, 0.7)'   // Red for refundable
                         ],
                         borderColor: [
                             'rgba(76, 175, 80, 1)',
