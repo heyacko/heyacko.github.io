@@ -127,7 +127,7 @@
 
             <div class="two-chart-row">
                 <div class="chart-container">
-                    <h3 style="text-align: center; margin-bottom: 20px; color: #2c5aa0; font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Gaming Spend Breakdown</h3>
+                    <h3 style="text-align: center; margin-bottom: 20px; color: #2c5aa0; font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Hours Played Distribution</h3>
                     <canvas id="spendPieChart"></canvas>
                 </div>
 
@@ -944,7 +944,7 @@
             generateVerdict(aggregateCostPerHour);
             
             // Update charts
-            updateSpendPieChart(refundableCost, totalCost);
+            updateHoursDistributionChart(totalHours);
             updateScatterChart();
             updateComparisonChart();
             
@@ -968,9 +968,9 @@
                 return;
             }
             
-            // Calculate cumulative hours until we reach 70% of total
+            // Calculate cumulative hours until we reach 50% of total
             let cumulativeHours = 0;
-            const threshold = totalHours * 0.7;
+            const threshold = totalHours * 0.5;
             const topGames = [];
             
             for (const game of playedGames) {
@@ -1379,25 +1379,52 @@
             }
         }
 
-        function updateSpendPieChart(refundableCost, totalCost) {
+        function updateHoursDistributionChart(totalHours) {
             const ctx = getChartContext('spendPieChart', spendPieChart);
             
-            const nonRefundableCost = totalCost - refundableCost;
+            // Sort games by hours played (descending)
+            const sortedGames = [...games].sort((a, b) => b.hoursPlayed - a.hoursPlayed);
+            
+            // Get top 5 games
+            const top3Games = sortedGames.slice(0, 5).filter(game => game.hoursPlayed > 0);
+            
+            // Calculate hours for "the rest"
+            const top3Hours = top3Games.reduce((sum, game) => sum + game.hoursPlayed, 0);
+            const restHours = totalHours - top3Hours;
+            
+            // Build labels and data arrays
+            const labels = top3Games.map(game => game.name);
+            const data = top3Games.map(game => game.hoursPlayed);
+            
+            // Add "The rest of your library" if there are more games
+            if (restHours > 0) {
+                labels.push('The rest of your library');
+                data.push(restHours);
+            }
+            
+            // Generate colors for top games
+            const colors = [
+                'rgba(74, 144, 226, 0.7)',   // Blue
+                'rgba(126, 211, 33, 0.7)',   // Green
+                'rgba(255, 152, 0, 0.7)',    // Orange
+                'rgba(158, 158, 158, 0.5)'   // Gray for "the rest"
+            ];
+            
+            const borderColors = [
+                'rgba(74, 144, 226, 1)',
+                'rgba(126, 211, 33, 1)',
+                'rgba(255, 152, 0, 1)',
+                'rgba(158, 158, 158, 1)'
+            ];
             
             spendPieChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: ['Games Kept (>2hrs)', 'Games Refundable (<2hrs)'],
+                    labels: labels,
                     datasets: [{
-                        data: [nonRefundableCost, refundableCost],
-                        backgroundColor: [
-                            'rgba(76, 175, 80, 0.7)',  // Green for kept games
-                            'rgba(244, 67, 54, 0.7)'   // Red for refundable
-                        ],
-                        borderColor: [
-                            'rgba(76, 175, 80, 1)',
-                            'rgba(244, 67, 54, 1)'
-                        ],
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderColor: borderColors.slice(0, labels.length),
                         borderWidth: 2
                     }]
                 },
@@ -1433,23 +1460,13 @@
                                 label: function(context) {
                                     const label = context.label || '';
                                     const value = context.parsed || 0;
-                                    const percentage = ((value / totalCost) * 100).toFixed(1);
-                                    return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                                    const percentage = ((value / totalHours) * 100).toFixed(1);
+                                    return `${label}: ${value.toFixed(1)} hrs (${percentage}%)`;
                                 }
                             }
                         },
                         datalabels: {
-                            color: '#fff',
-                            font: {
-                                family: 'Yu Gothic UI, sans-serif',
-                                size: 16,
-                                weight: 'bold'
-                            },
-                            formatter: function(value, context) {
-                                const percentage = ((value / totalCost) * 100).toFixed(1);
-                                return '$' + value.toFixed(2) + '\n(' + percentage + '%)';
-                            },
-                            textAlign: 'center'
+                            display: false
                         }
                     }
                 },
