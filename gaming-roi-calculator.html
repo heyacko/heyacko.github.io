@@ -2393,17 +2393,17 @@
                 let plotCph;
                 if (isNeverPlayed) {
                     // Never-played games: plot at high CPH if they cost money, or at 0.05 if free
-                    plotCph = game.totalCost > 0 ? game.totalCost / 0.1 : 0.0025;
+                    plotCph = game.totalCost > 0 ? game.totalCost / 0.1 : 0.0013;
                 } else if (game.totalCost === 0) {
                     // Free games that have been played: plot at 0.05 CPH (low but hoverable)
                     // This ensures they appear in "Evergreen value" quadrant but remain accessible
-                    plotCph = 0.05;
+                    plotCph = 0.0013;
                 } else if (game.hoursPlayed > 0) {
                     // Normal paid games: use actual CPH
                     plotCph = game.totalCost / game.hoursPlayed;
                 } else {
                     // Fallback: should not happen but handle it
-                    plotCph = 0.05;
+                    plotCph = 0.0013;
                 }
                 
                 const plotHours = isOutlier ? H_CAP : effectiveHours;
