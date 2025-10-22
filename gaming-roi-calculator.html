@@ -792,6 +792,33 @@
             z-index: 10;
         }
 
+        /* Grid overlay - sits beneath everything */
+        .scatter-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            background-image: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(100, 100, 100, 0.2) 0px,
+                    rgba(100, 100, 100, 0.2) 1px,
+                    transparent 1px,
+                    transparent 12.5%
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(100, 100, 100, 0.2) 0px,
+                    rgba(100, 100, 100, 0.2) 1px,
+                    transparent 1px,
+                    transparent 12.5%
+                );
+            background-size: 12.5% 12.5%;
+        }
+
         /* Crosshair lines for quadrants */
         .scatter-crosshair {
             position: absolute;
@@ -825,6 +852,32 @@
 
         .crosshair-arrow {
             display: none;
+        }
+
+        /* Axis labels on crosshair lines */
+        .axis-label {
+            position: absolute;
+            font-family: 'Lucida Console', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            font-weight: bold;
+            color: #2c5aa0;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4px 10px;
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 6;
+        }
+
+        .axis-label-horizontal {
+            top: 50%;
+            right: 10px;
+            transform: translateY(-130%);
+        }
+
+        .axis-label-vertical {
+            left: 50%;
+            top: 10px;
+            transform: translateX(-50%);
         }
 
         /* Quadrant background colors */
@@ -880,12 +933,13 @@
         /* Quadrant labels */
         .quadrant-label {
             position: absolute;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 18px;
+            font-weight: 700;
             font-family: 'Lucida Console', Monaco, 'Courier New', monospace;
-            opacity: 0.6;
+            opacity: 0.85;
             pointer-events: none;
             z-index: 2;
+            text-shadow: 0px 0px 3px rgba(255, 255, 255, 0.8);
         }
 
         .quadrant-tl {
@@ -1202,10 +1256,14 @@
             <div class="chart-container">
                 <h3 style="text-align: center; margin-bottom: 20px; color: #2c5aa0; font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Gaming Efficiency: Investment vs Value</h3>
                 <div class="scatter-wrapper">
+                    <div class="scatter-grid"></div>
                     <canvas id="scatterChart"></canvas>
                     <div class="scatter-crosshair">
                         <div class="crosshair-h"></div>
                         <div class="crosshair-v"></div>
+                        <!-- Axis labels -->
+                        <div class="axis-label axis-label-horizontal">Hours Played</div>
+                        <div class="axis-label axis-label-vertical">Effective Cost</div>
                         <!-- Quadrant labels -->
                         <div class="quadrant-label quadrant-tl">Backlog shame</div>
                         <div class="quadrant-label quadrant-tr">Luxury hobby</div>
@@ -1260,7 +1318,7 @@
                     </div>
                     
                     <div class="assumption-item">
-                        <label>Max:</label>
+                        <label>HBO Max:</label>
                         <input type="number" id="maxPrice" value="16" min="0" step="0.01">
                         <span>per month over</span>
                         <input type="number" id="maxHours" value="25" min="0.1" step="0.1">
@@ -1369,6 +1427,28 @@
         const STEAM_API_BASE = 'https://api.steampowered.com';
         // CORS proxy to bypass browser restrictions
         const CORS_PROXY = 'https://corsproxy.io/?';
+        
+        // Fun loading messages that rotate
+        const LOADING_MESSAGES = [
+            "Calculating your digital shame...",
+            "Judging your backlog...",
+            "Counting your unplayed games...",
+            "Discovering your buyer's remorse...",
+            "Finding your most expensive mistakes...",
+            "Measuring your Steam sale impulse control...",
+            "Analyzing your 'I'll play it someday' collection...",
+            "Evaluating your commitment issues...",
+            "Tallying your gaming sins...",
+            "Reviewing your digital hoarding habits...",
+            "Investigating your unfinished stories...",
+            "Quantifying your FOMO purchases...",
+            "Assessing your wallet's pain...",
+            "Examining your 'it was on sale!' defense...",
+            "Processing your gaming guilt...",
+            "Loading your library of good intentions..."
+        ];
+        
+        let loadingMessageInterval = null;
         
         // Advanced assumptions
         const accordionHeader = document.getElementById('accordionHeader');
@@ -1559,7 +1639,8 @@
                 return;
             }
 
-            showSteamStatus('loading', 'Connecting to Steam...');
+            // Start rotating fun loading messages
+            startLoadingMessages();
             steamConnectBtn.disabled = true;
             steamConnectBtn.textContent = 'Connecting...';
 
@@ -1574,6 +1655,7 @@
                 const ownedGames = await getOwnedGames(parsedSteamId);
                 
                 if (ownedGames.length === 0) {
+                    stopLoadingMessages();
                     showSteamStatus('error', 'No games found in your Steam library or profile is private.');
                     return;
                 }
@@ -1581,7 +1663,9 @@
                 // Import games (with fetched prices)
                 const result = await importSteamGames(ownedGames);
                 
-                showSteamStatus('success', `Successfully imported ${result.importedCount} games from Steam!${result.limitNote}`);
+                // Stop rotating messages and show success
+                stopLoadingMessages();
+                showSteamStatus('success', `Successfully imported ${result.importedCount} games from Steam!`);
                 
                 // Update games list UI
                 updateGamesList();
@@ -1589,8 +1673,10 @@
 
             } catch (error) {
                 console.error('Steam API Error:', error);
+                stopLoadingMessages();
                 showSteamStatus('error', `Failed to connect to Steam: ${error.message}`);
             } finally {
+                stopLoadingMessages();
                 steamConnectBtn.disabled = false;
                 steamConnectBtn.textContent = 'Connect Steam';
             }
@@ -1661,21 +1747,19 @@
             const gamesToImport = ownedGames.slice(0, 200);
             const totalGames = gamesToImport.length;
             
-            // Show initial progress message
-            showSteamStatus('loading', `Importing ${totalGames} games and fetching prices... 0%`);
+            // Step 1: Filter and prepare games to import
+            // (Loading messages are rotating, no need for static messages)
             
-            for (let i = 0; i < totalGames; i++) {
-                const game = gamesToImport[i];
-                
-                // Skip hidden games (Steam API usually doesn't return these, but double-check)
-                // Games marked as hidden or private won't have certain properties
+            const validGames = [];
+            for (const game of gamesToImport) {
+                // Skip hidden games or games without names
                 if (game.has_community_visible_stats === false || !game.name) {
                     skippedCount++;
                     continue;
                 }
                 
                 // Convert playtime from minutes to hours (keep 0 hour games)
-                const hoursPlayed = game.playtime_forever ? Math.round((game.playtime_forever / 60) * 10) / 10 : 0; // Round to 1 decimal
+                const hoursPlayed = game.playtime_forever ? Math.round((game.playtime_forever / 60) * 10) / 10 : 0;
                 
                 // Check if game already exists
                 const existingGame = games.find(g => g.name === game.name);
@@ -1689,15 +1773,22 @@
                     continue;
                 }
                 
-                // Fetch price from Steam Store API
-                let gamePrice = 0;
-                try {
-                    gamePrice = await fetchGamePrice(game.appid);
-                    // Small delay to avoid rate limiting and show progress
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                } catch (error) {
-                    console.warn(`Could not fetch price for ${game.name}:`, error);
-                }
+                validGames.push({ ...game, hoursPlayed });
+            }
+            
+            if (validGames.length === 0) {
+                return { importedCount };
+            }
+            
+            // Step 2: Batch fetch all prices at once (MUCH faster!)
+            // (Loading messages are rotating automatically)
+            const appIds = validGames.map(game => game.appid);
+            const gamePrices = await fetchGamePricesBatch(appIds);
+            
+            // Step 3: Add all games with their fetched prices
+            
+            for (const game of validGames) {
+                const gamePrice = gamePrices[game.appid] || 0;
                 
                 // Add new game with price
                 const newGame = {
@@ -1705,9 +1796,9 @@
                     name: game.name,
                     cost: gamePrice,
                     dlcCost: 0,
-                    hoursPlayed: hoursPlayed,
+                    hoursPlayed: game.hoursPlayed,
                     totalCost: gamePrice,
-                    costPerHour: gamePrice > 0 && hoursPlayed > 0 ? gamePrice / hoursPlayed : 0,
+                    costPerHour: gamePrice > 0 && game.hoursPlayed > 0 ? gamePrice / game.hoursPlayed : 0,
                     fromSteam: true, // Flag to indicate this came from Steam
                     appId: game.appid, // Store Steam app ID for reference
                     iconUrl: game.img_icon_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_icon_url}.jpg` : null
@@ -1715,21 +1806,11 @@
                 
                 games.push(newGame);
                 importedCount++;
-                
-                // Update progress percentage
-                const progress = Math.round(((i + 1) / totalGames) * 100);
-                showSteamStatus('loading', `Importing ${totalGames} games and fetching prices... ${progress}%`);
             }
             
             console.log(`Imported ${importedCount} games, skipped ${skippedCount} games (hidden or duplicates)`);
             
-            // Show note if user had more than 200 games
-            if (ownedGames.length > 100) {
-                const limitNote = ` (Limited to first 200 games from your ${ownedGames.length} game library)`;
-                return { importedCount, limitNote };
-            }
-            
-            return { importedCount, limitNote: '' };
+            return { importedCount };
         }
 
         async function fetchGamePrice(appId) {
@@ -1760,6 +1841,65 @@
             }
         }
 
+        async function fetchGamePricesBatch(appIds) {
+            // Batch fetch prices for multiple games at once
+            // Steam API supports multiple appids in a single request
+            try {
+                const batchSize = 50; // Steam can handle ~100, but 50 is safer
+                const batches = [];
+                
+                // Split appIds into batches
+                for (let i = 0; i < appIds.length; i += batchSize) {
+                    batches.push(appIds.slice(i, i + batchSize));
+                }
+                
+                const allPrices = {};
+                
+                for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+                    const batch = batches[batchIndex];
+                    
+                    // Create comma-separated list of app IDs
+                    const apiUrl = `https://store.steampowered.com/api/appdetails?appids=${batch.join(',')}&filters=price_overview&cc=US`;
+                    const url = `${CORS_PROXY}${encodeURIComponent(apiUrl)}`;
+                    
+                    try {
+                        const response = await fetch(url);
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            // Parse all games in the batch
+                            for (const appId of batch) {
+                                if (data[appId] && data[appId].success && data[appId].data) {
+                                    const priceData = data[appId].data.price_overview;
+                                    if (priceData && priceData.initial) {
+                                        allPrices[appId] = priceData.initial / 100;
+                                    } else {
+                                        allPrices[appId] = 0; // Free game
+                                    }
+                                } else {
+                                    allPrices[appId] = 0; // Price not available
+                                }
+                            }
+                        } else {
+                            // If batch fails, mark all as 0
+                            batch.forEach(appId => allPrices[appId] = 0);
+                        }
+                    } catch (error) {
+                        console.warn(`Batch ${batchIndex + 1} failed:`, error);
+                        // Mark failed batch games as 0
+                        batch.forEach(appId => allPrices[appId] = 0);
+                    }
+                    
+                    // No delay needed - batching keeps us within rate limits
+                }
+                
+                return allPrices;
+            } catch (error) {
+                console.error('Batch price fetch error:', error);
+                return {};
+            }
+        }
+
         function showSteamStatus(type, message) {
             steamStatus.className = `steam-status ${type}`;
             steamStatus.textContent = message;
@@ -1770,6 +1910,31 @@
                 setTimeout(() => {
                     steamStatus.style.display = 'none';
                 }, 5000);
+            }
+        }
+
+        function startLoadingMessages() {
+            // Clear any existing interval
+            if (loadingMessageInterval) {
+                clearInterval(loadingMessageInterval);
+            }
+            
+            let messageIndex = 0;
+            
+            // Show first message immediately
+            showSteamStatus('loading', LOADING_MESSAGES[messageIndex]);
+            
+            // Rotate through messages every 1 second
+            loadingMessageInterval = setInterval(() => {
+                messageIndex = (messageIndex + 1) % LOADING_MESSAGES.length;
+                showSteamStatus('loading', LOADING_MESSAGES[messageIndex]);
+            }, 1000);
+        }
+
+        function stopLoadingMessages() {
+            if (loadingMessageInterval) {
+                clearInterval(loadingMessageInterval);
+                loadingMessageInterval = null;
             }
         }
 
@@ -1929,9 +2094,9 @@
             return 'yikes';
         }
         
-        // Global sort state for table
-        let currentSortColumn = null;
-        let currentSortDirection = 'asc';
+        // Global sort state for table - default to sorting by initial cost descending
+        let currentSortColumn = 'totalCost';
+        let currentSortDirection = 'desc';
 
         function updateIndividualGamesMetrics() {
             gamesMetrics.innerHTML = '';
@@ -1994,7 +2159,13 @@
             
             // Create table rows for each game
             sortedGames.forEach(game => {
-                const costPerHourClass = getCostPerHourColorClass(game.costPerHour);
+                // Special case: if game has $0 CPH because it was purchased but never played, color it red
+                let costPerHourClass;
+                if (game.costPerHour === 0 && game.totalCost > 0 && game.hoursPlayed === 0) {
+                    costPerHourClass = 'yikes';  // Red for never-played purchased games
+                } else {
+                    costPerHourClass = getCostPerHourColorClass(game.costPerHour);
+                }
                 
                 // Add game icon if available
                 const gameIcon = game.iconUrl ? `<img src="${game.iconUrl}" alt="${game.name}" class="game-icon" onerror="this.style.display='none'">` : '';
@@ -2024,25 +2195,91 @@
         }
 
         function generateVerdict(costPerHour) {
-            let verdict;
+            // Calculate additional metrics for verdict
+            const totalCost = games.reduce((sum, game) => sum + game.totalCost, 0);
+            const totalHours = games.reduce((sum, game) => sum + game.hoursPlayed, 0);
+            const neverPlayedCost = games.reduce((sum, game) => game.hoursPlayed === 0 ? sum + game.totalCost : sum, 0);
+            const neverPlayedCount = games.filter(game => game.hoursPlayed === 0).length;
+            const neverPlayedPercent = (neverPlayedCost / totalCost) * 100;
             
-            // Verdict based on cost per hour - more generous thresholds
+            // Find best and worst value games (excluding never-played)
+            const playedGames = games.filter(game => game.hoursPlayed > 0);
+            const bestGame = playedGames.reduce((best, game) => 
+                game.costPerHour < best.costPerHour ? game : best, playedGames[0]);
+            const worstGame = playedGames.reduce((worst, game) => 
+                game.costPerHour > worst.costPerHour ? game : worst, playedGames[0]);
+            
+            // Benchmark comparisons (Netflix ~$0.40/hr, Movie ~$6/hr)
+            const netflixCPH = 0.40;
+            const movieCPH = 6.00;
+            
+            // ==============================================
+            // VERDICT TEMPLATE - EASY TO CUSTOMIZE
+            // Structure: Bold claim first, then stats as justification
+            // Available variables: costPerHour, totalCost, totalHours, neverPlayedCost, 
+            // neverPlayedCount, neverPlayedPercent, bestGame, worstGame, games.length
+            // ==============================================
+            
+            let verdict = '';
+            
+            // Lead with the spicy take, back it up with numbers
+            
+            // Opening: Bold claim about value
             if (costPerHour <= 1.00) {
-                verdict = "Legendary ROI. You basically got paid to have fun.";
+                verdict = `🎮 You're a gaming economics genius. Seriously—you're getting better value than Netflix at $${costPerHour.toFixed(2)}/hour. `;
             } else if (costPerHour <= 3.00) {
-                verdict = "Elite value. Beats most entertainment options per hour.";
+                verdict = `👍 Your gaming habit is actually a bargain. While others drop $15 on a 2-hour movie, you're cruising at $${costPerHour.toFixed(2)}/hour. `;
             } else if (costPerHour <= 8.00) {
-                verdict = "Solid deal. Competitive with premium entertainment.";
+                verdict = `💰 You're in the sweet spot of responsible gaming. At $${costPerHour.toFixed(2)}/hour, you're paying movie ticket prices for way more entertainment. `;
             } else if (costPerHour <= 15.00) {
-                verdict = "Reasonable. Still cheaper than a concert or sports ticket.";
-            } else if (costPerHour <= 30.00) {
-                verdict = "Premium pricing. You're paying for the experience.";
+                verdict = `🤔 Your wallet is feeling it, but you're not in danger zone yet. That $${costPerHour.toFixed(2)}/hour puts you between movie night and concert ticket territory. `;
             } else {
-                verdict = "Yikes. You funded a CEO yacht per hour.";
+                verdict = `😬 Let's be real—your gaming is expensive. At $${costPerHour.toFixed(2)}/hour, you could see a live concert or hit Disneyland instead. `;
+            }
+            
+            // Never-played games: Lead with shame, justify with numbers
+            if (neverPlayedCount > 0) {
+                if (neverPlayedPercent > 50) {
+                    verdict += `🚨 But here's the embarrassing part: you've built a digital mausoleum. More than half your money is rotting in ${neverPlayedCount} unplayed games—that's $${neverPlayedCost.toFixed(2)} of pure regret. `;
+                } else if (neverPlayedPercent > 25) {
+                    verdict += `⚠️ You've got a backlog problem, friend. ${neverPlayedPercent.toFixed(0)}% of your gaming budget ($${neverPlayedCost.toFixed(2)}) is trapped in ${neverPlayedCount} games collecting dust. `;
+                } else if (neverPlayedPercent > 10) {
+                    verdict += `📦 Minor backlog alert: ${neverPlayedCount} games worth $${neverPlayedCost.toFixed(2)} are sitting there judging you. Not terrible, but it's adding up. `;
+                } else {
+                    verdict += `✅ Respect—you actually play what you buy. Only $${neverPlayedCost.toFixed(2)} sitting unplayed means you're not a Steam sale victim. `;
+                }
+            } else {
+                verdict += `🌟 Holy commitment, Batman! You've played every single game. ${games.length} games, zero backlog. That's dedication (or denial). `;
+            }
+            
+            // Best/worst game callouts: Lead with character judgment
+            if (playedGames.length > 1 && bestGame && worstGame) {
+                if (bestGame.costPerHour < netflixCPH) {
+                    verdict += `Your MVP "${bestGame.name}" is basically free at $${bestGame.costPerHour.toFixed(2)}/hour. Meanwhile, `;
+                } else {
+                    verdict += `"${bestGame.name}" is your best value at $${bestGame.costPerHour.toFixed(2)}/hour, but `;
+                }
+                
+                if (worstGame.costPerHour > movieCPH) {
+                    verdict += `"${worstGame.name}" at $${worstGame.costPerHour.toFixed(2)}/hour is looking like buyer's remorse in digital form. `;
+                } else {
+                    verdict += `even your weakest game "${worstGame.name}" ($${worstGame.costPerHour.toFixed(2)}/hour) isn't bleeding you dry. `;
+                }
+            }
+            
+            // Closing: Bold advice
+            if (neverPlayedPercent > 30) {
+                verdict += `🎯 Real talk: Stop buying and start playing. You've spent $${totalCost.toFixed(2)} across ${games.length} games—get your money's worth.`;
+            } else if (costPerHour > 10) {
+                verdict += `💡 Want cheaper gaming? Simple: play what you own longer. Those ${totalHours.toFixed(0)} hours across $${totalCost.toFixed(2)} could stretch further.`;
+            } else if (costPerHour < 3) {
+                verdict += `🎯 You've cracked the code. ${totalHours.toFixed(0)} hours from $${totalCost.toFixed(2)} is genuinely impressive—whatever you're doing, don't stop.`;
+            } else {
+                verdict += `📊 You're doing fine. ${games.length} games, ${totalHours.toFixed(0)} hours, $${totalCost.toFixed(2)} spent—nothing heroic, nothing tragic.`;
             }
             
             verdictTextEl.textContent = verdict;
-            verdictSubtextEl.textContent = ''; // Clear subtext since we removed income-based punchlines
+            verdictSubtextEl.textContent = '';
         }
 
         function updateSpendPieChart(neverPlayedCost, totalCost) {
@@ -2141,28 +2378,51 @@
                 // Check outlier status BEFORE applying effectiveHours logic
                 const isOutlier = !isNeverPlayed && game.hoursPlayed > H_CAP;
                 
-                // Calculate effectiveHours for CPH calculation
+                // Calculate effectiveHours for plotting purposes only
                 let effectiveHours;
                 if (isNeverPlayed) {
-                    effectiveHours = 0.1;  // Never-played games
+                    effectiveHours = 0.1;  // Never-played games - for plotting only
                 } else if (isOutlier) {
-                    effectiveHours = game.hoursPlayed;  // Use true hours for CPH calculation
+                    effectiveHours = game.hoursPlayed;  // Use true hours for outliers
                 } else {
-                    effectiveHours = Math.max(game.hoursPlayed, 0.5);  // Normal games
+                    effectiveHours = Math.max(game.hoursPlayed, 0.5);  // Normal games - minimum 0.5 for plotting
                 }
                 
-                const cph = game.totalCost / effectiveHours;
+                // Use stored CPH from game object for consistency with table
+                // For plotting, handle special cases to ensure all games are plottable on log scale
+                let plotCph;
+                if (isNeverPlayed) {
+                    // Never-played games: plot at high CPH if they cost money, or at 0.05 if free
+                    plotCph = game.totalCost > 0 ? game.totalCost / 0.1 : 0.0025;
+                } else if (game.totalCost === 0) {
+                    // Free games that have been played: plot at 0.05 CPH (low but hoverable)
+                    // This ensures they appear in "Evergreen value" quadrant but remain accessible
+                    plotCph = 0.05;
+                } else if (game.hoursPlayed > 0) {
+                    // Normal paid games: use actual CPH
+                    plotCph = game.totalCost / game.hoursPlayed;
+                } else {
+                    // Fallback: should not happen but handle it
+                    plotCph = 0.05;
+                }
+                
                 const plotHours = isOutlier ? H_CAP : effectiveHours;
+                
+                // Store both plot CPH (for positioning) and actual CPH (for tooltip)
+                const actualCph = game.costPerHour;  // From game object
+                const isFreeGame = game.totalCost === 0;
                 
                 return {
                     name: game.name,
                     effectiveHours: effectiveHours,
                     plotHours: plotHours,
-                    cph: cph,
+                    cph: plotCph,  // Used for plotting position on y-axis
+                    actualCph: actualCph,  // True CPH for tooltip display
                     costUsd: game.totalCost,
                     hoursPlayed: game.hoursPlayed,
                     isNeverPlayed: isNeverPlayed,
                     isOutlier: isOutlier,
+                    isFreeGame: isFreeGame,
                     iconUrl: game.iconUrl
                 };
             });
@@ -2204,20 +2464,119 @@
                 return { label: 'Evergreen value', color: 'rgba(76, 175, 80, 0.7)' }; // Green
             };
             
-            // Create main dataset
-            const mainDataset = mainPoints.map(d => {
+            // Helper function to apply jitter to prevent overlapping points
+            // Uses seeded random based on game name for consistent placement
+            const applyJitter = (value, gameName, scale = 1) => {
+                // Simple hash function for seeded randomness
+                let hash = 0;
+                for (let i = 0; i < gameName.length; i++) {
+                    hash = ((hash << 5) - hash) + gameName.charCodeAt(i);
+                    hash = hash & hash;
+                }
+                // Convert hash to number between -1 and 1
+                const normalized = (hash % 1000) / 500 - 1;
+                // Apply jitter: ±15% for log scale
+                const jitterFactor = 0.15 * scale;
+                return value * (1 + normalized * jitterFactor);
+            };
+            
+            // Detect overlapping points and apply jitter where needed
+            const detectOverlap = (points, axisRanges) => {
+                const overlaps = new Set();
+                const { xMin, xMax, yMin, yMax } = axisRanges;
+                
+                // Check point-to-point overlaps
+                for (let i = 0; i < points.length; i++) {
+                    for (let j = i + 1; j < points.length; j++) {
+                        const point1 = points[i];
+                        const point2 = points[j];
+                        
+                        // Check if within ±10% on both axes
+                        const xRatio = point1.plotHours / point2.plotHours;
+                        const yRatio = point1.cph / point2.cph;
+                        
+                        const xWithin10Percent = xRatio >= 0.9 && xRatio <= 1.1;
+                        const yWithin10Percent = yRatio >= 0.9 && yRatio <= 1.1;
+                        
+                        if (xWithin10Percent && yWithin10Percent) {
+                            overlaps.add(i);
+                            overlaps.add(j);
+                        }
+                    }
+                }
+                
+                // Check for overlaps with quadrant labels and axis labels
+                // Define regions where text labels appear (approximate % of chart, expanded for better coverage)
+                const labelRegions = [
+                    // Quadrant labels (corners) - expanded regions for better text protection
+                    { xMin: 0, xMax: 0.20, yMin: 0.80, yMax: 1.0, name: 'top-left' },      // Backlog shame
+                    { xMin: 0.80, xMax: 1.0, yMin: 0.80, yMax: 1.0, name: 'top-right' },   // Luxury hobby
+                    { xMin: 0, xMax: 0.20, yMin: 0, yMax: 0.20, name: 'bottom-left' },     // Casual win
+                    { xMin: 0.80, xMax: 1.0, yMin: 0, yMax: 0.20, name: 'bottom-right' },  // Evergreen value
+                    // Axis labels
+                    { xMin: 0.78, xMax: 1.0, yMin: 0.42, yMax: 0.58, name: 'horizontal-axis' }, // Hours Played (right)
+                    { xMin: 0.42, xMax: 0.58, yMin: 0.80, yMax: 1.0, name: 'vertical-axis' }    // Effective Cost (top)
+                ];
+                
+                for (let i = 0; i < points.length; i++) {
+                    const point = points[i];
+                    
+                    // Normalize point coordinates to 0-1 range for comparison with label regions
+                    const normalizedX = (Math.log10(point.plotHours) - Math.log10(xMin)) / 
+                                       (Math.log10(xMax) - Math.log10(xMin));
+                    const normalizedY = (Math.log10(point.cph) - Math.log10(yMin)) / 
+                                       (Math.log10(yMax) - Math.log10(yMin));
+                    
+                    // Check if point falls within any label region
+                    for (const region of labelRegions) {
+                        if (normalizedX >= region.xMin && normalizedX <= region.xMax &&
+                            normalizedY >= region.yMin && normalizedY <= region.yMax) {
+                            overlaps.add(i);
+                            break;
+                        }
+                    }
+                }
+                
+                return overlaps;
+            };
+            
+            // Calculate axis ranges FIRST (needed for overlap detection)
+            const tempMainDataset = mainPoints.map(d => ({ x: d.plotHours, y: d.cph }));
+            const tempOutlierDataset = outlierPoints.map(d => ({ x: d.plotHours, y: d.cph }));
+            const tempAllPoints = [...tempMainDataset, ...tempOutlierDataset];
+            const tempXValues = tempAllPoints.map(d => d.x).filter(x => x > 0);
+            const tempYValues = tempAllPoints.map(d => d.y).filter(y => y > 0);
+            const tempNonZeroYValues = tempYValues.filter(y => y > 0.001);
+            
+            const xMin = 0.05;
+            const xMax = H_CAP * 1.2;
+            const yMin = tempNonZeroYValues.length > 0 
+                ? Math.min(0.001, Math.min(...tempNonZeroYValues) * 0.1)
+                : 0.001;
+            const yMax = Math.max(...tempYValues) * 2;
+            
+            const overlappingIndices = detectOverlap(mainPoints, { xMin, xMax, yMin, yMax });
+            
+            // Create main dataset with jitter applied to overlapping points
+            const mainDataset = mainPoints.map((d, index) => {
                 const quad = getQuadrant(d.plotHours, d.cph);
                 const radius = 16;
                 
+                // Apply jitter to overlapping points (especially 0-hour games)
+                const needsJitter = overlappingIndices.has(index) || d.isNeverPlayed;
+                const plottedX = needsJitter ? applyJitter(d.plotHours, d.name, 1.0) : d.plotHours;
+                const plottedY = needsJitter ? applyJitter(d.cph, d.name + '_y', 0.8) : d.cph;
+                
                 return {
-                    x: d.plotHours,
-                    y: d.cph,
+                    x: plottedX,
+                    y: plottedY,
                     label: d.name,
                     costUsd: d.costUsd,
-                    hoursPlayed: d.hoursPlayed,
+                    hoursPlayed: d.hoursPlayed,  // Keep true hours for tooltip
                     effectiveHours: d.effectiveHours,
-                    cph: d.cph,
+                    cph: d.actualCph,  // Use actual CPH for tooltip (not plot CPH)
                     isNeverPlayed: d.isNeverPlayed,
+                    isFreeGame: d.isFreeGame,
                     isOutlier: false,
                     quadrant: quad.label,
                     borderColor: d.isNeverPlayed ? 'rgba(150, 0, 0, 1)' : quad.color,
@@ -2238,7 +2597,8 @@
                     costUsd: d.costUsd,
                     hoursPlayed: d.hoursPlayed,
                     effectiveHours: d.effectiveHours,
-                    cph: d.cph,
+                    cph: d.actualCph,  // Use actual CPH for tooltip
+                    isFreeGame: d.isFreeGame,
                     isNeverPlayed: false,
                     isOutlier: true,
                     quadrant: quad.label,
@@ -2247,16 +2607,6 @@
                     iconUrl: d.iconUrl
                 };
             });
-            
-            // Calculate axis ranges using logarithmic scale
-            const allPoints = [...mainDataset, ...outlierDataset];
-            const xValues = allPoints.map(d => d.x).filter(x => x > 0);
-            const yValues = allPoints.map(d => d.y).filter(y => y > 0);
-            
-            const xMin = 0.05;  // Log scale min
-            const xMax = H_CAP * 1.2;  // Slightly beyond cap
-            const yMin = Math.min(...yValues) * 0.5;  // Dynamic min with padding below lowest point
-            const yMax = Math.max(...yValues) * 2;  // Dynamic max with padding
             
             // Create icon images for both datasets
             const mainIcons = mainDataset.map(d => {
@@ -2394,9 +2744,10 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { 
-                        mode: 'point', 
-                        intersect: true,
-                        includeInvisible: false
+                        mode: 'nearest', 
+                        intersect: false,
+                        includeInvisible: false,
+                        axis: 'xy'
                     },
                     plugins: {
                         title: {
@@ -2406,15 +2757,31 @@
                         tooltip: {
                             enabled: true,
                             displayColors: false,
+                            mode: 'nearest',
                             callbacks: {
-                                title: (ctx) => ctx[0]?.raw?.label || 'Unknown',
+                                title: (ctx) => {
+                                    // If multiple items, only show game names
+                                    if (ctx.length > 1) {
+                                        return ctx.map(item => item.raw.label).join(', ');
+                                    }
+                                    return ctx[0]?.raw?.label || 'Unknown';
+                                },
                                 label: (ctx) => {
+                                    // If multiple items are hovered, don't show details
+                                    const tooltipItems = ctx.chart.tooltip.dataPoints || [];
+                                    if (tooltipItems.length > 1) {
+                                        return null;  // Don't show label lines when multiple games are hovered
+                                    }
+                                    
                                     const d = ctx.raw;
                                     const lines = [
                                         `Hours played: ${d.hoursPlayed.toFixed(1)}`,  // True hours
                                         `Total cost: $${d.costUsd.toFixed(2)}`,
                                         `Cost per hour: $${d.cph.toFixed(2)}`
                                     ];
+                                    if (d.isFreeGame) {
+                                        lines.push('Status: Free game');
+                                    }
                                     if (d.isNeverPlayed) {
                                         lines.push('Status: Never played');
                                     }
@@ -2422,6 +2789,13 @@
                                         lines.push(`Note: Plotted at ${H_CAP}h cap (actual: ${d.hoursPlayed.toFixed(1)}h)`);
                                     }
                                     return lines;
+                                },
+                                beforeBody: (ctx) => {
+                                    // If multiple items, add separator line
+                                    if (ctx.length > 1) {
+                                        return '';
+                                    }
+                                    return null;
                                 }
                             }
                         },
@@ -2452,11 +2826,7 @@
                             min: xMin,
                             max: xMax,
                             title: {
-                                display: true,
-                                text: 'Hours Played (log scale)',
-                                font: { family: 'Lucida Console, Monaco, Courier New, monospace', size: 12 },
-                                color: '#2c5aa0',
-                                padding: { top: 10 }
+                                display: false  // Hide axis title
                             },
                             ticks: {
                                 display: false  // Hide tick labels
@@ -2474,11 +2844,7 @@
                             min: yMin,
                             max: yMax,
                             title: {
-                                display: true,
-                                text: 'Cost per Hour ($/hr, log scale)',
-                                font: { family: 'Lucida Console, Monaco, Courier New, monospace', size: 12 },
-                                color: '#2c5aa0',
-                                padding: { right: 10 }
+                                display: false  // Hide axis title
                             },
                             ticks: {
                                 display: false  // Hide tick labels
@@ -2525,7 +2891,7 @@
                 { label: 'Concert Ticket', value: assumptions.concert, isUserGame: false },
                 { label: 'Basketball Ticket', value: assumptions.basketball, isUserGame: false },
                 { label: 'Netflix', value: assumptions.netflix, isUserGame: false },
-                { label: 'Max', value: assumptions.max, isUserGame: false },
+                { label: 'HBO Max', value: assumptions.max, isUserGame: false },
                 { label: 'YouTube Premium', value: assumptions.youtube, isUserGame: false },
                 { label: 'Gym Membership', value: assumptions.gym, isUserGame: false },
                 { label: 'Spotify Premium', value: assumptions.spotify, isUserGame: false }
