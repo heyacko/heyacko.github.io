@@ -345,12 +345,12 @@ html::before {
 */
 .shared-card {
   background: linear-gradient(180deg, 
-    var(--white-alpha-12) 0%,
-    var(--white-alpha-08) 50%,
-    var(--white-alpha-05) 100%);
+    var(--white-alpha-20) 0%,
+    var(--white-alpha-15) 50%,
+    var(--white-alpha-12) 100%);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid var(--white-alpha-25);
+  border: 1px solid var(--white-alpha-30);
   border-top: 2px solid var(--white-alpha-40);  /* Vista top glossy edge */
   border-bottom: 1px solid var(--black-alpha-10);  /* Subtle bottom shadow */
   border-radius: 16px;
@@ -516,8 +516,8 @@ a:hover {
 */
 .shared-btn-ghost {
   background: linear-gradient(180deg, 
-    var(--white-alpha-12) 0%,
-    var(--white-alpha-08) 100%);
+    var(--white-alpha-20) 0%,
+    var(--white-alpha-15) 100%);
   backdrop-filter: blur(35px) saturate(180%);
   -webkit-backdrop-filter: blur(35px) saturate(180%);
   color: var(--text-primary);
@@ -537,7 +537,7 @@ a:hover {
 }
 
 .shared-btn-ghost:hover {
-  background: var(--primary-alpha-10);
+  background: var(--primary-alpha-15);
   border-color: var(--secondary);  /* Secondary color border on hover */
   box-shadow: 
     0 4px 16px var(--primary-alpha-20),
@@ -710,12 +710,12 @@ input[type="radio"] {
   padding: 25px;
   border-radius: 12px;
   background: linear-gradient(180deg, 
-    var(--white-alpha-12) 0%,
-    var(--white-alpha-08) 50%,
-    var(--white-alpha-05) 100%);
+    var(--white-alpha-20) 0%,
+    var(--white-alpha-15) 50%,
+    var(--white-alpha-12) 100%);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid var(--white-alpha-25);
+  border: 1px solid var(--white-alpha-30);
   border-top: 2px solid var(--white-alpha-40);
   border-bottom: 1px solid var(--black-alpha-10);
   box-shadow: 
@@ -758,12 +758,12 @@ input[type="radio"] {
   gap: 15px;
   align-items: flex-start;
   background: linear-gradient(180deg, 
-    var(--white-alpha-12) 0%,
-    var(--white-alpha-08) 50%,
-    var(--white-alpha-05) 100%);
+    var(--white-alpha-20) 0%,
+    var(--white-alpha-15) 50%,
+    var(--white-alpha-12) 100%);
   backdrop-filter: blur(35px) saturate(180%);
   -webkit-backdrop-filter: blur(35px) saturate(180%);
-  border: 1px solid var(--white-alpha-25);
+  border: 1px solid var(--white-alpha-30);
   border-top: 1px solid var(--white-alpha-40);
   border-bottom: 1px solid var(--black-alpha-05);
   padding: 15px;
@@ -778,9 +778,9 @@ input[type="radio"] {
 
 .shared-opt:hover {
   background: linear-gradient(180deg, 
-    var(--white-alpha-20) 0%,
-    var(--white-alpha-15) 50%,
-    var(--white-alpha-12) 100%);
+    var(--white-alpha-25) 0%,
+    var(--white-alpha-20) 50%,
+    var(--white-alpha-15) 100%);
   border-color: var(--secondary);
   border-top-color: var(--white-alpha-80);
   box-shadow: 
@@ -924,6 +924,53 @@ input[type="radio"] {
   font-size: 1.1rem;
 }
 
+/* Link wrapper for homepage title */
+.homepage-title-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Container for pill-shaped category buttons on index page */
+.pill-button-container {
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Large pill-shaped navigation buttons */
+.pill-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  padding: 30px 50px;
+  background: linear-gradient(180deg, var(--white-alpha-25) 0%, var(--white-alpha-20) 50%, var(--white-alpha-15) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--white-alpha-35);
+  border-top: 2px solid var(--white-alpha-40);
+  border-radius: 100px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-family: 'Lucida Console', Monaco, 'Courier New', monospace;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 30px var(--primary-alpha-15), 0 2px 10px var(--black-alpha-10);
+}
+
+.pill-button:hover {
+  background: linear-gradient(180deg, var(--white-alpha-30) 0%, var(--white-alpha-25) 50%, var(--white-alpha-20) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px var(--primary-alpha-20), 0 0 40px var(--secondary-alpha-30);
+}
+
+.pill-button-icon {
+  font-size: 2rem;
+}
+
 /* 4-column responsive grid */
 .homepage-grid {
   display: grid;
@@ -945,12 +992,12 @@ input[type="radio"] {
   position: relative;
   animation: glass-glow 4s ease-in-out infinite;
   background: linear-gradient(180deg, 
-    var(--white-alpha-12) 0%,
-    var(--white-alpha-08) 50%,
-    var(--white-alpha-05) 100%);
+    var(--white-alpha-20) 0%,
+    var(--white-alpha-15) 50%,
+    var(--white-alpha-12) 100%);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid var(--white-alpha-25);
+  border: 1px solid var(--white-alpha-30);
   border-top: 2px solid var(--white-alpha-40);
   border-bottom: 1px solid var(--black-alpha-10);
   border-radius: 20px;
@@ -969,9 +1016,9 @@ input[type="radio"] {
 
 .grid-card:hover {
   background: linear-gradient(180deg, 
-    var(--white-alpha-20) 0%,
-    var(--white-alpha-15) 50%,
-    var(--white-alpha-12) 100%);
+    var(--white-alpha-25) 0%,
+    var(--white-alpha-20) 50%,
+    var(--white-alpha-15) 100%);
   border-color: var(--secondary);
   border-top-color: var(--white-alpha-80);  /* Brighter top edge on hover */
   box-shadow: 
@@ -996,9 +1043,9 @@ input[type="radio"] {
   box-sizing: border-box;
   position: relative;
   background: linear-gradient(180deg, 
-    var(--white-alpha-10) 0%,
-    var(--white-alpha-05) 50%,
-    transparent 100%);
+    var(--white-alpha-15) 0%,
+    var(--white-alpha-10) 50%,
+    var(--white-alpha-05) 100%);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   border: 1px solid transparent;
