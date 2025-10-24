@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>acko.cool</title>
+<link rel="icon" type="image/png" href="../favicon.png">
+<link rel="stylesheet" href="../style.css">
+<!-- All styles have been moved to style.css for better organization and maintainability -->
+</head>
+<body>
+  <div class="shared-wrap">
+    <a href="/" class="homepage-title-link">
+      <h1 class="homepage-title">/blog</h1>
+    </a>
+
+    <div class="homepage-grid">
+      <!-- BLOG POSTS -->
+      <a href="./worth/" class="grid-card">
+        <div class="card-subtitle">🎮</div>
+        <div class="card-title">Are Video Games Worth The Money?</div>
+        <div class="card-desc">Exploring value beyond cost per hour.</div>
+      </a>
+
+      <div class="placeholder-card">
+        <img src="../favicon.png" alt="Coming Soon">
+      </div>
+
+      <div class="placeholder-card">
+        <img src="../favicon.png" alt="Coming Soon">
+      </div>
+
+      <div class="placeholder-card">
+        <img src="../favicon.png" alt="Coming Soon">
+      </div>
+
+      <div class="placeholder-card">
+        <img src="../favicon.png" alt="Coming Soon">
+      </div>
+
+      <div class="placeholder-card">
+        <img src="../favicon.png" alt="Coming Soon">
+      </div>
+
+      <div class="placeholder-card">
+        <img src="../favicon.png" alt="Coming Soon">
+      </div>
+
+      <div class="placeholder-card">
+        <img src="../favicon.png" alt="Coming Soon">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 
+  ================================================================================
+  PARALLAX SCROLLING EFFECT - BACKGROUND GRID ANIMATION
+  ================================================================================
+  This JavaScript creates a subtle parallax effect where the background grid
+  moves slightly as you scroll. This adds depth and visual interest to the page.
+  
+  HOW IT WORKS:
+  1. Listens for scroll events on the page
+  2. Gets how far the user has scrolled (in pixels)
+  3. Updates a CSS custom property (--scroll-y) with the scroll position
+  4. The CSS uses this value to move the background grid
+  
+  TO ADJUST THE PARALLAX EFFECT:
+  - Change the multiplier in the CSS (currently 0.3) to make it faster/slower
+  - Higher numbers = more movement, lower numbers = less movement
+  -->
+  <script>
+    // Listen for scroll events and update the parallax effect
+    window.addEventListener('scroll', function() {
+      // Get how far the user has scrolled down the page
+      const scrolled = window.pageYOffset;
+      
+      // Update the CSS custom property that controls the grid position
+      document.documentElement.style.setProperty('--scroll-y', scrolled + 'px');
+    });
+  </script>
+</body>
+</html>
+
