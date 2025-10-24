@@ -2222,5 +2222,74 @@ input[type="radio"] {
 }
 
 /* ============================================================================
+   BLOG POST COMPONENTS - Shortcode placeholders for Markdown posts
+   ============================================================================ */
+
+.pullquote, .callout, .chart-placeholder, .calc-placeholder {
+  margin: 24px 0;
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.pullquote {
+  font-size: 1.25em;
+  font-style: italic;
+  color: var(--text-primary);
+  border-left: 4px solid var(--primary);
+  padding-left: 20px;
+}
+
+.callout {
+  background: var(--primary-alpha-10);
+  border-left: 4px solid var(--secondary);
+  padding-left: 20px;
+}
+
+.chart-placeholder, .calc-placeholder {
+  text-align: center;
+  color: var(--neutral);
+  font-family: 'Lucida Console', Monaco, 'Courier New', monospace;
+}
+
+/* Prose styling for blog content */
+.prose {
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+
+.prose h1 {
+  font-size: 2.5em;
+  margin-top: 0;
+  margin-bottom: 0.5em;
+  color: var(--primary-dark);
+}
+
+.prose h2 {
+  font-size: 1.8em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  color: var(--primary-dark);
+}
+
+.prose p {
+  margin: 1em 0;
+}
+
+.prose figure {
+  margin: 2em 0;
+  text-align: center;
+}
+
+.prose figcaption {
+  margin-top: 0.5em;
+  font-size: 0.9em;
+  color: var(--neutral);
+  font-style: italic;
+}
+
+/* ============================================================================
    END OF STYLESHEET
    ============================================================================ */
