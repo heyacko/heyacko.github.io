@@ -95,10 +95,10 @@ DESIGN PRINCIPLES:
   /* ========== BASE COLORS (Change these to retheme the site) ========== */
   
   /* PRIMARY COLORS - Your brand color in 3 shades */
-  --primary: #89b4d6;           /* 1. Main brand color (soft Wii blue) */
+  --primary: #a89fd6;           /* 1. Main brand color (soft purple with blue undertones) */
   --primary-dark: #34383b;      /* 2. Darker shade for text & emphasis (charcoal gray) */
-  --primary-light: #e5e7eb;     /* 3. Light tint for backgrounds (light gray) */
-  --secondary: #5c9cd6;         /* 4. Secondary accent (brighter blue - use sparingly!) */
+  --primary-light: #e4dff2;     /* 3. Light tint for backgrounds (more saturated purple) */
+  --secondary: #8d7bd6;         /* 4. Secondary accent (brighter purple - use sparingly!) */
   
   /* SEMANTIC COLORS - Status indicators */
   --success: #6bb86b;           /* 5. Success/positive (muted green) */
