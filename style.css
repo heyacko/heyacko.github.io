@@ -2255,7 +2255,7 @@ input[type="radio"] {
 
 /* Prose styling for blog content */
 .prose {
-  max-width: 800px;
+  max-width: 100%;
   margin: 0 auto;
   line-height: 1.8;
 }

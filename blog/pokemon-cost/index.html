@@ -15,6 +15,11 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
+    /* Breadcrumb Navigation */
+    nav a:hover {
+      color: var(--primary) !important;
+    }
+
     /* Guess Section Styles */
     #guess-container {
       background: var(--white-alpha-80);
@@ -38,6 +43,30 @@
     #submit-guess {
       display: block;
       margin: 30px auto;
+      padding: 12px 30px;
+      background: var(--white-alpha-80);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    #submit-guess:hover:not(:disabled) {
+      background: var(--white-alpha-90);
+      border-color: var(--neutral);
+      transform: translateY(-2px);
+    }
+
+    #submit-guess:disabled {
+      background: var(--neutral);
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    #skip-all {
       padding: 15px 40px;
       background: var(--secondary);
       color: white;
@@ -50,33 +79,10 @@
       box-shadow: 0 4px 16px var(--secondary-alpha-30);
     }
 
-    #submit-guess:hover:not(:disabled) {
+    #skip-all:hover {
       background: var(--primary);
       transform: translateY(-2px);
       box-shadow: 0 6px 20px var(--primary-alpha-40);
-    }
-
-    #submit-guess:disabled {
-      background: var(--neutral);
-      cursor: not-allowed;
-      opacity: 0.5;
-    }
-
-    #skip-all {
-      padding: 12px 30px;
-      background: var(--white-alpha-80);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-subtle);
-      border-radius: 100px;
-      font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    #skip-all:hover {
-      background: var(--white-alpha-90);
-      border-color: var(--neutral);
     }
 
     #guess-summary {
@@ -261,9 +267,20 @@
   </style>
 </head>
 <body>
-  <main class="shared-wrap">
-    <div id="article-header" class="shared-card prose" style="text-align: center;">
-      <!-- Metadata will be inserted here -->
+  <!-- Breadcrumb Navigation -->
+  <nav style="position: sticky; top: 0; background: var(--primary-light); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-subtle); z-index: 1000; padding: 15px 0;">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 4px; font-family: 'Lucida Console', Monaco, 'Courier New', monospace; font-size: 1.5rem; font-weight: 700; color: var(--primary-dark);">
+      <a href="../../index.html" style="color: inherit; text-decoration: none; transition: color 0.2s;">acko.cool</a>
+      <span>/</span>
+      <a href="../index.html" style="color: inherit; text-decoration: none; transition: color 0.2s;">blog</a>
+      <span>/</span>
+      <a href="./index.html" style="color: inherit; text-decoration: none; transition: color 0.2s;">pokemon-cost</a>
+    </div>
+  </nav>
+
+  <main class="shared-wrap" style="margin-top: 40px;">
+    <div id="article-header" class="shared-card prose" style="text-align: center; padding-bottom: 0;">
+      <!-- Metadata and hero image will be inserted here -->
     </div>
     
     <article id="intro-content" class="shared-card prose">
@@ -273,10 +290,10 @@
     <!-- Interactive Guessing Section -->
     <div id="guess-container">
       <svg id="guess-chart"></svg>
-      <button id="submit-guess">Submit Guess</button>
       <div id="skip-all-container" style="display: none; text-align: center; margin: 20px 0;">
-        <button id="skip-all" class="skip-btn">See Results</button>
+        <button id="skip-all" class="skip-btn">View All Games</button>
       </div>
+      <button id="submit-guess">Submit Guess</button>
       <div id="guess-summary"></div>
       <div id="continue-reading">
         <button onclick="document.getElementById('reveal-section').scrollIntoView({ behavior: 'smooth' })">
@@ -342,9 +359,13 @@
       headerEl.innerHTML = `
         <h1 class="shared-h1" style="margin-bottom: 10px;">${metadata.title}</h1>
         ${metadata.subtitle ? `<p class="shared-sub" style="font-size: 1.1em; color: var(--neutral); margin-bottom: 20px;">${metadata.subtitle}</p>` : ''}
-        <div style="display: flex; gap: 20px; justify-content: center; align-items: center; color: var(--neutral); font-size: 0.9em;">
+        <div style="display: flex; gap: 20px; justify-content: center; align-items: center; color: var(--neutral); font-size: 0.9em; margin-bottom: 30px;">
           ${metadata.author ? `<span>By ${metadata.author}</span>` : ''}
           ${metadata.date ? `<span>${metadata.date}</span>` : ''}
+        </div>
+        <div style="margin: 0 -40px -40px -40px; overflow: hidden; aspect-ratio: 21/9;">
+          <img src="img/hero.jpg" alt="Pokemon game collection" 
+               style="width: 100%; height: 100%; object-fit: cover; display: block;" />
         </div>
       `;
       

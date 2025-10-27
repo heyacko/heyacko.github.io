@@ -7,7 +7,8 @@
     "gamePrice": 29.99,
     "dlcPrice": 0,
     "total": 119.98,
-    "adjustedPrice": 59.05
+    "adjustedPrice": 59.05,
+    "icon": "img/red-blue.png"
   },
   {
     "game": "Gold/Silver",
@@ -17,7 +18,8 @@
     "gamePrice": 29.99,
     "dlcPrice": 0,
     "total": 109.98,
-    "adjustedPrice": 55.90
+    "adjustedPrice": 55.90,
+    "icon": "img/gold-silver.png"
   },
   {
     "game": "Ruby/Sapphire",
@@ -27,7 +29,8 @@
     "gamePrice": 34.99,
     "dlcPrice": 0,
     "total": 134.98,
-    "adjustedPrice": 61.06
+    "adjustedPrice": 61.06,
+    "icon": "img/ruby-sapphire.png"
   },
   {
     "game": "Diamond/Pearl",
@@ -37,7 +40,8 @@
     "gamePrice": 34.99,
     "dlcPrice": 0,
     "total": 184.98,
-    "adjustedPrice": 54.16
+    "adjustedPrice": 54.16,
+    "icon": "img/diamond-pearl.jpg"
   },
   {
     "game": "Black/White",
@@ -47,7 +51,8 @@
     "gamePrice": 34.99,
     "dlcPrice": 0,
     "total": 184.98,
-    "adjustedPrice": 49.93
+    "adjustedPrice": 49.93,
+    "icon": "img/black-white.png"
   },
   {
     "game": "X/Y",
@@ -57,7 +62,8 @@
     "gamePrice": 39.99,
     "dlcPrice": 0,
     "total": 289.98,
-    "adjustedPrice": 55.11
+    "adjustedPrice": 55.11,
+    "icon": "img/x-y.png"
   },
   {
     "game": "Sun/Moon",
@@ -67,7 +73,8 @@
     "gamePrice": 39.99,
     "dlcPrice": 0,
     "total": 209.98,
-    "adjustedPrice": 53.51
+    "adjustedPrice": 53.51,
+    "icon": "img/sun-moon.png"
   },
   {
     "game": "Sword/Shield",
@@ -77,7 +84,8 @@
     "gamePrice": 59.99,
     "dlcPrice": 29.99,
     "total": 389.97,
-    "adjustedPrice": 75.29
+    "adjustedPrice": 75.29,
+    "icon": "img/sword-shield.png"
   },
   {
     "game": "Scarlet/Violet",
@@ -87,7 +95,8 @@
     "gamePrice": 59.99,
     "dlcPrice": 34.99,
     "total": 394.97,
-    "adjustedPrice": 65.81
+    "adjustedPrice": 65.81,
+    "icon": "img/scarlet-violet.png"
   }
 ]
 

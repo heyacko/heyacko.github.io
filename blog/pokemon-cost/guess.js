@@ -9,7 +9,7 @@ let currentBrush = null;
 export function createGuessChart(pokemonData) {
   guessData = pokemonData.map(d => ({
     ...d,
-    guess: 60,
+    guess: d.gamePrice, // Start at original price
     revealed: false,
     guessed: false
   }));
@@ -39,11 +39,20 @@ export function createGuessChart(pokemonData) {
   guessGroup = guessSvg.append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`);
   
+  // Add game icon
+  guessSvg.append('image')
+    .attr('id', 'game-icon')
+    .attr('x', width / 2 - 30)
+    .attr('y', 20)
+    .attr('width', 60)
+    .attr('height', 60)
+    .style('opacity', 0.9);
+  
   // Add instruction text
   guessSvg.append('text')
     .attr('id', 'game-title')
     .attr('x', width / 2)
-    .attr('y', 30)
+    .attr('y', 100)
     .attr('text-anchor', 'middle')
     .style('font-size', '20px')
     .style('font-weight', 'bold')
@@ -52,7 +61,7 @@ export function createGuessChart(pokemonData) {
   guessSvg.append('text')
     .attr('id', 'game-subtitle')
     .attr('x', width / 2)
-    .attr('y', 55)
+    .attr('y', 125)
     .attr('text-anchor', 'middle')
     .style('font-size', '14px')
     .style('fill', 'var(--text-secondary)');
@@ -110,7 +119,7 @@ export function createGuessChart(pokemonData) {
     .attr('id', 'guess-bar')
     .attr('x', 0)
     .attr('y', chartHeight * 0.35)
-    .attr('width', xScale(60))
+    .attr('width', xScale(guessData[0].gamePrice))
     .attr('height', chartHeight * 0.3)
     .attr('rx', 8)
     .style('fill', 'var(--primary-alpha-40)')
@@ -131,14 +140,14 @@ export function createGuessChart(pokemonData) {
   // Add price label
   guessGroup.append('text')
     .attr('id', 'guess-label')
-    .attr('x', xScale(60))
+    .attr('x', xScale(guessData[0].gamePrice))
     .attr('y', chartHeight * 0.5)
     .attr('dy', '0.35em')
     .attr('dx', '15')
     .style('font-size', '24px')
     .style('font-weight', 'bold')
     .style('fill', 'var(--primary)')
-    .text('$60');
+    .text(`$${guessData[0].gamePrice.toFixed(0)}`);
   
   // Add actual label (hidden initially)
   guessGroup.append('text')
@@ -170,7 +179,7 @@ export function createGuessChart(pokemonData) {
   currentBrush = guessGroup.append('g')
     .attr('class', 'brush')
     .call(brush)
-    .call(brush.move, [0, xScale(60)]);
+    .call(brush.move, [0, xScale(guessData[0].gamePrice)]);
   
   // Style brush with more obvious handle
   d3.select('.brush .selection')
@@ -196,7 +205,7 @@ export function createGuessChart(pokemonData) {
   // Add drag icon to handle
   const handleGroup = guessGroup.append('g')
     .attr('class', 'handle-icon')
-    .attr('transform', `translate(${xScale(60)},${chartHeight * 0.5})`)
+    .attr('transform', `translate(${xScale(guessData[0].gamePrice)},${chartHeight * 0.5})`)
     .style('pointer-events', 'none'); // Don't block brush interaction
   
   handleGroup.append('circle')
@@ -223,6 +232,10 @@ function showGame(index) {
   if (index >= guessData.length) return;
   
   const game = guessData[index];
+  
+  // Update game icon
+  guessSvg.select('#game-icon')
+    .attr('href', game.icon);
   
   guessSvg.select('#game-title')
     .text(`${game.game} (${game.year})`);
@@ -379,6 +392,9 @@ export function submitGuess() {
       
       d3.select('#skip-all-container').style('display', 'block');
     } else {
+      // Last game guessed - show the bar chart with all games
+      allRevealed = true;
+      showStackedBarChart();
       showFinalSummary();
     }
   }, 1000);
@@ -415,9 +431,12 @@ export function guessAnother() {
     .on('brush', handleBrush)
     .on('end', handleBrushEnd);
   
+  // Reset guess to original price for the new game
+  guessData[currentGameIndex].guess = guessData[currentGameIndex].gamePrice;
+  
   currentBrush = guessGroup.select('.brush')
     .call(brush)
-    .call(brush.move, [0, xScale(guessData[currentGameIndex].guess)]);
+    .call(brush.move, [0, xScale(guessData[currentGameIndex].gamePrice)]);
   
   d3.select('.brush .selection')
     .style('fill', 'none')
@@ -447,6 +466,7 @@ export function skipToEnd() {
   }
   
   showStackedBarChart();
+  showFinalSummary();
 }
 
 function showStackedBarChart() {
@@ -457,12 +477,13 @@ function showStackedBarChart() {
   // Clear existing chart
   guessGroup.selectAll('*').remove();
   guessSvg.selectAll('text').remove();
+  guessSvg.select('#game-icon').remove();
   
   const container = d3.select('#guess-container');
   const width = container.node().clientWidth;
   const height = Math.max(600, guessData.length * 60);
   
-  const margin = { top: 60, right: 100, bottom: 60, left: 140 };
+  const margin = { top: 60, right: 100, bottom: 60, left: 80 };
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
   
@@ -518,15 +539,15 @@ function showStackedBarChart() {
     .style('fill', 'var(--text-secondary)')
     .style('font-size', '12px');
   
-  // Add Y axis
-  const yAxis = d3.axisLeft(yScaleBar);
+  // Add Y axis (hide text labels, only show icons)
+  const yAxis = d3.axisLeft(yScaleBar)
+    .tickSize(0) // Hide tick marks
+    .tickFormat(''); // Don't show any text labels
   
   guessGroup.append('g')
     .attr('class', 'axis y-axis')
     .call(yAxis)
-    .selectAll('text')
-    .style('fill', 'var(--text-primary)')
-    .style('font-size', '13px');
+    .select('.domain').remove(); // Remove the axis line
   
   // Create game groups
   const gameGroups = guessGroup.selectAll('.game-bar-group')
@@ -535,6 +556,19 @@ function showStackedBarChart() {
     .append('g')
     .attr('class', 'game-bar-group')
     .attr('transform', d => `translate(0,${yScaleBar(d.game)})`);
+  
+  // Add game icons next to Y axis
+  gameGroups.append('image')
+    .attr('x', -55)
+    .attr('y', yScaleBar.bandwidth() / 2 - 15)
+    .attr('width', 30)
+    .attr('height', 30)
+    .attr('href', d => d.icon)
+    .style('opacity', 0)
+    .transition()
+    .duration(800)
+    .delay((d, i) => i * 100)
+    .style('opacity', 0.9);
   
   // Add actual price bars (lighter purple)
   gameGroups.append('rect')
