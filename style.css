@@ -92,13 +92,24 @@ DESIGN PRINCIPLES:
 */
 
 :root {
-  /* ========== BASE COLORS (Change these to retheme the site) ========== */
+  /* ========== BASE COLORS (Frutiger Aero Brand) ========== */
   
-  /* PRIMARY COLORS - Your brand color in 3 shades */
-  --primary: #a89fd6;           /* 1. Main brand color (soft purple with blue undertones) */
-  --primary-dark: #34383b;      /* 2. Darker shade for text & emphasis (charcoal gray) */
-  --primary-light: #fcfbfe;     /* 3. Light tint for backgrounds (nearly white with hint of purple) */
-  --secondary: #8d7bd6;         /* 4. Secondary accent (brighter purple - use sparingly!) */
+  /* BRAND PALETTE */
+  --brand-mocha: #4A2F1B;
+  --brand-tan: #D49663;
+  --brand-blue: #5E9DC8;
+  --brand-cream: #F4F1ED;
+  
+  /* PRIMARY COLORS - Derived from brand */
+  --primary: var(--brand-tan);       /* Main brand color */
+  --primary-dark: #34383b;           /* Darker shade for text & emphasis (keep existing) */
+  --primary-light: #fff8f2;          /* Warm page tint */
+  --secondary: var(--brand-blue);    /* Secondary accent - use sparingly! */
+  
+  /* AERO SKY GRADIENT COLORS */
+  --aero-sky-1: #eaf6ff;
+  --aero-sky-2: #cfe7ff;
+  --aero-sky-3: #bcd9ff;
   
   /* SEMANTIC COLORS - Status indicators */
   --success: #6bb86b;           /* 5. Success/positive (muted green) */
@@ -183,8 +194,62 @@ DESIGN PRINCIPLES:
   
   /* BORDERS & SHADOWS */
   --border-subtle: var(--primary-alpha-30);
-  --shadow-color: var(--primary-alpha-10);
-  --shadow-color-hover: var(--primary-alpha-20);
+  --shadow-color: rgba(14, 25, 40, .14);
+  --shadow-color-hover: rgba(14, 25, 40, .22);
+}
+
+
+/* ============================================================================
+   GLASS ELEVATION TIERS (Frutiger Aero)
+   ============================================================================ */
+
+.glass-1 {
+  background: var(--white-alpha-08);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 4px 12px var(--shadow-color);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 16px;
+}
+
+.glass-2 {
+  background: linear-gradient(180deg, var(--white-alpha-20), var(--white-alpha-12));
+  backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: 0 8px 24px var(--shadow-color);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 16px;
+}
+
+.glass-3 {
+  background: linear-gradient(180deg, var(--white-alpha-25), var(--white-alpha-15));
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: 0 16px 48px var(--shadow-color-hover);
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 20px;
+}
+
+
+/* ============================================================================
+   SPECULAR HIGHLIGHTS (Frutiger Aero)
+   ============================================================================ */
+
+.specular-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.specular-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(600px 200px at 20% -10%, rgba(255,255,255,.25), transparent 60%);
+  opacity: .6;
+  transition: transform .35s ease, opacity .35s ease;
+  pointer-events: none;
+}
+
+.specular-card:hover::after {
+  transform: translateY(2px);
+  opacity: .75;
 }
 
 
@@ -192,55 +257,33 @@ DESIGN PRINCIPLES:
    2. BASE STYLES & BACKGROUND EFFECTS
    ============================================================================
    
-   Sets up the foundation for the entire website including the animated
-   3D grid background pattern.
+   Single animated ambient Frutiger Aero background
 */
+
+@keyframes aeroDrift {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
 
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--bg-page);
-  background-image: 
-    linear-gradient(135deg, var(--primary-light) 0%, color-mix(in srgb, var(--primary-light) 90%, var(--primary) 10%) 25%, color-mix(in srgb, var(--primary-light) 75%, var(--primary) 25%) 50%, color-mix(in srgb, var(--primary-light) 90%, var(--primary) 10%) 75%, var(--primary-light) 100%),
-    radial-gradient(circle at 20% 80%, var(--primary-alpha-10) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, color-mix(in srgb, var(--success) 10%, transparent 90%) 0%, transparent 50%);
-  background-size: 100% 100%, 100% 100%, 100% 100%;
-  color: var(--text-primary);
-  font: 16px/1.5 'Yu Gothic UI', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-image:
+    radial-gradient(1200px 800px at 15% 20%, var(--aero-sky-1) 0%, transparent 60%),
+    radial-gradient(900px 700px at 85% 30%, var(--aero-sky-2) 0%, transparent 65%),
+    linear-gradient(135deg, var(--aero-sky-3), var(--primary-light));
+  background-size: 200% 200%, 200% 200%, 100% 100%;
+  animation: aeroDrift 28s ease-in-out infinite;
+  color: #1b1b1b;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  line-height: 1.55;
   font-weight: 400;
   min-height: 100vh;
   position: relative;
 }
 
-/* 3D Warped Grid Background Pattern
-   This creates a perspective grid that appears to recede into the distance.
-   Adjust background-size (50px) to change grid density */
-html::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    linear-gradient(var(--primary-dark-alpha-40) 2px, transparent 2px),
-    linear-gradient(90deg, var(--primary-dark-alpha-40) 2px, transparent 2px);
-  background-size: 50px 50px;
-  background-position: 0 calc(var(--scroll-y, 0px) * 0.3);
-  transform: perspective(1200px) rotateX(65deg) rotateY(0deg) rotateZ(12deg);
-  transform-origin: center center;
-  opacity: 0.3;
-  z-index: 1;
-  pointer-events: none;
-  filter: blur(0.3px);
-  mask-image: 
-    radial-gradient(ellipse at center, black 60%, transparent 100%),
-    linear-gradient(black, black);
-  mask-size: 120% 120%, 100% 100%;
-  mask-position: center center, center center;
-  mask-composite: intersect;
-  will-change: transform;
-}
+
 
 
 /* ============================================================================
@@ -264,20 +307,12 @@ html::before {
 }
 
 @keyframes glass-glow {
-  0%, 100% { 
-    box-shadow: 
-      0 8px 32px var(--shadow-color),
-      0 4px 16px var(--black-alpha-05),
-      inset 0 1px 0 var(--white-alpha-40),
-      inset 0 -1px 0 var(--black-alpha-05);
-  }
-  50% { 
-    box-shadow: 
-      0 12px 40px var(--shadow-color-hover),
-      0 6px 20px var(--black-alpha-10),
-      inset 0 1px 0 var(--white-alpha-80),
-      inset 0 -1px 0 var(--black-alpha-10);
-  }
+  0%,100% { box-shadow: 0 16px 48px var(--shadow-color-hover); }
+  50% { box-shadow: 0 22px 64px rgba(14,25,40,.28); }
+}
+
+.hero-cta {
+  animation: glass-glow 2.6s ease-in-out infinite;
 }
 
 @keyframes shimmer {
@@ -348,8 +383,8 @@ html::before {
     var(--white-alpha-20) 0%,
     var(--white-alpha-15) 50%,
     var(--white-alpha-12) 100%);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid var(--white-alpha-30);
   border-top: 2px solid var(--white-alpha-40);  /* Vista top glossy edge */
   border-bottom: 1px solid var(--black-alpha-10);  /* Subtle bottom shadow */
@@ -362,7 +397,7 @@ html::before {
     inset 0 -1px 0 var(--black-alpha-05);  /* Subtle bottom shadow */
   position: relative;
   overflow: hidden;
-  animation: glass-glow 3s ease-in-out infinite;
+  transition: transform .25s ease, box-shadow .25s ease;
   z-index: 10;
 }
 
@@ -380,6 +415,15 @@ html::before {
 /* Stack multiple cards with spacing */
 .shared-card + .shared-card {
   margin-top: 25px;
+}
+
+.shared-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 40px var(--shadow-color-hover),
+    0 6px 20px var(--black-alpha-10),
+    inset 0 1px 0 var(--white-alpha-80),
+    inset 0 -1px 0 var(--black-alpha-10);
 }
 
 /* SHARED-GRID - Simple grid layout for content
@@ -426,6 +470,13 @@ html::before {
    - shared-btn:       Primary action (gradient button)
    - shared-btn-ghost: Secondary action (transparent with border)
 */
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
 
 /* TEXT LINKS - Use secondary color for links */
 a {
@@ -518,8 +569,8 @@ a:hover {
   background: linear-gradient(180deg, 
     var(--white-alpha-20) 0%,
     var(--white-alpha-15) 100%);
-  backdrop-filter: blur(35px) saturate(180%);
-  -webkit-backdrop-filter: blur(35px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
   color: var(--text-primary);
   border: 1px solid var(--primary-alpha-30);
   padding: 12px 20px;
@@ -713,8 +764,8 @@ input[type="radio"] {
     var(--white-alpha-20) 0%,
     var(--white-alpha-15) 50%,
     var(--white-alpha-12) 100%);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid var(--white-alpha-30);
   border-top: 2px solid var(--white-alpha-40);
   border-bottom: 1px solid var(--black-alpha-10);
@@ -761,8 +812,8 @@ input[type="radio"] {
     var(--white-alpha-20) 0%,
     var(--white-alpha-15) 50%,
     var(--white-alpha-12) 100%);
-  backdrop-filter: blur(35px) saturate(180%);
-  -webkit-backdrop-filter: blur(35px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
   border: 1px solid var(--white-alpha-30);
   border-top: 1px solid var(--white-alpha-40);
   border-bottom: 1px solid var(--black-alpha-05);
@@ -834,8 +885,8 @@ input[type="radio"] {
   background: linear-gradient(180deg, 
     var(--success-alpha-20) 0%,
     var(--success-alpha-10) 100%);
-  backdrop-filter: blur(25px) saturate(150%);
-  -webkit-backdrop-filter: blur(25px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
   border-color: var(--success);
   border-top-color: color-mix(in srgb, var(--success) 50%, white 50%);
   color: var(--success);
@@ -848,8 +899,8 @@ input[type="radio"] {
   background: linear-gradient(180deg, 
     var(--error-alpha-20) 0%,
     var(--error-alpha-10) 100%);
-  backdrop-filter: blur(25px) saturate(150%);
-  -webkit-backdrop-filter: blur(25px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
   border-color: var(--error);
   color: var(--error);
   box-shadow: 0 4px 16px var(--error-alpha-20);
@@ -913,7 +964,6 @@ input[type="radio"] {
   font-weight: 700;
   color: var(--primary-dark);
   text-shadow: 0 2px 4px var(--primary-dark-alpha-10);
-  animation: float 3s ease-in-out infinite;
 }
 
 .homepage-subtitle {
@@ -950,8 +1000,8 @@ input[type="radio"] {
     var(--white-alpha-20) 0%,
     var(--white-alpha-15) 50%,
     var(--white-alpha-12) 100%);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid var(--white-alpha-30);
   border-top: 2px solid var(--white-alpha-40);
   border-bottom: 1px solid var(--black-alpha-10);
@@ -1021,13 +1071,13 @@ input[type="radio"] {
   padding: 30px;
   box-sizing: border-box;
   position: relative;
-  animation: glass-glow 4s ease-in-out infinite;
+  overflow: hidden;
   background: linear-gradient(180deg, 
     var(--white-alpha-20) 0%,
     var(--white-alpha-15) 50%,
     var(--white-alpha-12) 100%);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid var(--white-alpha-30);
   border-top: 2px solid var(--white-alpha-40);
   border-bottom: 1px solid var(--black-alpha-10);
@@ -1043,6 +1093,22 @@ input[type="radio"] {
 
 .grid-card * {
   text-decoration: none;
+}
+
+.grid-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(600px 200px at 20% -10%, rgba(255,255,255,.25), transparent 60%);
+  opacity: .6;
+  transition: transform .35s ease, opacity .35s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.grid-card > * {
+  position: relative;
+  z-index: 2;
 }
 
 .grid-card:hover {
@@ -1061,6 +1127,11 @@ input[type="radio"] {
   transition: all 0.4s ease;
 }
 
+.grid-card:hover::after {
+  transform: translateY(2px);
+  opacity: .75;
+}
+
 /* Placeholder "Coming Soon" cards */
 .placeholder-card {
   display: flex;
@@ -1077,8 +1148,8 @@ input[type="radio"] {
     var(--white-alpha-15) 0%,
     var(--white-alpha-10) 50%,
     var(--white-alpha-05) 100%);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid transparent;
   border-radius: 24px;
   cursor: default;
@@ -1152,14 +1223,6 @@ input[type="radio"] {
   transform: translateY(0px);
 }
 
-.grid-card:hover .card-subtitle {
-  animation: float 2s ease-in-out infinite;
-  animation-fill-mode: both;
-}
-
-.grid-card:not(:hover) .card-subtitle {
-  animation: float-return 0.3s ease-out forwards;
-}
 
 @keyframes float-return {
   0% { transform: translateY(-10px); }
@@ -2289,6 +2352,57 @@ input[type="radio"] {
   color: var(--neutral);
   font-style: italic;
 }
+
+/* ============================================================================
+   LIVING BUBBLES LAYER (Frutiger Aero)
+   ============================================================================ */
+
+@keyframes bubble {
+  0% { transform: translateY(20px) scale(.8); opacity: 0; }
+  10% { opacity: .35; }
+  90% { opacity: .35; }
+  100% { transform: translateY(-160px) scale(1); opacity: 0; }
+}
+
+.aero-bubbles {
+  position: absolute;
+  inset: auto 0 40px 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.aero-bubbles span {
+  position: absolute;
+  bottom: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--primary-alpha-30);
+  filter: blur(.3px);
+  animation: bubble 14s ease-in infinite;
+}
+
+.aero-bubbles span:nth-child(1) { left: 12%; animation-delay: 0s; }
+.aero-bubbles span:nth-child(2) { left: 28%; width: 10px; height: 10px; animation-delay: 2s; }
+.aero-bubbles span:nth-child(3) { left: 55%; animation-delay: 5s; }
+.aero-bubbles span:nth-child(4) { left: 75%; width: 6px; height: 6px; animation-delay: 8s; }
+
+
+/* ============================================================================
+   POKEMON COST - PAGE-SPECIFIC UTILITIES
+   ============================================================================ */
+
+.pokemon-card {
+  background: var(--white-alpha-80);
+  backdrop-filter: blur(22px);
+  border-radius: 20px;
+  border: 1px solid var(--white-alpha-30);
+  padding: 40px;
+  margin: 40px 0;
+  box-shadow: 0 8px 32px var(--shadow-color);
+}
+
 
 /* ============================================================================
    END OF STYLESHEET

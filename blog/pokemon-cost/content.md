@@ -1,6 +1,5 @@
 ---
 title: What Every Pokemon Game Would Cost Today
-subtitle: Stop blaming the games. Blame the consoles.
 author: acko
 date: January 2025
 ---
