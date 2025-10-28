@@ -334,8 +334,60 @@
     import { createConsoleChart, resizeConsoleChart } from './console-chart.js';
 
     async function loadContent() {
-      const res = await fetch('./content.md');
-      let md = await res.text();
+      // Embedded markdown content (GitHub Pages doesn't serve .md files)
+      let md = `---
+title: What Every Pokemon Game Would Cost Today
+author: acko
+date: January 2025
+---
+
+"$60 for a Pokemon game? Games are getting so expensive!"
+
+You've heard it. Maybe you've said it. But here's the thing: **you're wrong about which part is expensive.**
+
+Before we show you the data, let's test your intuition. Start with Pokemon Red/Blue from 1998. It cost $30 back then. What do you think it would cost in 2025 dollars when adjusted for inflation?
+
+Drag the slider below to make your guess, then see how close you were.
+
+## The Reveal: Games Haven't Changed
+
+Surprised? Most people overestimate how much game prices have increased. The truth is simpler: **Pokemon games cost almost exactly what they've always cost when you account for inflation.**
+
+From Pokemon Red at $30 in 1998 to Scarlet/Violet at $60 in 2022, games have tracked inflation almost perfectly. A dollar in 1998 is worth about $2 today. $30 doubled is $60. That's it. That's the whole story.
+
+But wait—doesn't everything feel more expensive? Let's put this in context.
+
+## How Pokemon Compares to Everything Else
+
+Here's what else cost money in 1998 versus today:
+
+**Everything doubled.** Gas, movie tickets, a Big Mac—they all cost roughly twice as much in 2025 dollars as they did in 1998. Pokemon games are no different. They're not getting more expensive relative to anything else. They're just keeping pace with inflation.
+
+So if Pokemon games aren't the problem, what is?
+
+## The Real Culprit: Consoles
+
+Let's look at what you actually paid to play Pokemon over the years:
+
+- **1998**: Game Boy ($90) + Pokemon Red ($30) = **$120 total** ($236 in 2025 dollars)
+- **2022**: Nintendo Switch ($300) + Pokemon Scarlet ($60) = **$360 total** ($391 in 2025 dollars)
+
+Notice something? The console went from $90 to $300 in nominal dollars. That's a **233% increase**—way above inflation. Meanwhile, the game went from $30 to $60, which is exactly inflation.
+
+**Games tracked inflation. Consoles exploded.**
+
+The Game Boy in 1998 cost $90, or about $177 in today's money. The Switch costs $300—that's **69% more expensive** than the Game Boy was in real terms. Nintendo Switch is genuinely more expensive hardware than its predecessors, while the software has stayed remarkably stable.
+
+## The Bottom Line
+
+Next time someone complains about $60 Pokemon games, show them this:
+
+- **Game prices are fine.** They've tracked inflation for 25 years.
+- **Console prices are the problem.** They've grown faster than inflation.
+- **Everything else doubled too.** Games aren't uniquely expensive.
+
+Your anger isn't wrong—gaming *is* more expensive than it used to be. You're just blaming the wrong part. Stop complaining about $60 games. Start complaining about $300 consoles.
+`;
       
       // Extract YAML frontmatter
       const frontmatterMatch = md.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
@@ -420,7 +472,7 @@
     }
 
     loadContent().catch(err => {
-      document.getElementById('intro-content').innerHTML = `<p style="color:red">Error loading content.md</p><pre>${err}</pre>`;
+      document.getElementById('intro-content').innerHTML = `<p style="color:var(--error)">Error loading content</p><pre>${err}</pre>`;
       console.error(err);
     });
   </script>
