@@ -121,24 +121,24 @@
             </div>
 
             <div id="gameDistribution" style="text-align: center; margin: 30px auto; max-width: 900px; display: none;">
-                <p id="gameDistributionText" style="font-size: 1.2em; color: #2c5aa0; margin-bottom: 20px;"></p>
+                <p id="gameDistributionText" style="font-size: 1.2em; color: var(--primary-dark); margin-bottom: 20px;"></p>
                 <div id="topGamesDisplay" style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;"></div>
             </div>
 
             <div class="two-chart-row">
                 <div class="chart-container">
-                    <h3 style="text-align: center; margin-bottom: 20px; color: #2c5aa0; font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Hours Played Distribution</h3>
+                    <h3 style="text-align: center; margin-bottom: 20px; color: var(--primary-dark); font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Hours Played Distribution</h3>
                     <canvas id="spendPieChart"></canvas>
                 </div>
 
                 <div class="chart-container">
-                    <h3 style="text-align: center; margin-bottom: 20px; color: #2c5aa0; font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Cost Per Hour Comparison</h3>
+                    <h3 style="text-align: center; margin-bottom: 20px; color: var(--primary-dark); font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Cost Per Hour Comparison</h3>
                     <canvas id="comparisonChart"></canvas>
                 </div>
             </div>
 
             <div class="chart-container">
-                <h3 style="text-align: center; margin-bottom: 20px; color: #2c5aa0; font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Gaming Efficiency: Investment vs Value</h3>
+                <h3 style="text-align: center; margin-bottom: 20px; color: var(--primary-dark); font-family: 'Lucida Console', Monaco, 'Courier New', monospace;">Gaming Efficiency: Investment vs Value</h3>
                 <div class="scatter-wrapper">
                     <div class="scatter-grid"></div>
                     <canvas id="scatterChart"></canvas>
@@ -309,6 +309,59 @@
         const STEAM_API_BASE = 'https://api.steampowered.com';
         const CORS_PROXY = 'https://corsproxy.io/?';
         const H_CAP = 200; // Hours cap for scatter chart outliers
+        
+        // Helper function to get CSS variable colors as rgba strings
+        function getCssColor(varName, alpha = 1) {
+            const rootStyles = getComputedStyle(document.documentElement);
+            const color = rootStyles.getPropertyValue(varName).trim();
+            
+            // If color already has rgba format, parse it
+            if (color.startsWith('rgba')) {
+                return color;
+            }
+            
+            // If it's rgb, convert to rgba
+            if (color.startsWith('rgb(')) {
+                return color.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`);
+            }
+            
+            // If it's a hex color, convert to rgba
+            if (color.startsWith('#')) {
+                const hex = color.replace('#', '');
+                const r = parseInt(hex.substring(0, 2), 16);
+                const g = parseInt(hex.substring(2, 4), 16);
+                const b = parseInt(hex.substring(4, 6), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+            
+            // If it's a color-mix or other CSS function, use a temporary element to compute it
+            const temp = document.createElement('div');
+            temp.style.color = color;
+            document.body.appendChild(temp);
+            const computed = getComputedStyle(temp).color;
+            document.body.removeChild(temp);
+            
+            // computed will be in rgb() format, convert to rgba
+            if (computed.startsWith('rgb(')) {
+                return computed.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`);
+            }
+            
+            return `rgba(0, 0, 0, ${alpha})`; // fallback
+        }
+        
+        // Define semantic chart colors using CSS variables
+        const chartColors = {
+            blue: { bg: getCssColor('--secondary', 0.7), border: getCssColor('--secondary', 1) },
+            green: { bg: getCssColor('--success', 0.7), border: getCssColor('--success', 1) },
+            orange: { bg: getCssColor('--warning', 0.7), border: getCssColor('--warning', 1) },
+            purple: { bg: getCssColor('--primary', 0.7), border: getCssColor('--primary', 1) },
+            red: { bg: getCssColor('--error', 0.7), border: getCssColor('--error', 1) },
+            gray: { bg: getCssColor('--neutral', 0.5), border: getCssColor('--neutral', 1) },
+            lightBlue: { bg: getCssColor('--secondary', 0.6), border: getCssColor('--secondary', 1) },
+            darkBlue: { bg: getCssColor('--secondary', 0.8), border: getCssColor('--secondary', 1) },
+            white: { bg: getCssColor('--white', 0.95), border: getCssColor('--white', 1) },
+            gridLine: getCssColor('--gray-light', 0.3)
+        };
         
         // Fun loading messages that rotate
         const LOADING_MESSAGES = [
@@ -1013,7 +1066,7 @@
                     const nameSpan = document.createElement('div');
                     nameSpan.textContent = game.name;
                     nameSpan.style.fontSize = '0.9em';
-                    nameSpan.style.color = '#2c5aa0';
+                    nameSpan.style.color = getCssColor('--primary-dark', 1);
                     nameSpan.style.maxWidth = '120px';
                     nameSpan.style.wordWrap = 'break-word';
                     gameDiv.appendChild(nameSpan);
@@ -1021,7 +1074,7 @@
                     const hoursSpan = document.createElement('div');
                     hoursSpan.textContent = `${game.hoursPlayed.toFixed(1)} hrs`;
                     hoursSpan.style.fontSize = '0.8em';
-                    hoursSpan.style.color = '#666';
+                    hoursSpan.style.color = getCssColor('--gray-light', 1);
                     hoursSpan.style.marginTop = '4px';
                     gameDiv.appendChild(hoursSpan);
                     
@@ -1269,43 +1322,43 @@
             let gradeColor = '';
             if (score >= 97) {
                 letterGrade = 'A+';
-                gradeColor = '#4CAF50'; // Green
+                gradeColor = getCssColor('--success', 1); // Green
             } else if (score >= 93) {
                 letterGrade = 'A';
-                gradeColor = '#4CAF50'; // Green
+                gradeColor = getCssColor('--success', 1); // Green
             } else if (score >= 90) {
                 letterGrade = 'A-';
-                gradeColor = '#4CAF50'; // Green
+                gradeColor = getCssColor('--success', 1); // Green
             } else if (score >= 87) {
                 letterGrade = 'B+';
-                gradeColor = '#2196F3'; // Blue
+                gradeColor = getCssColor('--secondary', 1); // Blue
             } else if (score >= 83) {
                 letterGrade = 'B';
-                gradeColor = '#2196F3'; // Blue
+                gradeColor = getCssColor('--secondary', 1); // Blue
             } else if (score >= 80) {
                 letterGrade = 'B-';
-                gradeColor = '#2196F3'; // Blue
+                gradeColor = getCssColor('--secondary', 1); // Blue
             } else if (score >= 77) {
                 letterGrade = 'C+';
-                gradeColor = '#FFC107'; // Yellow/Amber
+                gradeColor = getCssColor('--primary', 1); // Amber/Tan
             } else if (score >= 73) {
                 letterGrade = 'C';
-                gradeColor = '#FFC107'; // Yellow/Amber
+                gradeColor = getCssColor('--primary', 1); // Amber/Tan
             } else if (score >= 70) {
                 letterGrade = 'C-';
-                gradeColor = '#FFC107'; // Yellow/Amber
+                gradeColor = getCssColor('--primary', 1); // Amber/Tan
             } else if (score >= 67) {
                 letterGrade = 'D+';
-                gradeColor = '#FF9800'; // Orange
+                gradeColor = getCssColor('--warning', 1); // Orange
             } else if (score >= 63) {
                 letterGrade = 'D';
-                gradeColor = '#FF9800'; // Orange
+                gradeColor = getCssColor('--warning', 1); // Orange
             } else if (score >= 60) {
                 letterGrade = 'D-';
-                gradeColor = '#FF9800'; // Orange
+                gradeColor = getCssColor('--warning', 1); // Orange
             } else {
                 letterGrade = 'F';
-                gradeColor = '#F44336'; // Red
+                gradeColor = getCssColor('--error', 1); // Red
             }
             
             // Build verdict HTML with avatar and username above
@@ -1318,7 +1371,7 @@
             if (userName && avatarUrl) {
                 verdictHTML += '<div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">';
                 verdictHTML += `<img src="${avatarUrl}" alt="Steam Avatar" style="border-radius: 50%; width: 32px; height: 32px;">`;
-                verdictHTML += `<span style="font-size: 1.2em; color: #666;">${userName} | Gaming Report Card</span>`;
+                verdictHTML += `<span style="font-size: 1.2em; color: var(--gray-light);">${userName} | Gaming Report Card</span>`;
                 verdictHTML += '</div>';
             }
             
@@ -1373,7 +1426,7 @@
             }
             
             if (feedbackMessage) {
-                verdictSubtextEl.innerHTML = `<span style="font-size: 1.2em; color: #666; margin-top: 15px; display: block;">${feedbackMessage}</span>`;
+                verdictSubtextEl.innerHTML = `<span style="font-size: 1.2em; color: var(--gray-light); margin-top: 15px; display: block;">${feedbackMessage}</span>`;
             } else {
                 verdictSubtextEl.textContent = '';
             }
@@ -1404,21 +1457,21 @@
             
             // Generate colors for top games (enough for 5 games + "the rest")
             const colors = [
-                'rgba(74, 144, 226, 0.7)',   // Blue
-                'rgba(126, 211, 33, 0.7)',   // Green
-                'rgba(255, 152, 0, 0.7)',    // Orange
-                'rgba(156, 39, 176, 0.7)',   // Purple
-                'rgba(244, 67, 54, 0.7)',    // Red
-                'rgba(158, 158, 158, 0.5)'   // Gray for "the rest"
+                chartColors.blue.bg,      // Blue
+                chartColors.green.bg,     // Green
+                chartColors.orange.bg,    // Orange
+                chartColors.purple.bg,    // Purple
+                chartColors.red.bg,       // Red
+                chartColors.gray.bg       // Gray for "the rest"
             ];
             
             const borderColors = [
-                'rgba(74, 144, 226, 1)',
-                'rgba(126, 211, 33, 1)',
-                'rgba(255, 152, 0, 1)',
-                'rgba(156, 39, 176, 1)',
-                'rgba(244, 67, 54, 1)',
-                'rgba(158, 158, 158, 1)'
+                chartColors.blue.border,
+                chartColors.green.border,
+                chartColors.orange.border,
+                chartColors.purple.border,
+                chartColors.red.border,
+                chartColors.gray.border
             ];
             
             spendPieChart = new Chart(ctx, {
@@ -1445,7 +1498,7 @@
                                     family: 'Yu Gothic UI, sans-serif',
                                     size: 14
                                 },
-                                color: '#2c5aa0',
+                                color: getCssColor('--primary-dark', 1),
                                 padding: 15,
                                 usePointStyle: true,
                                 pointStyle: 'circle'
@@ -1453,10 +1506,10 @@
                         },
                         tooltip: {
                             enabled: true,
-                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                            titleColor: '#2c5aa0',
-                            bodyColor: '#2c5aa0',
-                            borderColor: '#2c5aa0',
+                            backgroundColor: chartColors.white.bg,
+                            titleColor: getCssColor('--primary-dark', 1),
+                            bodyColor: getCssColor('--primary-dark', 1),
+                            borderColor: getCssColor('--primary-dark', 1),
                             borderWidth: 1,
                             padding: 12,
                             displayColors: true,
@@ -1567,10 +1620,10 @@
             const getQuadrant = (plotHours, cph) => {
                 const isLeft = plotHours <= medianHours;
                 const isTop = cph >= medianCph;
-                if (isLeft && isTop) return { label: 'Backlog shame', color: 'rgba(244, 67, 54, 0.7)' }; // Red
-                if (!isLeft && isTop) return { label: 'Luxury hobby', color: 'rgba(255, 152, 0, 0.7)' }; // Orange
-                if (isLeft && !isTop) return { label: 'Casual win', color: 'rgba(33, 150, 243, 0.7)' }; // Blue
-                return { label: 'Evergreen value', color: 'rgba(76, 175, 80, 0.7)' }; // Green
+                if (isLeft && isTop) return { label: 'Backlog shame', color: chartColors.red.bg }; // Red
+                if (!isLeft && isTop) return { label: 'Luxury hobby', color: chartColors.orange.bg }; // Orange
+                if (isLeft && !isTop) return { label: 'Casual win', color: chartColors.blue.bg }; // Blue
+                return { label: 'Evergreen value', color: chartColors.green.bg }; // Green
             };
             
             // Helper function to apply jitter to prevent overlapping points
@@ -1688,7 +1741,7 @@
                     isFreeGame: d.isFreeGame,
                     isOutlier: false,
                     quadrant: quad.label,
-                    borderColor: d.isNeverPlayed ? 'rgba(150, 0, 0, 1)' : quad.color,
+                    borderColor: d.isNeverPlayed ? getCssColor('--error', 1) : quad.color,
                     borderWidth: d.isNeverPlayed ? 3 : 2,
                     iconUrl: d.iconUrl
                 };
@@ -1914,7 +1967,7 @@
                                     type: 'line',
                                     xMin: medianHours,
                                     xMax: medianHours,
-                                    borderColor: 'rgba(100, 100, 100, 0.3)',
+                                    borderColor: chartColors.gridLine,
                                     borderWidth: 2,
                                     borderDash: [3, 3]
                                 },
@@ -1922,7 +1975,7 @@
                                     type: 'line',
                                     yMin: medianCph,
                                     yMax: medianCph,
-                                    borderColor: 'rgba(100, 100, 100, 0.3)',
+                                    borderColor: chartColors.gridLine,
                                     borderWidth: 2,
                                     borderDash: [3, 3]
                                 }
@@ -2021,10 +2074,10 @@
             const sortedLabels = entertainmentOptions.map(option => option.label);
             const sortedData = entertainmentOptions.map(option => option.value);
             const sortedBackgroundColors = entertainmentOptions.map(option => 
-                option.isUserGame ? 'rgba(74, 144, 226, 0.8)' : 'rgba(126, 211, 33, 0.6)'
+                option.isUserGame ? chartColors.darkBlue.bg : chartColors.lightBlue.bg
             );
             const sortedBorderColors = entertainmentOptions.map(option => 
-                option.isUserGame ? 'rgba(74, 144, 226, 1)' : 'rgba(126, 211, 33, 1)'
+                option.isUserGame ? chartColors.darkBlue.border : chartColors.lightBlue.border
             );
             
             const chartData = {
@@ -2061,10 +2114,10 @@
                                 font: {
                                     family: 'Lucida Console, Monaco, Courier New, monospace'
                                 },
-                                color: '#2c5aa0'
+                                color: getCssColor('--primary-dark', 1)
                             },
                             grid: {
-                                color: 'rgba(74, 144, 226, 0.2)'
+                                color: getCssColor('--secondary', 0.2)
                             }
                         },
                         y: {
