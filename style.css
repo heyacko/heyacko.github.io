@@ -181,10 +181,11 @@ DESIGN PRINCIPLES:
   /* Use these in your CSS for clarity */
   
   /* TEXT COLORS */
-  --text-primary: var(--primary-dark);
-  --text-secondary: var(--neutral);
-  --text-link: var(--secondary);                                              /* Links - use sparingly */
-  --text-link-hover: color-mix(in srgb, var(--secondary) 80%, white 20%);    /* Lighter on hover */
+  --text-primary: var(--primary-dark);     /* Headings and emphasis */
+  --text-secondary: var(--neutral);        /* Muted/secondary text */
+  --text-body: #1a1a1a;                   /* Body text - almost black for readability in prose */
+  --text-link: var(--secondary);          /* Links - use sparingly */
+  --text-link-hover: color-mix(in srgb, var(--secondary) 80%, white 20%);  /* Lighter on hover */
   
   /* BACKGROUNDS */
   --bg-page: var(--primary-light);
@@ -2321,6 +2322,8 @@ input[type="radio"] {
   max-width: 100%;
   margin: 0 auto;
   line-height: 1.8;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--text-body);
 }
 
 .prose h1 {
