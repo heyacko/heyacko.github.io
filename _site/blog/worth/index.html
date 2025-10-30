@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Are Video Games Worth The Money? — acko</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Fraunces:wght@900&family=Libre+Baskerville:wght@700&display=swap" rel="stylesheet" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/utilities.css">
+  <link rel="stylesheet" href="/styles/components.css">
+
+  
+
+  <style>
+    .site-footer { margin-top: calc(var(--space-9) + var(--space-5)); padding: var(--space-4) 0; border-top: 2px solid #000; }
+    .footer-nav { display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: center; }
+  </style>
+
+  
+    
+      
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+      
+    
+  
+</head>
+<body>
+  
+
+  
+  <style>
+  /* Brutalist breadcrumb nav */
+  .breadcrumb-nav {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    border-bottom: 2px solid #000;
+    z-index: 1000;
+    padding: var(--space-4) 0;
+  }
+
+  .breadcrumb-nav__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 var(--space-6);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: var(--size-2);
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .breadcrumb-nav a {
+    color: var(--link);
+    text-decoration: none;
+  }
+
+  .breadcrumb-nav a:hover {
+    color: var(--link-hover);
+  }
+
+  /* Prose content */
+  .prose {
+    max-width: var(--measure);
+    margin: 0 auto;
+    line-height: var(--lh-body);
+    font-family: var(--font-mono);
+    color: var(--text);
+  }
+
+  .prose h1 {
+    font-family: var(--font-serif);
+    font-size: var(--size-6);
+    margin-top: 0;
+    margin-bottom: var(--space-5);
+  }
+
+  .prose h2 {
+    font-family: var(--font-serif);
+    font-size: var(--size-5);
+    margin-top: var(--space-7);
+    margin-bottom: var(--space-4);
+  }
+
+  .prose h3 {
+    font-family: var(--font-serif);
+    font-size: var(--size-4);
+    margin-top: var(--space-6);
+    margin-bottom: var(--space-3);
+  }
+
+  .prose p {
+    margin-bottom: var(--space-4);
+  }
+
+  .prose ul, .prose ol {
+    margin-bottom: var(--space-4);
+    padding-left: var(--space-5);
+  }
+
+  .prose li {
+    margin-bottom: var(--space-2);
+  }
+
+  .prose blockquote {
+    border-left: 4px solid var(--color-accent);
+    padding-left: var(--space-4);
+    margin: var(--space-5) 0;
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  .prose code {
+    background: var(--color-cream);
+    padding: 2px 4px;
+    border: 1px solid #000;
+    font-family: var(--font-mono);
+    font-size: var(--size-1);
+  }
+
+  .prose pre {
+    background: var(--color-cream);
+    border: 2px solid #000;
+    padding: var(--space-4);
+    overflow-x: auto;
+    margin: var(--space-5) 0;
+  }
+
+  .prose pre code {
+    background: none;
+    border: none;
+    padding: 0;
+  }
+
+  .center {
+    text-align: center;
+  }
+</style>
+
+
+  <style>
+    .center {  text-align: center;}
+  </style>
+
+
+
+<nav class="breadcrumb-nav">
+  <div class="breadcrumb-nav__inner">
+    <a href="/">acko</a>
+    <span>/</span>
+    <a href="/blog">blog</a>
+    <span>/</span>
+    <a href="/blog/worth/">worth</a>
+  </div>
+</nav>
+
+<main class="container flow" style="margin-top: var(--space-7); padding-bottom: var(--space-9);">
+  <div id="article-header" class="card card--hard prose center">
+  <!-- Metadata will be inserted here -->
+</div>
+
+<article id="content" class="card card--hard prose">
+  <noscript>Please enable JavaScript to view this article.</noscript>
+</article>
+
+<script>
+  async function loadContent() {
+    try {
+      const response = await fetch('./content.md');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const markdown = await response.text();
+      
+      // Parse markdown
+      const html = marked.parse(markdown);
+      
+      // Extract metadata
+      const metadataMatch = markdown.match(/^---\n([\s\S]*?)\n---/);
+      if (metadataMatch) {
+        const metadata = metadataMatch[1];
+        const titleMatch = metadata.match(/title:\s*(.+)/);
+        const authorMatch = metadata.match(/author:\s*(.+)/);
+        const dateMatch = metadata.match(/date:\s*(.+)/);
+        
+        if (titleMatch) {
+          document.getElementById('article-header').innerHTML = `
+            <h1>${titleMatch[1]}</h1>
+            <p><strong>${authorMatch ? authorMatch[1] : 'acko'}</strong> • ${dateMatch ? dateMatch[1] : '2025'}</p>
+          `;
+        }
+      }
+      
+      // Process shortcodes
+      const processedHtml = processShortcodes(html);
+      
+      // Load content
+      document.getElementById('content').innerHTML = processedHtml;
+      
+    } catch (err) {
+      document.getElementById('content').innerHTML = `<div class="callout callout--error"><p><strong>Error loading content</strong></p><pre>${err}</pre></div>`;
+      console.error(err);
+    }
+  }
+
+  // Shortcode processor
+  function processShortcodes(html) {
+    let out = html;
+    
+    // callout - block element with content (supports variants: success, warning, error, info)
+    out = out.replace(
+      /\{\{callout(?:\s+type="?(success|warning|error|info)"?)?\}\}\s*([\s\S]*?)\s*\{\{\/callout\}\}/gi,
+      (_, type, inner) => {
+        const variant = type ? ` callout--${type}` : '';
+        return `<aside class="callout${variant}">${inner.trim()}</aside>`;
+      }
+    );
+    
+    return out;
+  }
+
+  // Load content when page loads
+  loadContent();
+</script>
+</main>
+
+
+  
+
+  <footer class="site-footer">
+  <div class="container footer-nav">
+    <a href="/" class="button">Home</a>
+    
+    <a href="/blog" class="button">Blog</a>
+    
+  </div>
+</footer>
+
+
+
+
+  <script src="/scripts/nav.js" defer></script>
+</body>
+</html>
+

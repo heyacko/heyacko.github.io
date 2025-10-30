@@ -1,99 +1,79 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Are Video Games Worth The Money?</title>
+---
+layout: post
+title: "Are Video Games Worth The Money?"
+nav_title: "worth"
+custom_styles: |
+  .center {
+    text-align: center;
+  }
+custom_js:
+  - "https://cdn.jsdelivr.net/npm/marked/marked.min.js"
+---
 
-  <!-- Reuse the global stylesheet -->
-  <link rel="stylesheet" href="../../style.css" />
+<div id="article-header" class="card card--hard prose center">
+  <!-- Metadata will be inserted here -->
+</div>
 
-  <!-- Markdown parser -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<article id="content" class="card card--hard prose">
+  <noscript>Please enable JavaScript to view this article.</noscript>
+</article>
 
-  <style>
-    /* Breadcrumb Navigation */
-    nav a:hover {
-      color: var(--primary) !important;
-    }
-  </style>
-</head>
-<body>
-  <!-- Breadcrumb Navigation -->
-  <nav style="position: sticky; top: 0; background: var(--primary-light); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-subtle); z-index: 1000; padding: 15px 0;">
-    <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 4px; font-family: 'Lucida Console', Monaco, 'Courier New', monospace; font-size: 1.5rem; font-weight: 700; color: var(--primary-dark);">
-      <a href="../../index.html" style="color: inherit; text-decoration: none; transition: color 0.2s;">acko.cool</a>
-      <span>/</span>
-      <a href="../index.html" style="color: inherit; text-decoration: none; transition: color 0.2s;">blog</a>
-      <span>/</span>
-      <a href="./index.html" style="color: inherit; text-decoration: none; transition: color 0.2s;">worth</a>
-    </div>
-  </nav>
-
-  <main class="shared-wrap" style="margin-top: 40px;">
-    <div id="article-header" class="shared-card prose" style="text-align: center; padding-bottom: 0;">
-      <!-- Metadata and hero image will be inserted here -->
-    </div>
-    
-    <article id="content" class="shared-card prose">
-      <noscript>Please enable JavaScript to view this article.</noscript>
-    </article>
-  </main>
-
-  <script type="module">
-    import { processShortcodes } from './components/shortcodes.js';
-
-    async function loadContent() {
-      const res = await fetch('./content.md');
-      let md = await res.text();
+<script>
+  async function loadContent() {
+    try {
+      const response = await fetch('./content.md');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const markdown = await response.text();
       
-      // Extract YAML frontmatter
-      const frontmatterMatch = md.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
-      let metadata = { title: '', subtitle: '', author: '', date: '' };
+      // Parse markdown
+      const html = marked.parse(markdown);
       
-      if (frontmatterMatch) {
-        const frontmatter = frontmatterMatch[1];
-        const titleMatch = frontmatter.match(/title:\s*(.+)/);
-        const subtitleMatch = frontmatter.match(/subtitle:\s*(.+)/);
-        const authorMatch = frontmatter.match(/author:\s*(.+)/);
-        const dateMatch = frontmatter.match(/date:\s*(.+)/);
+      // Extract metadata
+      const metadataMatch = markdown.match(/^---\n([\s\S]*?)\n---/);
+      if (metadataMatch) {
+        const metadata = metadataMatch[1];
+        const titleMatch = metadata.match(/title:\s*(.+)/);
+        const authorMatch = metadata.match(/author:\s*(.+)/);
+        const dateMatch = metadata.match(/date:\s*(.+)/);
         
-        if (titleMatch) metadata.title = titleMatch[1].trim();
-        if (subtitleMatch) metadata.subtitle = subtitleMatch[1].trim();
-        if (authorMatch) metadata.author = authorMatch[1].trim();
-        if (dateMatch) metadata.date = dateMatch[1].trim();
+        if (titleMatch) {
+          document.getElementById('article-header').innerHTML = `
+            <h1>${titleMatch[1]}</h1>
+            <p><strong>${authorMatch ? authorMatch[1] : 'acko'}</strong> • ${dateMatch ? dateMatch[1] : '2025'}</p>
+          `;
+        }
       }
       
-      // Display metadata in header card
-      const headerEl = document.getElementById('article-header');
-      headerEl.innerHTML = `
-        <h1 class="shared-h1" style="margin-bottom: 10px;">${metadata.title}</h1>
-        ${metadata.subtitle ? `<p class="shared-sub" style="font-size: 1.1em; color: var(--neutral); margin-bottom: 20px;">${metadata.subtitle}</p>` : ''}
-        <div style="display: flex; gap: 20px; justify-content: center; align-items: center; color: var(--neutral); font-size: 0.9em; margin-bottom: 30px;">
-          ${metadata.author ? `<span>By ${metadata.author}</span>` : ''}
-          ${metadata.date ? `<span>${metadata.date}</span>` : ''}
-        </div>
-        <div style="margin: 0 -40px -40px -40px; overflow: hidden; aspect-ratio: 21/9;">
-          <img src="img/hero.jpg" alt="Video games collection" 
-               style="width: 100%; height: 100%; object-fit: cover; display: block;" />
-        </div>
-      `;
+      // Process shortcodes
+      const processedHtml = processShortcodes(html);
       
-      // Strip YAML frontmatter from content
-      md = md.replace(/^---\s*\n[\s\S]*?\n---\s*\n/, '');
+      // Load content
+      document.getElementById('content').innerHTML = processedHtml;
       
-      // Process shortcodes BEFORE markdown parsing
-      md = processShortcodes(md);
-      
-      // Parse markdown to HTML
-      const html = marked.parse(md, { mangle: false, headerIds: true });
-      document.getElementById('content').innerHTML = html;
+    } catch (err) {
+      document.getElementById('content').innerHTML = `<div class="callout callout--error"><p><strong>Error loading content</strong></p><pre>${err}</pre></div>`;
+      console.error(err);
     }
+  }
 
-    loadContent().catch(err => {
-      document.getElementById('content').innerHTML = `<p style="color:red">Error loading content.md</p><pre>${err}</pre>`;
-    });
-  </script>
-</body>
-</html>
+  // Shortcode processor
+  function processShortcodes(html) {
+    let out = html;
+    
+    // callout - block element with content (supports variants: success, warning, error, info)
+    out = out.replace(
+      /\{\{callout(?:\s+type="?(success|warning|error|info)"?)?\}\}\s*([\s\S]*?)\s*\{\{\/callout\}\}/gi,
+      (_, type, inner) => {
+        const variant = type ? ` callout--${type}` : '';
+        return `<aside class="callout${variant}">${inner.trim()}</aside>`;
+      }
+    );
+    
+    return out;
+  }
 
+  // Load content when page loads
+  loadContent();
+</script>

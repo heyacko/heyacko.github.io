@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>What Every Pokemon Game Would Cost Today — acko</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Fraunces:wght@900&family=Libre+Baskerville:wght@700&display=swap" rel="stylesheet" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/utilities.css">
+  <link rel="stylesheet" href="/styles/components.css">
+
+  
+
+  <style>
+    .site-footer { margin-top: calc(var(--space-9) + var(--space-5)); padding: var(--space-4) 0; border-top: 2px solid #000; }
+    .footer-nav { display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: center; }
+  </style>
+
+  
+    
+      
+        <script src="https://d3js.org/d3.v7.min.js" defer></script>
+      
+    
+      
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+      
+    
+  
+</head>
+<body>
+  
+
+  
+  <style>
+  /* Brutalist breadcrumb nav */
+  .breadcrumb-nav {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    border-bottom: 2px solid #000;
+    z-index: 1000;
+    padding: var(--space-4) 0;
+  }
+
+  .breadcrumb-nav__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 var(--space-6);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: var(--size-2);
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .breadcrumb-nav a {
+    color: var(--link);
+    text-decoration: none;
+  }
+
+  .breadcrumb-nav a:hover {
+    color: var(--link-hover);
+  }
+
+  /* Prose content */
+  .prose {
+    max-width: var(--measure);
+    margin: 0 auto;
+    line-height: var(--lh-body);
+    font-family: var(--font-mono);
+    color: var(--text);
+  }
+
+  .prose h1 {
+    font-family: var(--font-serif);
+    font-size: var(--size-6);
+    margin-top: 0;
+    margin-bottom: var(--space-5);
+  }
+
+  .prose h2 {
+    font-family: var(--font-serif);
+    font-size: var(--size-5);
+    margin-top: var(--space-7);
+    margin-bottom: var(--space-4);
+  }
+
+  .prose h3 {
+    font-family: var(--font-serif);
+    font-size: var(--size-4);
+    margin-top: var(--space-6);
+    margin-bottom: var(--space-3);
+  }
+
+  .prose p {
+    margin-bottom: var(--space-4);
+  }
+
+  .prose ul, .prose ol {
+    margin-bottom: var(--space-4);
+    padding-left: var(--space-5);
+  }
+
+  .prose li {
+    margin-bottom: var(--space-2);
+  }
+
+  .prose blockquote {
+    border-left: 4px solid var(--color-accent);
+    padding-left: var(--space-4);
+    margin: var(--space-5) 0;
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  .prose code {
+    background: var(--color-cream);
+    padding: 2px 4px;
+    border: 1px solid #000;
+    font-family: var(--font-mono);
+    font-size: var(--size-1);
+  }
+
+  .prose pre {
+    background: var(--color-cream);
+    border: 2px solid #000;
+    padding: var(--space-4);
+    overflow-x: auto;
+    margin: var(--space-5) 0;
+  }
+
+  .prose pre code {
+    background: none;
+    border: none;
+    padding: 0;
+  }
+
+  .center {
+    text-align: center;
+  }
+</style>
+
+
+  <style>
+    /* Chart containers - brutalist boxes */#guess-container,#comparison-container,#console-container {  background: var(--bg);  border: 2px solid #000;  padding: var(--space-7);  margin: var(--space-7) 0;}#guess-warning {  text-align: center;  color: var(--color-accent);  font-size: var(--size-1);  margin: var(--space-5) 0;  opacity: 0;  transition: opacity 0.3s ease;}#submit-guess,#skip-all {  border: 2px solid #000;  padding: var(--space-3) var(--space-5);  font-family: var(--font-mono);  font-weight: 700;  cursor: pointer;  text-transform: uppercase;  letter-spacing: 0.02em;}#submit-guess {  display: block;  margin: var(--space-6) auto;  background: var(--color-cream);  color: var(--text);}#submit-guess:hover:not(:disabled) {  background: var(--color-accent);}#submit-guess:disabled {  background: var(--muted);  cursor: not-allowed;  opacity: 0.5;}#skip-all {  background: var(--color-secondary);  color: #fff;}#skip-all:hover {  background: var(--link-hover);}#guess-summary {  display: none;  text-align: center;  padding: var(--space-6);  margin: var(--space-6) 0;  font-size: var(--size-2);  line-height: var(--lh-body);}#continue-reading {  display: none;  text-align: center;  margin: var(--space-6) 0;}#continue-reading button {  padding: var(--space-3) var(--space-5);  background: var(--color-secondary);  color: #fff;  border: 2px solid #000;  font-family: var(--font-mono);  font-weight: 700;  text-transform: uppercase;  cursor: pointer;}#continue-reading button:hover {  background: var(--link-hover);}/* Scrollytelling layout */.scrolly-container {  position: relative;  display: grid;  grid-template-columns: 1fr 1fr;  gap: var(--space-7);  margin: var(--space-8) 0;  min-height: 400vh;}.scrolly-narrative {  position: relative;}.scrolly-step {  min-height: 60vh;  margin-bottom: 40vh;  padding: var(--space-6);  background: var(--bg);  border: 2px solid #000;  opacity: 0.3;  transition: opacity 0.4s ease;}.scrolly-step.active {  opacity: 1;}.scrolly-step h2 {  margin-top: 0;}.scrolly-viz {  position: sticky;  top: 100px;  height: 80vh;  display: flex;  align-items: center;  justify-content: center;}#chart-container {  width: 100%;  height: 100%;  background: var(--bg);  border: 2px solid #000;  padding: var(--space-6);}/* Chart styles - D3 specific */.bar-original {  fill: var(--color-accent);  transition: fill 0.3s ease;}.bar-adjusted {  fill: var(--color-secondary);  transition: fill 0.3s ease;}.bar-original:hover,.bar-adjusted:hover {  opacity: 0.8;}.axis-label {  font-size: var(--size-1);  fill: var(--muted);  font-family: var(--font-mono);}.axis path,.axis line {  stroke: #000;}.grid line {  stroke: #000;  stroke-opacity: 0.2;  stroke-dasharray: 2,2;}.tick text {  font-family: var(--font-mono);  font-size: var(--size-1);  fill: var(--text);}.tick line {  stroke: #000;}.domain {  stroke: #000;}/* Responsive adjustments */@media (max-width: 768px) {  .scrolly-container {    grid-template-columns: 1fr;    gap: var(--space-4);  }  .scrolly-viz {    position: relative;    top: 0;    height: 60vh;    margin-bottom: var(--space-7);  }  .scrolly-step {    min-height: auto;    margin-bottom: var(--space-5);  }}/* Inline styles cleanup */.hero-card { padding: 0; overflow: hidden; aspect-ratio: 21/9; border: 2px solid #000; }.hero-img { width: 100%; height: 100%; object-fit: cover; display: block; }.my-5 { margin: var(--space-5) 0; }
+  </style>
+
+
+
+<nav class="breadcrumb-nav">
+  <div class="breadcrumb-nav__inner">
+    <a href="/">acko</a>
+    <span>/</span>
+    <a href="/blog">blog</a>
+    <span>/</span>
+    <a href="/blog/pokemon-cost/">pokemon-cost</a>
+  </div>
+</nav>
+
+<main class="container flow" style="margin-top: var(--space-7); padding-bottom: var(--space-9);">
+  <div id="article-header" class="card card--hard prose center">
+  <!-- Hero Image (static to ensure it always displays) -->
+  <div class="shared-card hero-card">
+    <img id="hero-image" class="hero-img" src="./img/hero.jpg" alt="Pokemon games through the years" />
+  </div>
+</div>
+
+
+
+<article id="intro-content" class="card card--hard prose">
+  <noscript>Please enable JavaScript to view this article.</noscript>
+</article>
+
+<!-- Interactive Guessing Section -->
+<div id="guess-container">
+  <svg id="guess-chart"></svg>
+  <div id="skip-all-container" class="hide center my-5">
+    <button id="skip-all">View All Games</button>
+  </div>
+  <button id="submit-guess">Submit Guess</button>
+  <div id="guess-warning"></div>
+  <div id="guess-summary"></div>
+  <div id="continue-reading">
+    <button onclick="document.getElementById('reveal-section').scrollIntoView({ behavior: 'smooth' })">
+      Continue Reading →
+    </button>
+  </div>
+</div>
+
+<!-- Reveal Section -->
+<article id="reveal-section" class="card card--hard prose">
+  <!-- Reveal content will be inserted here -->
+</article>
+
+<!-- Comparison Section -->
+<div id="comparison-container">
+  <svg id="comparison-chart"></svg>
+</div>
+
+<!-- Context Section -->
+<article id="context-section" class="card card--hard prose">
+  <!-- Context content will be inserted here -->
+</article>
+
+<!-- Console Chart Section -->
+<div id="console-container">
+  <svg id="console-chart"></svg>
+</div>
+
+<!-- Conclusion Section -->
+<article id="conclusion-section" class="card card--hard prose">
+  <!-- Conclusion will be inserted here -->
+</article>
+
+<script type="module">
+  import { createGuessChart, submitGuess, guessAnother, skipToEnd, resizeGuessChart, createComparisonChart, resizeComparisonChart, createConsoleChart, resizeConsoleChart } from './charts.js';
+
+  async function loadContent() {
+    try {
+      // Wait for marked to be available
+      let retries = 0;
+      while (typeof marked === 'undefined' && retries < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+      }
+      if (typeof marked === 'undefined') {
+        throw new Error('marked library failed to load');
+      }
+
+      const response = await fetch('./content.txt');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const markdown = await response.text();
+
+      // Extract metadata (support both \n and \r\n line endings)
+      const fmRegex = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*(?:\r?\n)?/;
+      const metadataMatch = markdown.match(fmRegex);
+      if (metadataMatch) {
+        const metadata = metadataMatch[1];
+        const titleMatch = metadata.match(/title:\s*(.+)/);
+        const authorMatch = metadata.match(/author:\s*(.+)/);
+        const dateMatch = metadata.match(/date:\s*(.+)/);
+
+        let title = titleMatch ? titleMatch[1].trim() : '';
+        if ((title.startsWith('"') && title.endsWith('"')) || (title.startsWith("'") && title.endsWith("'"))) {
+          title = title.slice(1, -1);
+        }
+        const author = authorMatch ? authorMatch[1].trim() : 'acko';
+        const date = dateMatch ? dateMatch[1].trim() : '2025';
+
+        const articleHeader = document.getElementById('article-header');
+        if (articleHeader && title) {
+          articleHeader.innerHTML = `
+            <h1>${title}</h1>
+            <p><strong>${author}</strong> • ${date}</p>
+          `;
+        }
+      }
+
+      // Strip frontmatter before parsing content
+      const bodyMarkdown = markdown.replace(fmRegex, '');
+
+      // Parse markdown
+      let parsed = marked.parse(bodyMarkdown);
+      // If content starts with an H1, drop it to avoid duplicating the header
+      parsed = parsed.replace(/^\s*<h1[\s\S]*?<\/h1>\s*/i, '');
+
+      // Everything before the first <h2> is the intro
+      const parts = parsed.split(/<h2\b/i);
+      let introHTML = parts[0] ? parts[0].trim() : '';
+      // Ensure no H1 or HEADER blocks sneak into the intro block
+      introHTML = introHTML
+        .replace(/<h1[\s\S]*?<\/h1>/gi, '')
+        .replace(/<header[\s\S]*?<\/header>/gi, '');
+      const revealHTML = parts[1] ? '<h2' + parts[1] : '';
+      const contextHTML = parts[2] ? '<h2' + parts[2] : '';
+      const conclusionHTML = parts[3] ? '<h2' + parts[3] : '';
+
+      document.getElementById('intro-content').innerHTML = introHTML;
+      document.getElementById('reveal-section').innerHTML = revealHTML;
+      document.getElementById('context-section').innerHTML = contextHTML;
+      document.getElementById('conclusion-section').innerHTML = conclusionHTML;
+    } catch (err) {
+      console.error('Error loading content:', err);
+      document.getElementById('intro-content').innerHTML = '<p>Error loading content. Please refresh the page.</p>';
+    }
+  }
+
+  // Initialize everything
+  Promise.all([
+    loadContent(),
+    d3.json('./data.json')
+  ]).then(([_, pokemonData]) => {
+    createGuessChart(pokemonData);
+    createComparisonChart();
+    createConsoleChart();
+    
+    // Set up event listeners
+    document.getElementById('submit-guess').addEventListener('click', submitGuess);
+    document.getElementById('skip-all').addEventListener('click', skipToEnd);
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      resizeGuessChart();
+      resizeComparisonChart();
+      resizeConsoleChart();
+    });
+  }).catch(err => {
+    console.error('Error loading content:', err);
+    document.getElementById('intro-content').innerHTML = '<p>Error loading content. Please refresh the page.</p>';
+  });
+</script>
+</main>
+
+
+  
+
+  <footer class="site-footer">
+  <div class="container footer-nav">
+    <a href="/" class="button">Home</a>
+    
+    <a href="/blog" class="button">Blog</a>
+    
+  </div>
+</footer>
+
+
+
+
+  <script src="/scripts/nav.js" defer></script>
+</body>
+</html>
+

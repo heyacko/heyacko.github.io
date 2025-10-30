@@ -34,5 +34,5 @@ Where the "cost/hour" metric falls apart.
 
 ## Try It Yourself
 
-Want to see how your own gaming library stacks up? Check out the [Gaming Report Card](../../games/gaming-report-card.html) to analyze your Steam library and get your own grade.
+Want to see how your own gaming library stacks up? Check out the [Gaming Report Card](../../games/gaming-report-card/) to analyze your Steam library and get your own grade.
 

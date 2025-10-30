@@ -1,481 +1,368 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>What Every Pokemon Game Would Cost Today</title>
+---
+layout: post
+title: "What Every Pokemon Game Would Cost Today"
+nav_title: "pokemon-cost"
+custom_styles: |
+  /* Chart containers - brutalist boxes */
+  #guess-container,
+  #comparison-container,
+  #console-container {
+    background: var(--bg);
+    border: 2px solid #000;
+    padding: var(--space-7);
+    margin: var(--space-7) 0;
+  }
 
-  <!-- Reuse the global stylesheet -->
-  <link rel="stylesheet" href="../../style.css" />
+  #guess-warning {
+    text-align: center;
+    color: var(--color-accent);
+    font-size: var(--size-1);
+    margin: var(--space-5) 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
 
-  <!-- D3.js for visualization -->
-  <script src="https://d3js.org/d3.v7.min.js"></script>
+  #submit-guess,
+  #skip-all {
+    border: 2px solid #000;
+    padding: var(--space-3) var(--space-5);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
 
-  <!-- Markdown parser -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  #submit-guess {
+    display: block;
+    margin: var(--space-6) auto;
+    background: var(--color-cream);
+    color: var(--text);
+  }
 
-  <style>
-    /* Breadcrumb Navigation */
-    nav a:hover {
-      color: var(--primary) !important;
-    }
+  #submit-guess:hover:not(:disabled) {
+    background: var(--color-accent);
+  }
 
-    /* Guess Section Styles */
-    #guess-container {
-      background: var(--white-alpha-80);
-      backdrop-filter: blur(22px);
-      border-radius: 20px;
-      border: 1px solid var(--white-alpha-30);
-      padding: 40px;
-      margin: 40px 0;
-      box-shadow: 0 8px 32px var(--shadow-color);
-    }
+  #submit-guess:disabled {
+    background: var(--muted);
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 
-    #guess-warning {
-      text-align: center;
-      color: var(--warning);
-      font-size: 14px;
-      margin: 20px 0;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
+  #skip-all {
+    background: var(--color-secondary);
+    color: #fff;
+  }
 
-    #submit-guess {
-      display: block;
-      margin: 30px auto;
-      padding: 12px 30px;
-      background: var(--white-alpha-80);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-subtle);
-      border-radius: 100px;
-      font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
+  #skip-all:hover {
+    background: var(--link-hover);
+  }
 
-    #submit-guess:hover:not(:disabled) {
-      background: var(--white-alpha-90);
-      border-color: var(--neutral);
-      transform: translateY(-2px);
-    }
+  #guess-summary {
+    display: none;
+    text-align: center;
+    padding: var(--space-6);
+    margin: var(--space-6) 0;
+    font-size: var(--size-2);
+    line-height: var(--lh-body);
+  }
 
-    #submit-guess:disabled {
-      background: var(--neutral);
-      cursor: not-allowed;
-      opacity: 0.5;
-    }
+  #continue-reading {
+    display: none;
+    text-align: center;
+    margin: var(--space-6) 0;
+  }
 
-    #skip-all {
-      padding: 15px 40px;
-      background: var(--secondary);
-      color: var(--white);
-      border: none;
-      border-radius: 100px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 16px var(--secondary-alpha-30);
-    }
+  #continue-reading button {
+    padding: var(--space-3) var(--space-5);
+    background: var(--color-secondary);
+    color: #fff;
+    border: 2px solid #000;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
 
-    #skip-all:hover {
-      background: var(--primary);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px var(--primary-alpha-40);
-    }
+  #continue-reading button:hover {
+    background: var(--link-hover);
+  }
 
-    #guess-summary {
-      display: none;
-      text-align: center;
-      padding: 30px;
-      margin: 30px 0;
-      background: var(--primary-alpha-10);
-      border-radius: 12px;
-      font-size: 16px;
-      line-height: 1.6;
-    }
+  /* Scrollytelling layout */
+  .scrolly-container {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-7);
+    margin: var(--space-8) 0;
+    min-height: 400vh;
+  }
 
-    #continue-reading {
-      display: none;
-      text-align: center;
-      margin: 30px 0;
-    }
+  .scrolly-narrative {
+    position: relative;
+  }
 
-    #continue-reading button {
-      padding: 12px 30px;
-      background: var(--primary);
-      color: var(--white);
-      border: none;
-      border-radius: 100px;
-      font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
+  .scrolly-step {
+    min-height: 60vh;
+    margin-bottom: 40vh;
+    padding: var(--space-6);
+    background: var(--bg);
+    border: 2px solid #000;
+    opacity: 0.3;
+    transition: opacity 0.4s ease;
+  }
 
-    #continue-reading button:hover {
-      background: var(--secondary);
-      transform: translateY(-2px);
-    }
+  .scrolly-step.active {
+    opacity: 1;
+  }
 
-    /* Comparison Section */
-    #comparison-container,
-    #console-container {
-      background: var(--white-alpha-80);
-      backdrop-filter: blur(22px);
-      border-radius: 20px;
-      border: 1px solid var(--white-alpha-30);
-      padding: 40px;
-      margin: 40px 0;
-      box-shadow: 0 8px 32px var(--shadow-color);
-    }
+  .scrolly-step h2 {
+    margin-top: 0;
+  }
 
-    /* Scrollytelling layout */
-    /* Scrollytelling layout */
+  .scrolly-viz {
+    position: sticky;
+    top: 100px;
+    height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #chart-container {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border: 2px solid #000;
+    padding: var(--space-6);
+  }
+
+  /* Chart styles - D3 specific */
+  .bar-original {
+    fill: var(--color-accent);
+    transition: fill 0.3s ease;
+  }
+
+  .bar-adjusted {
+    fill: var(--color-secondary);
+    transition: fill 0.3s ease;
+  }
+
+  .bar-original:hover,
+  .bar-adjusted:hover {
+    opacity: 0.8;
+  }
+
+  .axis-label {
+    font-size: var(--size-1);
+    fill: var(--muted);
+    font-family: var(--font-mono);
+  }
+
+  .axis path,
+  .axis line {
+    stroke: #000;
+  }
+
+  .grid line {
+    stroke: #000;
+    stroke-opacity: 0.2;
+    stroke-dasharray: 2,2;
+  }
+
+  .tick text {
+    font-family: var(--font-mono);
+    font-size: var(--size-1);
+    fill: var(--text);
+  }
+
+  .tick line {
+    stroke: #000;
+  }
+
+  .domain {
+    stroke: #000;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
     .scrolly-container {
-      position: relative;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 40px;
-      margin: 60px 0;
-      min-height: 400vh; /* Allows for scroll progression */
-    }
-
-    .scrolly-narrative {
-      position: relative;
-    }
-
-    .scrolly-step {
-      min-height: 60vh;
-      margin-bottom: 40vh;
-      padding: 30px;
-      background: var(--white-alpha-80);
-      backdrop-filter: blur(22px);
-      border-radius: 20px;
-      border: 1px solid var(--white-alpha-30);
-      opacity: 0.3;
-      transition: opacity 0.4s ease;
-    }
-
-    .scrolly-step.active {
-      opacity: 1;
-    }
-
-    .scrolly-step h2 {
-      color: var(--primary);
-      margin-top: 0;
+      grid-template-columns: 1fr;
+      gap: var(--space-4);
     }
 
     .scrolly-viz {
-      position: sticky;
-      top: 100px;
-      height: 80vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position: relative;
+      top: 0;
+      height: 60vh;
+      margin-bottom: var(--space-7);
     }
 
-    #chart-container {
-      width: 100%;
-      height: 100%;
-      background: var(--white-alpha-80);
-      backdrop-filter: blur(22px);
-      border-radius: 20px;
-      border: 1px solid var(--white-alpha-30);
-      padding: 30px;
-      box-shadow: 0 8px 32px var(--shadow-color);
+    .scrolly-step {
+      min-height: auto;
+      margin-bottom: var(--space-5);
     }
-
-    /* Chart styles */
-    .bar-original {
-      fill: var(--primary-alpha-40);
-      transition: fill 0.3s ease;
-    }
-
-    .bar-adjusted {
-      fill: var(--secondary);
-      transition: fill 0.3s ease;
-    }
-
-    .bar-original:hover,
-    .bar-adjusted:hover {
-      opacity: 0.8;
-    }
-
-    .axis-label {
-      font-size: 12px;
-      fill: var(--text-secondary);
-    }
-
-    .axis path,
-    .axis line {
-      stroke: var(--border-subtle);
-    }
-
-    .grid line {
-      stroke: var(--border-subtle);
-      stroke-opacity: 0.3;
-      stroke-dasharray: 2,2;
-    }
-
-    .game-label {
-      font-size: 14px;
-      fill: var(--text-primary);
-      font-weight: 500;
-    }
-
-    .chart-legend {
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .legend-color {
-      width: 20px;
-      height: 12px;
-      border-radius: 2px;
-    }
-
-    /* Mobile responsive */
-    @media (max-width: 968px) {
-      .scrolly-container {
-        grid-template-columns: 1fr;
-        gap: 20px;
-      }
-
-      .scrolly-viz {
-        position: relative;
-        top: 0;
-        height: 60vh;
-        margin-bottom: 40px;
-      }
-
-      .scrolly-step {
-        min-height: auto;
-        margin-bottom: 20px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <!-- Breadcrumb Navigation -->
-  <nav style="position: sticky; top: 0; background: var(--primary-light); backdrop-filter: blur(18px); border-bottom: 1px solid var(--border-subtle); z-index: 1000; padding: 15px 0;">
-    <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 4px; font-family: 'Lucida Console', Monaco, 'Courier New', monospace; font-size: 1.5rem; font-weight: 700; color: var(--primary-dark);">
-      <a href="../../index.html" style="color: inherit; text-decoration: none; transition: color 0.2s;">acko.cool</a>
-      <span>/</span>
-      <a href="../index.html" style="color: inherit; text-decoration: none; transition: color 0.2s;">blog</a>
-      <span>/</span>
-      <a href="./index.html" style="color: inherit; text-decoration: none; transition: color 0.2s;">pokemon-cost</a>
-    </div>
-  </nav>
-
-  <main class="shared-wrap" style="margin-top: 40px;">
-    <div id="article-header" class="shared-card prose" style="text-align: center; padding-bottom: 0;">
-      <!-- Metadata and hero image will be inserted here -->
-    </div>
-    
-    <article id="intro-content" class="shared-card prose">
-      <noscript>Please enable JavaScript to view this article.</noscript>
-    </article>
-
-    <!-- Interactive Guessing Section -->
-    <div id="guess-container">
-      <svg id="guess-chart"></svg>
-      <div id="skip-all-container" style="display: none; text-align: center; margin: 20px 0;">
-        <button id="skip-all" class="skip-btn">View All Games</button>
-      </div>
-      <button id="submit-guess">Submit Guess</button>
-      <div id="guess-summary"></div>
-      <div id="continue-reading">
-        <button onclick="document.getElementById('reveal-section').scrollIntoView({ behavior: 'smooth' })">
-          Continue Reading →
-        </button>
-      </div>
-    </div>
-
-    <!-- Reveal Section -->
-    <article id="reveal-section" class="shared-card prose">
-      <!-- Reveal content will be inserted here -->
-    </article>
-
-    <!-- Comparison Section -->
-    <div id="comparison-container">
-      <svg id="comparison-chart"></svg>
-    </div>
-
-    <!-- Context Section -->
-    <article id="context-section" class="shared-card prose">
-      <!-- Context content will be inserted here -->
-    </article>
-
-    <!-- Console Chart Section -->
-    <div id="console-container">
-      <svg id="console-chart"></svg>
-    </div>
-
-    <!-- Conclusion Section -->
-    <article id="conclusion-section" class="shared-card prose">
-      <!-- Conclusion will be inserted here -->
-    </article>
-  </main>
-
-  <script type="module">
-    import { createGuessChart, submitGuess, guessAnother, skipToEnd, resizeGuessChart } from './guess.js';
-    import { createComparisonChart, resizeComparisonChart } from './comparison-chart.js';
-    import { createConsoleChart, resizeConsoleChart } from './console-chart.js';
-
-    async function loadContent() {
-      // Embedded markdown content (GitHub Pages doesn't serve .md files)
-      let md = `---
-title: What Every Pokemon Game Would Cost Today
-author: acko
-date: January 2025
+  }
+  /* Inline styles cleanup */
+  .hero-card { padding: 0; overflow: hidden; aspect-ratio: 21/9; border: 2px solid #000; }
+  .hero-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .my-5 { margin: var(--space-5) 0; }
+custom_js:
+  - "https://d3js.org/d3.v7.min.js"
+  - "https://cdn.jsdelivr.net/npm/marked/marked.min.js"
 ---
 
-"$60 for a Pokemon game? Games are getting so expensive!"
+<div id="article-header" class="card card--hard prose center">
+  <!-- Hero Image (static to ensure it always displays) -->
+  <div class="shared-card hero-card">
+    <img id="hero-image" class="hero-img" src="./img/hero.jpg" alt="Pokemon games through the years" />
+  </div>
+</div>
 
-You've heard it. Maybe you've said it. But here's the thing: **you're wrong about which part is expensive.**
 
-Before we show you the data, let's test your intuition. Start with Pokemon Red/Blue from 1998. It cost $30 back then. What do you think it would cost in 2025 dollars when adjusted for inflation?
 
-Drag the slider below to make your guess, then see how close you were.
+<article id="intro-content" class="card card--hard prose">
+  <noscript>Please enable JavaScript to view this article.</noscript>
+</article>
 
-## The Reveal: Games Haven't Changed
+<!-- Interactive Guessing Section -->
+<div id="guess-container">
+  <svg id="guess-chart"></svg>
+  <div id="skip-all-container" class="hide center my-5">
+    <button id="skip-all">View All Games</button>
+  </div>
+  <button id="submit-guess">Submit Guess</button>
+  <div id="guess-warning"></div>
+  <div id="guess-summary"></div>
+  <div id="continue-reading">
+    <button onclick="document.getElementById('reveal-section').scrollIntoView({ behavior: 'smooth' })">
+      Continue Reading →
+    </button>
+  </div>
+</div>
 
-Surprised? Most people overestimate how much game prices have increased. The truth is simpler: **Pokemon games cost almost exactly what they've always cost when you account for inflation.**
+<!-- Reveal Section -->
+<article id="reveal-section" class="card card--hard prose">
+  <!-- Reveal content will be inserted here -->
+</article>
 
-From Pokemon Red at $30 in 1998 to Scarlet/Violet at $60 in 2022, games have tracked inflation almost perfectly. A dollar in 1998 is worth about $2 today. $30 doubled is $60. That's it. That's the whole story.
+<!-- Comparison Section -->
+<div id="comparison-container">
+  <svg id="comparison-chart"></svg>
+</div>
 
-But wait—doesn't everything feel more expensive? Let's put this in context.
+<!-- Context Section -->
+<article id="context-section" class="card card--hard prose">
+  <!-- Context content will be inserted here -->
+</article>
 
-## How Pokemon Compares to Everything Else
+<!-- Console Chart Section -->
+<div id="console-container">
+  <svg id="console-chart"></svg>
+</div>
 
-Here's what else cost money in 1998 versus today:
+<!-- Conclusion Section -->
+<article id="conclusion-section" class="card card--hard prose">
+  <!-- Conclusion will be inserted here -->
+</article>
 
-**Everything doubled.** Gas, movie tickets, a Big Mac—they all cost roughly twice as much in 2025 dollars as they did in 1998. Pokemon games are no different. They're not getting more expensive relative to anything else. They're just keeping pace with inflation.
+<script type="module">
+  import { createGuessChart, submitGuess, guessAnother, skipToEnd, resizeGuessChart, createComparisonChart, resizeComparisonChart, createConsoleChart, resizeConsoleChart } from './charts.js';
 
-So if Pokemon games aren't the problem, what is?
-
-## The Real Culprit: Consoles
-
-Let's look at what you actually paid to play Pokemon over the years:
-
-- **1998**: Game Boy ($90) + Pokemon Red ($30) = **$120 total** ($236 in 2025 dollars)
-- **2022**: Nintendo Switch ($300) + Pokemon Scarlet ($60) = **$360 total** ($391 in 2025 dollars)
-
-Notice something? The console went from $90 to $300 in nominal dollars. That's a **233% increase**—way above inflation. Meanwhile, the game went from $30 to $60, which is exactly inflation.
-
-**Games tracked inflation. Consoles exploded.**
-
-The Game Boy in 1998 cost $90, or about $177 in today's money. The Switch costs $300—that's **69% more expensive** than the Game Boy was in real terms. Nintendo Switch is genuinely more expensive hardware than its predecessors, while the software has stayed remarkably stable.
-
-## The Bottom Line
-
-Next time someone complains about $60 Pokemon games, show them this:
-
-- **Game prices are fine.** They've tracked inflation for 25 years.
-- **Console prices are the problem.** They've grown faster than inflation.
-- **Everything else doubled too.** Games aren't uniquely expensive.
-
-Your anger isn't wrong—gaming *is* more expensive than it used to be. You're just blaming the wrong part. Stop complaining about $60 games. Start complaining about $300 consoles.
-`;
-      
-      // Extract YAML frontmatter
-      const frontmatterMatch = md.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
-      let metadata = { title: '', subtitle: '', author: '', date: '' };
-      
-      if (frontmatterMatch) {
-        const frontmatter = frontmatterMatch[1];
-        const titleMatch = frontmatter.match(/title:\s*(.+)/);
-        const subtitleMatch = frontmatter.match(/subtitle:\s*(.+)/);
-        const authorMatch = frontmatter.match(/author:\s*(.+)/);
-        const dateMatch = frontmatter.match(/date:\s*(.+)/);
-        
-        if (titleMatch) metadata.title = titleMatch[1].trim();
-        if (subtitleMatch) metadata.subtitle = subtitleMatch[1].trim();
-        if (authorMatch) metadata.author = authorMatch[1].trim();
-        if (dateMatch) metadata.date = dateMatch[1].trim();
+  async function loadContent() {
+    try {
+      // Wait for marked to be available
+      let retries = 0;
+      while (typeof marked === 'undefined' && retries < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
       }
-      
-      // Display metadata in header card
-      const headerEl = document.getElementById('article-header');
-      headerEl.innerHTML = `
-        <h1 class="shared-h1" style="margin-bottom: 10px;">${metadata.title}</h1>
-        ${metadata.subtitle ? `<p class="shared-sub" style="font-size: 1.1em; color: var(--neutral); margin-bottom: 20px;">${metadata.subtitle}</p>` : ''}
-        <div style="display: flex; gap: 20px; justify-content: center; align-items: center; color: var(--neutral); font-size: 0.9em; margin-bottom: 30px;">
-          ${metadata.author ? `<span>By ${metadata.author}</span>` : ''}
-          ${metadata.date ? `<span>${metadata.date}</span>` : ''}
-        </div>
-        <div style="margin: 0 -40px -40px -40px; overflow: hidden; aspect-ratio: 21/9;">
-          <img src="img/hero.jpg" alt="Pokemon game collection" 
-               style="width: 100%; height: 100%; object-fit: cover; display: block;" />
-        </div>
-      `;
-      
-      // Strip YAML frontmatter from content
-      md = md.replace(/^---\s*\n[\s\S]*?\n---\s*\n/, '');
-      
-      // Split content by sections
-      const sections = md.split('## ');
-      const intro = sections[0];
-      const reveal = sections[1] || '';
-      const comparison = sections[2] || '';
-      const console = sections[3] || '';
-      const conclusion = sections[4] || '';
-      
-      // Parse and display sections
-      const introHtml = marked.parse(intro, { mangle: false, headerIds: true });
-      document.getElementById('intro-content').innerHTML = introHtml;
-      
-      const revealHtml = marked.parse('## ' + reveal, { mangle: false, headerIds: true });
-      document.getElementById('reveal-section').innerHTML = revealHtml;
-      
-      const comparisonHtml = marked.parse('## ' + comparison, { mangle: false, headerIds: true });
-      document.getElementById('context-section').innerHTML = comparisonHtml;
-      
-      const consoleHtml = marked.parse('## ' + console, { mangle: false, headerIds: true });
-      document.getElementById('console-container').insertAdjacentHTML('beforebegin', 
-        `<article class="shared-card prose">${consoleHtml}</article>`);
-      
-      const conclusionHtml = marked.parse('## ' + conclusion, { mangle: false, headerIds: true });
-      document.getElementById('conclusion-section').innerHTML = conclusionHtml;
-      
-      // Load data and initialize visualizations
-      const data = await fetch('./data.json').then(r => r.json());
-      
-      // Create guess chart
-      createGuessChart(data);
-      
-      // Set up button event handlers
-      document.getElementById('submit-guess').addEventListener('click', submitGuess);
-      document.getElementById('skip-all').addEventListener('click', skipToEnd);
-      
-      // Create comparison and console charts
-      await createComparisonChart();
-      createConsoleChart();
-      
-      // Handle window resize
-      window.addEventListener('resize', () => {
-        resizeGuessChart();
-        resizeComparisonChart();
-        resizeConsoleChart();
-      });
+      if (typeof marked === 'undefined') {
+        throw new Error('marked library failed to load');
+      }
+
+      const response = await fetch('./content.txt');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const markdown = await response.text();
+
+      // Extract metadata (support both \n and \r\n line endings)
+      const fmRegex = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*(?:\r?\n)?/;
+      const metadataMatch = markdown.match(fmRegex);
+      if (metadataMatch) {
+        const metadata = metadataMatch[1];
+        const titleMatch = metadata.match(/title:\s*(.+)/);
+        const authorMatch = metadata.match(/author:\s*(.+)/);
+        const dateMatch = metadata.match(/date:\s*(.+)/);
+
+        let title = titleMatch ? titleMatch[1].trim() : '';
+        if ((title.startsWith('"') && title.endsWith('"')) || (title.startsWith("'") && title.endsWith("'"))) {
+          title = title.slice(1, -1);
+        }
+        const author = authorMatch ? authorMatch[1].trim() : 'acko';
+        const date = dateMatch ? dateMatch[1].trim() : '2025';
+
+        const articleHeader = document.getElementById('article-header');
+        if (articleHeader && title) {
+          articleHeader.innerHTML = `
+            <h1>${title}</h1>
+            <p><strong>${author}</strong> • ${date}</p>
+          `;
+        }
+      }
+
+      // Strip frontmatter before parsing content
+      const bodyMarkdown = markdown.replace(fmRegex, '');
+
+      // Parse markdown
+      let parsed = marked.parse(bodyMarkdown);
+      // If content starts with an H1, drop it to avoid duplicating the header
+      parsed = parsed.replace(/^\s*<h1[\s\S]*?<\/h1>\s*/i, '');
+
+      // Everything before the first <h2> is the intro
+      const parts = parsed.split(/<h2\b/i);
+      let introHTML = parts[0] ? parts[0].trim() : '';
+      // Ensure no H1 or HEADER blocks sneak into the intro block
+      introHTML = introHTML
+        .replace(/<h1[\s\S]*?<\/h1>/gi, '')
+        .replace(/<header[\s\S]*?<\/header>/gi, '');
+      const revealHTML = parts[1] ? '<h2' + parts[1] : '';
+      const contextHTML = parts[2] ? '<h2' + parts[2] : '';
+      const conclusionHTML = parts[3] ? '<h2' + parts[3] : '';
+
+      document.getElementById('intro-content').innerHTML = introHTML;
+      document.getElementById('reveal-section').innerHTML = revealHTML;
+      document.getElementById('context-section').innerHTML = contextHTML;
+      document.getElementById('conclusion-section').innerHTML = conclusionHTML;
+    } catch (err) {
+      console.error('Error loading content:', err);
+      document.getElementById('intro-content').innerHTML = '<p>Error loading content. Please refresh the page.</p>';
     }
+  }
 
-    loadContent().catch(err => {
-      document.getElementById('intro-content').innerHTML = `<p style="color:var(--error)">Error loading content</p><pre>${err}</pre>`;
-      console.error(err);
+  // Initialize everything
+  Promise.all([
+    loadContent(),
+    d3.json('./data.json')
+  ]).then(([_, pokemonData]) => {
+    createGuessChart(pokemonData);
+    createComparisonChart();
+    createConsoleChart();
+    
+    // Set up event listeners
+    document.getElementById('submit-guess').addEventListener('click', submitGuess);
+    document.getElementById('skip-all').addEventListener('click', skipToEnd);
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      resizeGuessChart();
+      resizeComparisonChart();
+      resizeConsoleChart();
     });
-  </script>
-</body>
-</html>
-
+  }).catch(err => {
+    console.error('Error loading content:', err);
+    document.getElementById('intro-content').innerHTML = '<p>Error loading content. Please refresh the page.</p>';
+  });
+</script>

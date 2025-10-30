@@ -1,35 +1,43 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>acko.cool</title>
-<link rel="icon" type="image/png" href="favicon.png">
-<link rel="stylesheet" href="style.css">
-<!-- All styles have been moved to style.css for better organization and maintainability -->
-</head>
-<body>
-  <div class="shared-wrap">
-    <a href="/" class="homepage-title-link">
-      <h1 class="homepage-title">acko.cool</h1>
-    </a>
-    <p class="homepage-subtitle">developed by acko</p>
+---
+layout: page
+title: "home"
+---
 
-    <div class="pill-button-container">
-      <!-- CATEGORY BUTTONS -->
-      <a href="/games" class="pill-button hero-cta">
-        <span class="pill-button-icon">🎮</span>
-        <span>games</span>
-      </a>
+<section class="hero flow">
+  <h1>acko.cool</h1>
+  <p class="tagline">neo-brutalist lab notes. minimal system, loud type.</p>
+</section>
 
-      <a href="/blog" class="pill-button">
-        <span class="pill-button-icon">📝</span>
-        <span>blog</span>
-      </a>
+<section class="grid grid-3 mt-6">
+  <a href="/games" class="card card--hard">
+    <h2 class="card__title">🎮 games</h2>
+    <p>Interactive quizzes and calculators.</p>
+  </a>
 
-    </div>
+  <a href="/blog" class="card card--hard">
+    <h2 class="card__title">📝 blog</h2>
+    <p>Data-first commentary with feelings.</p>
+  </a>
+
+  <div class="card card--hard" style="opacity: 0.5;">
+    <h2 class="card__title">coming soon</h2>
+    <p>More projects in the works.</p>
   </div>
+</section>
 
-
-</body>
-</html>
+<section class="grid grid-3 mt-6">
+  <div class="card card--hard flow">
+    <h3 class="card__title">semantic states</h3>
+    <p><span class="badge badge--success">ok</span> <span class="badge badge--warning">check</span> <span class="badge badge--error">fail</span> <span class="badge badge--info">info</span></p>
+    <a class="button button--success mt-3">confirm</a>
+    <a class="button button--error mt-3">delete</a>
+  </div>
+  <div class="card card--hard callout callout--warning flow">
+    <h3>heads up</h3>
+    <p>deploy scheduled tonight at 11pm PT.</p>
+  </div>
+  <div class="card card--hard flow">
+    <h3>inline text</h3>
+    <p><strong class="text-error">failed</strong> to save. <a class="text-info" href="#">see logs</a>.</p>
+  </div>
+</section>

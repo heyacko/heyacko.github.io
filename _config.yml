@@ -1,0 +1,44 @@
+# Site settings
+title: "acko"
+description: "neo-brutalist lab notes. minimal system, loud type."
+url: "https://heyacko.github.io"
+baseurl: ""
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+permalink: pretty
+
+# Collections
+collections:
+  posts:
+    output: true
+    permalink: /:name/
+
+# Exclude files from processing
+exclude:
+  - partnerships-calc/
+  - README.md
+  - tmp.txt
+  - Gemfile
+  - Gemfile.lock
+
+# Include files
+include:
+  - _pages
+  - styles
+  - scripts
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "page"
+

@@ -1,98 +1,26 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>acko.cool</title>
-<link rel="icon" type="image/png" href="../favicon.png">
-<link rel="stylesheet" href="../style.css">
-<!-- All styles have been moved to style.css for better organization and maintainability -->
-</head>
-<body>
-  <div class="shared-wrap">
-    <a href="/" class="homepage-title-link">
-      <h1 class="homepage-title">/games/</h1>
-    </a>
+---
+layout: page
+title: "games"
+---
 
-    <div class="homepage-grid">
-      <!-- REAL CARDS: Uncomment these as you add them, they'll replace placeholders -->
-      <!-- <a href="political-compass.html" class="grid-card">
-        <div class="card-subtitle">🗳️</div>
-        <div class="card-title">Modern U.S. Political Compass</div>
-        <div class="card-desc">20-question political quiz.</div>
-      </a>
+<section class="hero flow">
+  <h1>/games/</h1>
+  <p class="tagline">interactive quizzes and calculators</p>
+</section>
 
-      <a href="rationalism-optimism.html" class="grid-card">
-        <div class="card-subtitle">🧠</div>
-        <div class="card-title">The Tuesday That Wouldn't End</div>
-        <div class="card-desc">A short choose-your-own-adventure story.</div>
-      </a> -->
+<section class="grid grid-3 mt-6">
+  <a href="./socal-vs-norcal/" class="card card--hard">
+    <h2 class="card__title">🌴 SoCal vs NorCal Quiz</h2>
+    <p>test your california knowledge</p>
+  </a>
 
-      <a href="./socal-vs-norcal.html" class="grid-card">
-        <div class="card-subtitle">🌴</div>
-        <div class="card-title">SoCal vs NorCal Quiz</div>
-      </a>
+  <a href="./gaming-report-card/" class="card card--hard">
+    <h2 class="card__title">📚 Gaming Report Card</h2>
+    <p>calculate your gaming ROI</p>
+  </a>
 
-      <a href="./gaming-report-card.html" class="grid-card">
-        <div class="card-subtitle">📚</div>
-        <div class="card-title">Gaming Report Card</div>
-      </a>
-
-      <!-- PLACEHOLDER CARDS: These fill the remaining slots in the grid -->
-      <div class="placeholder-card">
-        <img src="../favicon.png" alt="Coming Soon">
-      </div>
-
-      <div class="placeholder-card">
-        <img src="../favicon.png" alt="Coming Soon">
-      </div>
-
-      <div class="placeholder-card">
-        <img src="../favicon.png" alt="Coming Soon">
-      </div>
-
-      <div class="placeholder-card">
-        <img src="../favicon.png" alt="Coming Soon">
-      </div>
-
-      <div class="placeholder-card">
-        <img src="../favicon.png" alt="Coming Soon">
-      </div>
-
-      <div class="placeholder-card">
-        <img src="../favicon.png" alt="Coming Soon">
-      </div>
-
-    </div>
+  <div class="card card--hard" style="opacity: 0.5;">
+    <h2 class="card__title">coming soon</h2>
+    <p>more games in the works</p>
   </div>
-
-  <!-- 
-  ================================================================================
-  PARALLAX SCROLLING EFFECT - BACKGROUND GRID ANIMATION
-  ================================================================================
-  This JavaScript creates a subtle parallax effect where the background grid
-  moves slightly as you scroll. This adds depth and visual interest to the page.
-  
-  HOW IT WORKS:
-  1. Listens for scroll events on the page
-  2. Gets how far the user has scrolled (in pixels)
-  3. Updates a CSS custom property (--scroll-y) with the scroll position
-  4. The CSS uses this value to move the background grid
-  
-  TO ADJUST THE PARALLAX EFFECT:
-  - Change the multiplier in the CSS (currently 0.3) to make it faster/slower
-  - Higher numbers = more movement, lower numbers = less movement
-  -->
-  <script>
-    // Listen for scroll events and update the parallax effect
-    window.addEventListener('scroll', function() {
-      // Get how far the user has scrolled down the page
-      const scrolled = window.pageYOffset;
-      
-      // Update the CSS custom property that controls the grid position
-      document.documentElement.style.setProperty('--scroll-y', scrolled + 'px');
-    });
-  </script>
-</body>
-</html>
-
+</section>

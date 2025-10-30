@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ page.title | default: site.title }}{% if page.title != site.title %} — {{ site.title }}{% endif %}</title>
+  <link rel="icon" type="image/png" href="{{ site.baseurl }}/favicon.png">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Fraunces:wght@900&family=Libre+Baskerville:wght@700&display=swap" rel="stylesheet" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ site.baseurl }}/styles/tokens.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/styles/base.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/styles/utilities.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/styles/components.css">
+
+  {% if page.custom_css %}
+    {% for css_file in page.custom_css %}
+      {% if css_file contains '://' %}
+        <link rel="stylesheet" href="{{ css_file }}">
+      {% else %}
+        <link rel="stylesheet" href="{{ site.baseurl }}/{{ css_file }}">
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+  <style>
+    .site-footer { margin-top: calc(var(--space-9) + var(--space-5)); padding: var(--space-4) 0; border-top: 2px solid #000; }
+    .footer-nav { display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: center; }
+  </style>
+
+  {% if page.custom_js %}
+    {% for js_file in page.custom_js %}
+      {% if js_file contains '://' %}
+        <script src="{{ js_file }}" defer></script>
+      {% else %}
+        <script src="{{ site.baseurl }}/{{ js_file }}" defer></script>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+</head>
+<body>
+  {% unless page.layout == 'post' %}
+  {% include header.html %}
+  {% endunless %}
+
+  {% if page.layout == 'post' %}
+  {{ content }}
+  {% else %}
+  <div style="padding-bottom: var(--space-9);">
+    {{ content }}
+  </div>
+  {% endif %}
+
+  {% include footer.html %}
+
+  <script src="{{ site.baseurl }}/scripts/nav.js" defer></script>
+</body>
+</html>
+

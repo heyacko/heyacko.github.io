@@ -1,0 +1,102 @@
+[
+  {
+    "game": "Red/Blue",
+    "year": 1998,
+    "platform": "Game Boy",
+    "platformPrice": 89.99,
+    "gamePrice": 29.99,
+    "dlcPrice": 0,
+    "total": 119.98,
+    "adjustedPrice": 59.05,
+    "icon": "img/red-blue.png"
+  },
+  {
+    "game": "Gold/Silver",
+    "year": 2000,
+    "platform": "Game Boy Color",
+    "platformPrice": 79.99,
+    "gamePrice": 29.99,
+    "dlcPrice": 0,
+    "total": 109.98,
+    "adjustedPrice": 55.90,
+    "icon": "img/gold-silver.png"
+  },
+  {
+    "game": "Ruby/Sapphire",
+    "year": 2003,
+    "platform": "Game Boy Advance",
+    "platformPrice": 99.99,
+    "gamePrice": 34.99,
+    "dlcPrice": 0,
+    "total": 134.98,
+    "adjustedPrice": 61.06,
+    "icon": "img/ruby-sapphire.png"
+  },
+  {
+    "game": "Diamond/Pearl",
+    "year": 2007,
+    "platform": "Nintendo DS",
+    "platformPrice": 149.99,
+    "gamePrice": 34.99,
+    "dlcPrice": 0,
+    "total": 184.98,
+    "adjustedPrice": 54.16,
+    "icon": "img/diamond-pearl.jpg"
+  },
+  {
+    "game": "Black/White",
+    "year": 2011,
+    "platform": "Nintendo DS",
+    "platformPrice": 149.99,
+    "gamePrice": 34.99,
+    "dlcPrice": 0,
+    "total": 184.98,
+    "adjustedPrice": 49.93,
+    "icon": "img/black-white.png"
+  },
+  {
+    "game": "X/Y",
+    "year": 2013,
+    "platform": "Nintendo 3DS",
+    "platformPrice": 249.99,
+    "gamePrice": 39.99,
+    "dlcPrice": 0,
+    "total": 289.98,
+    "adjustedPrice": 55.11,
+    "icon": "img/x-y.png"
+  },
+  {
+    "game": "Sun/Moon",
+    "year": 2016,
+    "platform": "Nintendo 3DS",
+    "platformPrice": 169.99,
+    "gamePrice": 39.99,
+    "dlcPrice": 0,
+    "total": 209.98,
+    "adjustedPrice": 53.51,
+    "icon": "img/sun-moon.png"
+  },
+  {
+    "game": "Sword/Shield",
+    "year": 2019,
+    "platform": "Nintendo Switch",
+    "platformPrice": 299.99,
+    "gamePrice": 59.99,
+    "dlcPrice": 29.99,
+    "total": 389.97,
+    "adjustedPrice": 75.29,
+    "icon": "img/sword-shield.png"
+  },
+  {
+    "game": "Scarlet/Violet",
+    "year": 2022,
+    "platform": "Nintendo Switch",
+    "platformPrice": 299.99,
+    "gamePrice": 59.99,
+    "dlcPrice": 34.99,
+    "total": 394.97,
+    "adjustedPrice": 65.81,
+    "icon": "img/scarlet-violet.png"
+  }
+]
+

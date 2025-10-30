@@ -1,0 +1,71 @@
+:root{
+  /* brand */
+  --color-primary: #4A2F1B; /* deep mocha */
+  --color-accent:  #D49663; /* tan/orange */
+  --color-secondary:#5E9DC8; /* cerulean */
+  --color-cream:    #F4F1ED; /* soft cream */
+
+  /* neutrals/high-contrast */
+  --bg:    #ffffff;
+  --text:  #111111;
+  --muted: #6b6b6b;
+  --line:  #e6e6e6;
+
+  /* action */
+  --link: var(--color-secondary);
+  --link-hover: #2d78a8;
+
+  /* spacing scale (neo-brutalist likes generous whitespace) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* radii & shadow (keep blunt/boxy) */
+  --radius-0: 0;
+  --radius-1: 6px;
+  --shadow-0: 0 0 0 1.5px #000; /* brutalist stroke */
+
+  /* type scale (maximalist headings) */
+  --font-mono: "IBM Plex Mono", "Lucida Console", Monaco, Consolas, "Courier New", monospace;
+  --font-serif: "Fraunces", "Libre Baskerville", Georgia, "Times New Roman", serif;
+
+  --size-1: clamp(12px, 0.8vw + 10px, 14px);
+  --size-2: clamp(16px, 1vw + 12px, 18px);  /* body */
+  --size-3: clamp(20px, 1.2vw + 14px, 22px);
+  --size-4: clamp(26px, 2.1vw + 12px, 32px);
+  --size-5: clamp(34px, 3vw + 14px, 44px);
+  --size-6: clamp(46px, 4.2vw + 16px, 64px);
+
+  /* rhythm */
+  --lh-tight: 1.1;
+  --lh-body: 1.5;
+  --measure: 68ch; /* comfortable line length */
+
+  /* semantic states */
+  --color-success: #1B7D2A;   /* confident green */
+  --color-warning: #E0A500;   /* goldenrod */
+  --color-error:   #B00020;   /* crimson */
+  --color-info:    #2E68A6;   /* grounded blue */
+
+  /* light fills (subtle panes) */
+  --color-success-bg: #EAF5EB;
+  --color-warning-bg: #FFF8E1;
+  --color-error-bg:   #FDECEE;
+  --color-info-bg:    #E8F1FA;
+
+  /* legacy compatibility for gaming-report-card */
+  --success: var(--color-success);
+  --error: var(--color-error);
+  --warning: var(--color-warning);
+  --primary-dark: var(--text);
+  --neutral: var(--muted);
+  --gray-light: var(--muted);
+  --white: var(--bg);
+  --primary: var(--color-primary);
+}
+
