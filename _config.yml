@@ -1,13 +1,13 @@
 ﻿# Site
-title:  heyacko
-description: Personal site
-url: https://heyacko.com
-baseurl: 
+title: "heyacko"
+description: "Personal site"
+url: "https://heyacko.com"
+baseurl: ""
 
 # Theme
 remote_theme: mmistakes/so-simple-theme
 plugins:
- - jekyll-remote-theme
+  - jekyll-remote-theme
 
 # Permalinks (optional)
 permalink: /:categories/:title/
