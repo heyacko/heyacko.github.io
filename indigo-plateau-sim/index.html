@@ -2409,11 +2409,15 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
       for (let i = 0; i < 400; i++) { const a = m[p + i * 3], d = m[p + i * 3 + 1], v = m[p + i * 3 + 2]; if (a === 0xFF) break; if (a === 0xFE) { rows.push(null); continue; } rows.push([a, d, v]); }
       return rows;
     })();
-    this.eff = function (atkType, t1, t2) {
+    const effScan = function (atkType, t1, t2) {
       let mult = 1;
       for (const r of chart) { if (!r) break; if (r[0] === atkType && (r[1] === t1 || r[1] === t2)) mult *= r[2] / 10; }
       return mult;
     };
+    // precomputed from effScan for every type triple (hot: the heuristic stand-in calls it inside every playout)
+    const effTable = new Float64Array(32 * 32 * 32);
+    for (let a = 0; a < 32; a++) for (let d1 = 0; d1 < 32; d1++) for (let d2 = 0; d2 < 32; d2++) effTable[(a << 10) | (d1 << 5) | d2] = effScan(a, d1, d2);
+    this.eff = (atkType, t1, t2) => (atkType | t1 | t2) < 32 && atkType >= 0 && t1 >= 0 && t2 >= 0 ? effTable[(atkType << 10) | (t1 << 5) | t2] : effScan(atkType, t1, t2);
 
     // ---------- THE battle loop ----------
     // player: { decide(env, ctx) -> option, searches?: bool }. Every runner (page, benchmark, golden check,
