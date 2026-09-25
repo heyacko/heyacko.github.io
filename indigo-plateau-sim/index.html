@@ -1789,11 +1789,16 @@ globalThis.FR_SDTABLES = {"names": {"species":{"1":"Bulbasaur","2":"Ivysaur","3"
   const FAIL = new Set([S.BUTITFAILED, S.MIRRORMOVEFAILED, S.FAILEDTOSPITUP, S.FAILEDTOSWALLOW, S.TOOWEAKFORSUBSTITUTE, S.PKMNCANTSTOCKPILE, S.BUTNOEFFECT]);
   const ALREADY = byId({ PKMNALREADYASLEEP: 'slp', PKMNALREADYASLEEP2: 'slp', PKMNALREADYPOISONED: 'psn', PKMNISALREADYPARALYZED: 'par', PKMNALREADYHASBURN: 'brn', PKMNALREADYCONFUSED: 'confusion' });
   const HP_ITEMS = new Set(['potion', 'superpotion', 'hyperpotion', 'maxpotion', 'fullrestore', 'freshwater', 'sodapop', 'lemonade', 'moomoomilk', 'energypowder', 'energyroot', 'berryjuice']);
+  // Status given by the other Pokémon's ability: "ROSELIA's POISON POINT poisoned Foe HITMONCHAN!" (the status icon follows)
+  const STATUS_BY_ABILITY = new Set([S.PKMNPOISONEDBY, S.PKMNBURNEDBY, S.PKMNFROZENBY, S.PKMNWASPARALYZEDBY, S.PKMNMADESLEEP]);
+  const MOVE_TARGET_USER = 1 << 4; // gBattleMoves[].target (include/battle.h)
+  // Moves that change two stats at once: "X's stats won't go any higher/lower!" names neither, so Showdown's per-stat 0 lines need these
+  const MULTI_STATS = { 321: ['atk', 'def'], 322: ['def', 'spd'], 339: ['atk', 'def'], 347: ['spa', 'spd'], 349: ['atk', 'spe'] }; // Tickle, Cosmic Power, Bulk Up, Calm Mind, Dragon Dance
   const CALLERS = new Set([118, 119, 214, 267, 274]); // Metronome, Mirror Move, Sleep Talk, Nature Power, Assist: "used X" then "used Y"
   const CHARGE = new Set([S.PKMNWHIPPEDWHIRLWIND, S.PKMNTOOKSUNLIGHT, S.PKMNLOWEREDHEAD, S.PKMNISGLOWING, S.PKMNFLEWHIGH, S.PKMNDUGHOLE, S.PKMNHIDUNDERWATER, S.PKMNSPRANGUP]);
   const BIND_START = new Set([S.PKMNSQUEEZEDBYBIND, S.PKMNTRAPPEDINVORTEX, S.PKMNWRAPPEDBY, S.PKMNCLAMPED, S.PKMNTRAPPEDBYSANDTOMB]);
   const BERRY_CURE = new Set([S.PKMNSITEMCUREDPARALYSIS, S.PKMNSITEMCUREDPOISON, S.PKMNSITEMHEALEDBURN, S.PKMNSITEMDEFROSTEDIT, S.PKMNSITEMWOKEIT,
-    S.PKMNSITEMCUREDPROBLEM, S.PKMNSITEMRESTOREDSTATUS, S.PKMNSITEMNORMALIZEDSTATUS]);
+    S.PKMNSITEMCUREDPROBLEM, S.PKMNSITEMNORMALIZEDSTATUS]);
   const ABILITY_IMMUNE = new Set([S.PKMNSXMADEYUSELESS, S.PKMNSXMADEYINEFFECTIVE, S.PKMNSXMADEITINEFFECTIVE, S.PKMNMAKESGROUNDMISS, S.PKMNPREVENTSPARALYSISWITH,
     S.PKMNPREVENTSROMANCEWITH, S.PKMNPREVENTSPOISONINGWITH, S.PKMNPREVENTSCONFUSIONWITH, S.PKMNSXPREVENTSBURNS, S.PKMNPROTECTEDBY, S.PKMNSXBLOCKSY, S.PKMNSXBLOCKSY2]);
   // Text the viewer writes itself (intro, send-outs, recalls, move used, effectiveness, faint) or that has no protocol line
@@ -1802,9 +1807,9 @@ globalThis.FR_SDTABLES = {"names": {"species":{"1":"Bulbasaur","2":"Ivysaur","3"
     'TRAINER2WINTEXT', 'PKMNGAINEDEXP', 'PKMNGREWTOLV', 'PKMNLEARNEDMOVE', 'PKMNLEARNEDMOVE2', 'TRYTOLEARNMOVE1', 'TRYTOLEARNMOVE2', 'TRYTOLEARNMOVE3',
     'PKMNFORGOTMOVE', 'STOPLEARNINGMOVE', 'DIDNOTLEARNMOVE', 'ATTACKERFAINTED', 'TARGETFAINTED', 'PLAYERGOTMONEY', 'PLAYERWHITEOUT', 'PLAYERWHITEOUT2',
     'PLAYERWHITEDOUT', 'PLAYERDEFEATEDTRAINER1', 'PLAYERLOSTAGAINSTENEMYTRAINER', 'PLAYERPAIDPRIZEMONEY', 'EMPTYSTRING3', 'EMPTYSTRING4',
-    'PKMNREGAINEDHEALTH', 'PKMNHPFULL', 'TRAINER1MON1COMEBACK', 'TRAINER1MON2COMEBACK', 'TRAINER1MON1AND2COMEBACK',
-    'BUTNOTHINGHAPPENED', 'PKMNFELLASLEEP', 'PKMNMADESLEEP', 'PKMNWASPOISONED', 'PKMNPOISONEDBY', 'PKMNBADLYPOISONED', 'PKMNWASBURNED', 'PKMNBURNEDBY',
-    'PKMNWASFROZEN', 'PKMNFROZENBY', 'PKMNWASDEFROSTED', 'PKMNWASDEFROSTED2', 'PKMNWASDEFROSTEDBY', 'PKMNWASPARALYZED', 'PKMNWASPARALYZEDBY', 'PKMNWOKEUP',
+    'PKMNREGAINEDHEALTH', 'TRAINER1MON1COMEBACK', 'TRAINER1MON2COMEBACK', 'TRAINER1MON1AND2COMEBACK',
+    'BUTNOTHINGHAPPENED', 'PKMNFELLASLEEP', 'PKMNWASPOISONED', 'PKMNBADLYPOISONED', 'PKMNWASBURNED',
+    'PKMNWASFROZEN', 'PKMNWASDEFROSTED', 'PKMNWASDEFROSTED2', 'PKMNWASDEFROSTEDBY', 'PKMNWASPARALYZED', 'PKMNWOKEUP',
     'PKMNHEALEDPARALYSIS', 'PKMNSTATUSNORMAL', 'STATSHARPLY', 'STATROSE', 'STATHARSHLY', 'STATFELL', 'PKMNMADEWISH'].map(k => S[k]));
   if (isNode) { const bad = [...DROP].filter(v => v === undefined).length; if (bad) throw new Error('frlogs: unknown STRINGID in DROP'); }
 
@@ -1819,6 +1824,8 @@ globalThis.FR_SDTABLES = {"names": {"species":{"1":"Bulbasaur","2":"Ivysaur","3"
       return { items, moves };
     })());
     const spName = sp => N.species[sp] || titleCase(E.speciesName(sp));
+    const movePtr = E.x.hl_move_data_ptr(); // struct BattleMove is 9 bytes; target is byte 6
+    const selfTarget = m => (new Uint8Array(E.mem.buffer, movePtr + m * 9 + 6, 1)[0] & MOVE_TARGET_USER) !== 0;
     const mvName = m => N.moves[m] || titleCase(E.moveName(m));
     const itName = i => N.items[i] || titleCase(E.itemName(i));
     const itemText = t => cache.items[toID(t)] || titleCase(t);
@@ -1849,9 +1856,11 @@ globalThis.FR_SDTABLES = {"names": {"species":{"1":"Bulbasaur","2":"Ivysaur","3"
     const lastHp = [-1, -1]; // index in out of each side's latest -damage/-heal line
     function flush() {
       if (!hold) return;
-      out.push(...hold.pre, hold.line); lastHp[hold.s] = out.length - 1; hold = null;
+      out.push(...hold.pre, hold.line); lastHp[hold.s] = out.length - 1; out.push(...hold.post); hold = null;
     }
     const emit = l => { flush(); out.push(l); };
+    // printed between a hit's HP bar and its effectiveness/crit message (Focus Band, Endure): stays after the -damage
+    const afterHit = (s, l) => { if (hold && hold.s === s) hold.post.push(l); else emit(l); };
     function insertAt(k, l) { // insert a line before out[k], keeping remembered indices right
       out.splice(k, 0, l);
       for (const t of [0, 1]) if (lastHp[t] >= k) lastHp[t]++;
@@ -1905,14 +1914,15 @@ globalThis.FR_SDTABLES = {"names": {"species":{"1":"Bulbasaur","2":"Ivysaur","3"
           // the same side moving twice in a row is two turns, unless the first move called this one or a status check led into it
           if (actor === s && !lead && !(lastMove && lastMove.s === s && CALLERS.has(lastMove.mv))) actor = -1;
           action(s); trainerItem = null; pending[0] = pending[1] = null;
-          emit(`|move|${ident(s)}|${mvName(e.a)}|${ident(e.b & 1)}`);
-          lastMove = { idx: out.length - 1, s, t: e.b & 1, mv: e.a }; break;
+          const tg = selfTarget(e.a) ? s : e.b & 1; // the engine's target is left over from before for self-targeting moves
+          emit(`|move|${ident(s)}|${mvName(e.a)}|${ident(tg)}`);
+          lastMove = { idx: out.length - 1, s, t: tg, mv: e.a }; break;
         }
         case CTRL.HPBAR: {
           const delta = (e.a << 16) >> 16; if (!delta) break; // payload: HP change, damage positive
           const m = monAt(s, e.slot); m.hp = Math.max(0, Math.min(e.maxhp, e.hp - delta)); m.maxhp = e.maxhp;
           const tag = pending[s]; pending[s] = null;
-          flush(); hold = { s, pre: [], line: `|${delta < 0 ? '-heal' : '-damage'}|${ident(s)}|${hpStr(m)}${tag ? '|' + tag : ''}` };
+          flush(); hold = { s, pre: [], post: [], line: `|${delta < 0 ? '-heal' : '-damage'}|${ident(s)}|${hpStr(m)}${tag ? '|' + tag : ''}` };
           break;
         }
         case CTRL.FAINT: { const m = monAt(s, e.slot); m.hp = 0; m.status = ''; emit(`|faint|${ident(s)}`); break; }
@@ -1969,7 +1979,9 @@ globalThis.FR_SDTABLES = {"names": {"species":{"1":"Bulbasaur","2":"Ivysaur","3"
       if (WEATHER_UPKEEP[id]) { residualPhase(); emit(`|-weather|${WEATHER_UPKEEP[id]}|[upkeep]`); return; }
       if (WEATHER_END.has(id)) { residualPhase(); emit('|-weather|none'); return; }
       if (RESIDUAL_DAMAGE[id]) { residualPhase(); pending[subj] = RESIDUAL_DAMAGE[id]; return; }
-      if (CANT[id]) { action(subj); lead = true; emit(`|cant|${ident(subj)}|${CANT[id]}`); return; }
+      if (CANT[id]) { // sleep, freeze, recharge, flinch, Truant... come first in a turn; paralysis and Attract come after the confusion check
+        if (!['par', 'Attract'].includes(CANT[id])) actor = -1;
+        action(subj); lead = true; emit(`|cant|${ident(subj)}|${CANT[id]}`); return; }
       if (FAIL.has(id)) { const a = lastMove ? lastMove.s : s; tagMove('[still]'); emit(`|-fail|${ident(a)}`); return; }
       if (ALREADY[id]) { tagMove('[still]'); emit(`|-fail|${ident(subj)}|${ALREADY[id]}`); return; }
       if (CHARGE.has(id)) { // turn 1 of a two-turn move: the game prints no "used" line
@@ -1983,6 +1995,10 @@ globalThis.FR_SDTABLES = {"names": {"species":{"1":"Bulbasaur","2":"Ivysaur","3"
         if ((m = new RegExp(`${Q}s (.+?) (cured|healed|defrosted|woke|restored|normalized)`).exec(t))) emit(`|-enditem|${ident(subj)}|${itemText(m[1])}|[eat]`);
         statusTag[subj] = '[msg]'; return;
       }
+      if (STATUS_BY_ABILITY.has(id)) { // "RAICHU's STATIC paralyzed Foe JYNX!", "UMBREON's SYNCHRONIZE ..."
+        if ((m = new RegExp(`^(Foe )?.+?${Q}s (.+?) (?:poisoned|burned|froze|paralyzed|made) (Foe )?`).exec(t))) statusTag[m[3] ? 1 : 0] = `[from] ability: ${abilityText(m[2])}|[of] ${ident(m[1] ? 1 : 0)}`;
+        return;
+      }
       if (ABILITY_IMMUNE.has(id)) {
         m = new RegExp(`${Q}s (.+?) (made|makes|prevents|protects|blocks|prevented)`).exec(t);
         tagMove('[still]'); emit(`|-immune|${ident(subj)}${m ? '|[from] ability: ' + abilityText(m[1]) : ''}`); return;
@@ -1994,19 +2010,36 @@ globalThis.FR_SDTABLES = {"names": {"species":{"1":"Bulbasaur","2":"Ivysaur","3"
         case S.ITDOESNTAFFECT: { const tg = /affect Foe/.test(t) ? 1 : 0; tagMove('[still]'); emit(`|-immune|${ident(tg)}`); return; }
         case S.PKMNWASNTAFFECTED: case S.PKMNUNAFFECTED: emit(`|-immune|${ident(subj)}`); return;
         case S.ONEHITKO: emit('|-ohko'); return;
+        case S.PKMNSITEMRESTOREDSTATUS: // White Herb: "X's WHITE HERB restored its status!" (lowered stats, not a status condition)
+          if ((m = new RegExp(`${Q}s (.+?) restored`).exec(t))) { emit(`|-enditem|${ident(subj)}|${itemText(m[1])}`); emit(`|-clearnegativeboost|${ident(subj)}|[silent]`); } return;
+        case S.PKMNTRYINGTOTAKEFOE: emit(`|-singleturn|${ident(subj)}|move: Destiny Bond`); return;
+        case S.PKMNTOOKFOE: emit(`|-activate|${ident(subj)}|move: Destiny Bond`); return;
+        case S.PREVENTEDFROMWORKING: // "METANG's CLEAR BODY prevented Foe GYARADOS's INTIMIDATE from working!"
+          if ((m = new RegExp(`${Q}s (.+?) prevented (Foe )?.+?${Q}s (.+?) from working`).exec(t))) {
+            emit(`|-ability|${ident(m[2] ? 1 : 0)}|${abilityText(m[3])}|boost`);
+            emit(`|-fail|${ident(subj)}|unboost|[from] ability: ${abilityText(m[1])}|[of] ${ident(subj)}`);
+          }
+          return;
+        case S.PKMNHPFULL: tagMove('[still]'); emit(`|-fail|${ident(subj)}|heal`); return; // Rest / Recover at full HP
         case S.PKMNCRASHED: if (lastMove) pending[lastMove.s] = `[from] ${mvName(lastMove.mv)}`; return; // Hi Jump Kick / Jump Kick miss: the bar follows
         case S.HITXTIMES: if ((m = /Hit (\d+) time/.exec(t))) emit(`|-hitcount|${ident(lastMove ? lastMove.t : s ^ 1)}|${m[1]}`); return;
         case S.MAGNITUDESTRENGTH: if ((m = /(\d+)/.exec(t))) emit(`|-activate|${ident(s)}|move: Magnitude|${m[1]}`); return;
         case S.PKMNPROTECTEDITSELF2: emit(`|-singleturn|${ident(subj)}|Protect`); return;
         case S.PKMNPROTECTEDITSELF: emit(`|-activate|${ident(subj)}|move: Protect`); return;
         case S.PKMNBRACEDITSELF: emit(`|-singleturn|${ident(subj)}|move: Endure`); return;
-        case S.PKMNENDUREDHIT: emit(`|-activate|${ident(subj)}|move: Endure`); return;
+        case S.PKMNENDUREDHIT: afterHit(subj, `|-activate|${ident(subj)}|move: Endure`); return;
         // stat stages
         case S.ATTACKERSSTATROSE: case S.DEFENDERSSTATROSE: case S.ATTACKERSSTATFELL: case S.DEFENDERSSTATFELL:
-        case S.STATSWONTINCREASE: case S.STATSWONTDECREASE: case S.STATSWONTINCREASE2: case S.STATSWONTDECREASE2: {
+        case S.STATSWONTINCREASE: case S.STATSWONTDECREASE: {
           if (!(m = new RegExp(`^(?:Foe )?.+?${Q}s ${STAT_RE} (sharply rose|rose|harshly fell|fell|won${Q}t go higher|won${Q}t go lower)`).exec(t))) return;
           const up = /rose|higher/.test(m[2]), n = /won/.test(m[2]) ? 0 : /sharply|harshly/.test(m[2]) ? 2 : 1;
           emit(`|${up ? '-boost' : '-unboost'}|${ident(subj)}|${statText(m[1])}|${n}`); return;
+        }
+        case S.STATSWONTINCREASE2: case S.STATSWONTDECREASE2: { // "Foe MACHAMP's stats won't go any higher!"
+          const stats = lastMove && MULTI_STATS[lastMove.mv];
+          if (stats) for (const st of stats) emit(`|${id === S.STATSWONTINCREASE2 ? '-boost' : '-unboost'}|${ident(subj)}|${st}|0`);
+          else emit(`|-fail|${ident(subj)}`);
+          return;
         }
         case S.USINGITEMSTATOFPKMNROSE: { // "Using X ATTACK, the ATTACK of Foe X rose!" (a trainer's X item, or a stat berry)
           if (!(m = new RegExp(`^Using (.+?), the ${STAT_RE} of (Foe )?.+? (sharply )?rose`).exec(t))) return;
@@ -2118,7 +2151,7 @@ globalThis.FR_SDTABLES = {"names": {"species":{"1":"Bulbasaur","2":"Ivysaur","3"
           if (trainerItem) { emit(`|-end|${ident(subj)}|confusion|[from] item: ${trainerItem}`); return; }
           if ((m = new RegExp(`${Q}s (.+?) snapped`).exec(t))) { emit(`|-enditem|${ident(subj)}|${itemText(m[1])}|[eat]`); emit(`|-end|${ident(subj)}|confusion|[silent]`); } return;
         case S.PKMNSITEMRESTOREDPP: if (trainerItem) { emit(`|-activate|${ident(subj)}|item: ${trainerItem}`); return; } if ((m = new RegExp(`${Q}s (.+?) restored`).exec(t))) emit(`|-enditem|${ident(subj)}|${itemText(m[1])}|[eat]`); return;
-        case S.PKMNHUNGONWITHX: if ((m = /using (?:its )?(.+?)!/.exec(t))) emit(`|-activate|${ident(subj)}|item: ${itemText(m[1])}`); return;
+        case S.PKMNHUNGONWITHX: if ((m = /using (?:its )?(.+?)!/.exec(t))) afterHit(subj, `|-activate|${ident(subj)}|item: ${itemText(m[1])}`); return;
         case S.PKMNKNOCKEDOFF: if ((m = new RegExp(`knocked off (Foe )?.+?${Q}s (.+?)!`).exec(t))) emit(`|-enditem|${ident(m[1] ? 1 : 0)}|${itemText(m[2])}|[from] move: Knock Off|[of] ${ident(subj)}`); return;
         case S.PKMNSTOLEITEM: if ((m = new RegExp(`stole (Foe )?.+?${Q}s (.+?)!`).exec(t))) emit(`|-item|${ident(subj)}|${itemText(m[2])}|[from] move: Thief|[of] ${ident(m[1] ? 1 : 0)}`); return;
         case S.TRAINER1USEDITEM: // "LEADER LT. SURGE used SUPER POTION!": the bar (and status icon) follow
