@@ -3832,6 +3832,7 @@ globalThis.FR_SDTABLES = {"names": {"species":{"1":"Bulbasaur","2":"Ivysaur","3"
       runs: [], usedSum: 0, lastOne: 0, mons: cfg.team.map(() => ({ kos: 0, faints: 0, sweeps: 0, used: 0 })), war: null, cfg, t0: performance.now(), records: [], plan: null };
     const bag0 = cfg.bag ? Object.values(cfg.bag).reduce((a, b) => a + b, 0) : 0;
     last = res; render(res, false);
+    renderTeam(res); renderPlan(res); $('fr-plan-prog').hidden = true; // hide the panels about the previous batch until this one finishes
     await runSeeds(cfg, seeds, job, m => {
       res.n++; res.funnel[m.reached]++; res.turns += m.perBattle.reduce((a, b) => a + b.turns, 0);
       const won = m.reached === cfg.trainers.length; if (won) res.wins++;
@@ -3941,10 +3942,14 @@ globalThis.FR_SDTABLES = {"names": {"species":{"1":"Bulbasaur","2":"Ivysaur","3"
     return t.fights.map(f => (multi && f.name ? f.name + '\n' : '') + f.lines.map((l, k) => `${k + 1}. ${l}`).join('\n')).join('\n\n') + '\n' + t.otherwise;
   }
   async function findPlan() {
-    const res = last; if (!res || !res.records.length || planJob || running) return;
+    const res = last, say = t => { $('fr-plan-prog').hidden = false; $('fr-plan-prog').textContent = t; };
+    if (planJob) return;
+    if (running) { say('Wait for the runs above to finish, then try again.'); return; }
+    if (warJob) { say('Wait for "Measure wins added" to finish, then try again.'); return; }
+    if (!res || !res.records.length) { say('Run simulations first: the plan is built from those runs.'); return; }
     const cfg = res.cfg, job = { cancel: false }; planJob = job; renderTeam(res);
     const t0 = performance.now(), prog = $('fr-plan-prog');
-    $('fr-plan-go').hidden = true; $('fr-plan-stop').hidden = false; prog.hidden = false; prog.textContent = 'Starting…';
+    $('fr-plan-go').hidden = true; $('fr-plan-stop').hidden = false; prog.hidden = false; prog.textContent = 'Starting: collecting the situations from your runs…';
     res.plan = { result: null };
     let id = 0; const chains = new Map();
     const ask = (w, msg) => { const p = (chains.get(w) || Promise.resolve()).then(() => job.cancel ? msg.seeds.map(() => 0) : new Promise(resolve => {
