@@ -453,7 +453,8 @@ table.contrib .bar{display:inline-block;height:8px;border-radius:4px;background:
           <li>Hardcore nuzlocke: no items, every Pokémon capped at the highest level on the other side (the Champion's, for a full run), and a Pokémon that faints stays out. The search then scores a win with fewer faints above a win with more.</li>
           <li>Player strength, on a 12-boss benchmark with the same luck for every player: the game's own AI playing your side wins 39%, Quick search 51%, Standard 62%, Deep about 70%, and a search that knows every future roll 82%.</li>
           <li>Goals, on the same benchmark at Standard: Win without losses raises wins with no faints from 4% to 13% with no measurable change in overall wins. Win fast wins about 0.8 turns sooner per fight (roughly 6%) at the same win rate.</li>
-          <li>At Quick look-ahead (480 battles each, same luck): Win with fewest Pokémon sends out about 0.2 fewer Pokémon per won fight (roughly 7%) at the same win rate. Choosing the lead and Shift style showed no measurable change in wins (+1 and +4 points, both within noise).</li>
+          <li>At Quick look-ahead (480 battles each, same luck): Win with fewest Pokémon sends out about 0.2 fewer Pokémon per won fight (roughly 7%) at the same win rate. Shift style showed no measurable change in wins (+4 points, within noise).</li>
+          <li>Choosing the lead (hardcore rules, Win without losses, 480 battles each with the team in a random order, same luck): at Standard the player won 59% with it on vs 53% keeping the typed order (+7 points, a real difference); at Quick +4 points (within noise). If your first Pokémon is already a good lead, it makes no measurable difference.</li>
           <li>Win by a thread, same test: fights won with one Pokémon left standing rise from 45% to 86% of wins, and the average leftover drops from 1.4 to 0.6 Pokémon's worth. The cost is about 6 points of wins (±5).</li>
         </ul></div>
       </div>
@@ -3159,8 +3160,11 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
     const standIn = () => make(o.standIn || 'heur', { heur: o.heur });
     const searcher = (algo, extra) => {
       const si = standIn(), stats = { decisions: 0, depthSum: 0 };
+      // lead choice plays each lead out with the stand-in, or with o.leadBy (a player name, e.g. 'learned' or 'flatcrn' at
+      // o.leadSearchBudget playouts) for o.leadBudget playouts in all (lab/lead_choosers.js)
+      const leadBy = o.leadBy ? make(o.leadBy, { budget: o.leadSearchBudget || 16, standIn: 'heur' }) : si;
       return { name, searches: true, planBetweenFights: planByPlayout, stats,
-        chooseLead: (env, c) => chooseLeadByPlayout(env, c, si, o.budget || 96),
+        chooseLead: (env, c) => chooseLeadByPlayout(env, c, leadBy, o.leadBudget || o.budget || 96),
         decide(env, c) {
           const ctx = Object.assign({ budget: o.budget || 96, standIn: si, rng: c.rng, seed: c.seed, decisionIndex: c.i, playoutCap: o.playoutCap, c: o.c, prune: o.prune, truncate: o.truncate }, extra);
           const choice = algo(env, ctx);
