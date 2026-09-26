@@ -390,11 +390,11 @@ table.contrib .bar{display:inline-block;height:8px;border-radius:4px;background:
   <section class="panel" id="fr-team-panel" aria-labelledby="fr-contrib-h" hidden>
     <div class="row" style="justify-content:space-between">
       <h2 id="fr-contrib-h">Your Pokémon</h2>
-      <div class="row"><button class="btn" id="fr-war" type="button">Measure wins added</button><button class="btn" id="fr-war-stop" type="button" hidden>Stop</button></div>
+      <div class="row"><button class="btn" id="fr-war" type="button">Measure wins added</button><button class="btn" id="fr-war-stop" type="button" hidden>Stop</button><span class="hint" id="fr-war-progress" aria-live="polite" hidden></span></div>
     </div>
     <div class="tablewrap"><table class="contrib" id="fr-contrib"></table></div>
     <p class="hint" id="fr-war-ai" hidden>These runs used the game's own AI, which never switches. It sends Pokémon out in team order, so here wins added mostly measures who leads. A negative number means the team did better without that Pokémon in its slot. Use Search for a fairer read.</p>
-    <p class="hint" id="fr-war-note">KOs and faints come from the runs above. <b>Wins added</b> reruns the same runs, with the same luck, once without each Pokémon, and reports how many points the clear rate drops. It costs about as much as the original batch per Pokémon. Two Pokémon that do the same job each look less valuable, because the other one covers for it.</p>
+    <p class="hint" id="fr-war-note">KOs and faints come from the runs above. <b>Wins added</b> reruns the same runs, with the same luck, once without each Pokémon, and reports how many points the clear rate drops. It costs about as much as the original batch per Pokémon. All Pokémon are measured together, so every row fills in as it goes; the ± shrinks as runs come in, and you can stop once the numbers settle. Two Pokémon that do the same job each look less valuable, because the other one covers for it.</p>
   </section>
 
   <section class="panel" id="fr-plan-panel" aria-labelledby="fr-plan-h" hidden>
@@ -4278,23 +4278,25 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
       planSamples: pol === 'ai' ? 6 : 10, n: +$('fr-n').value, goal: pol === 'ai' ? null : readGoal(), nuz };
   }
   // Play a list of seeds across the worker pool. onResult gets each run's summary; returns when done or cancelled.
-  function runSeeds(cfg, seeds, job, onResult, extra) {
+  // Play a list of jobs { cfg, seed, onResult, extra } across the worker pool, one run per message. Returns when done or cancelled.
+  function runJobs(jobs, job) {
     let next = 0;
     return Promise.all(pool.map(w => new Promise(resolve => {
       const pump = () => {
-        if (job.cancel || next >= seeds.length) { w.onmessage = null; resolve(); return; }
-        const batch = seeds.slice(next, next + 1); next += 1;
+        if (job.cancel || next >= jobs.length) { w.onmessage = null; resolve(); return; }
+        const j = jobs[next++], cfg = j.cfg;
         w.onmessage = e => {
           const m = e.data;
-          if (m.type === 'result') onResult(m);
+          if (m.type === 'result') j.onResult(m);
           else if (m.type === 'batchdone') pump();
           else if (m.type === 'error') { $('fr-log').textContent = 'Engine error: ' + m.message; pump(); }
         };
-        w.postMessage(Object.assign({ type: 'runs', seeds: batch, team: cfg.team, trainers: cfg.trainers, policy: cfg.policy, budget: cfg.budget, prune: cfg.prune, enemy: cfg.enemy, bag: cfg.bag, planSamples: cfg.planSamples, goal: cfg.goal, shift: cfg.shift, freeLead: cfg.freeLead }, extra || {}));
+        w.postMessage(Object.assign({ type: 'runs', seeds: [j.seed], team: cfg.team, trainers: cfg.trainers, policy: cfg.policy, budget: cfg.budget, prune: cfg.prune, enemy: cfg.enemy, bag: cfg.bag, planSamples: cfg.planSamples, goal: cfg.goal, shift: cfg.shift, freeLead: cfg.freeLead }, j.extra || {}));
       };
       pump();
     })));
   }
+  const runSeeds = (cfg, seeds, job, onResult, extra) => runJobs(seeds.map(seed => ({ cfg, seed, onResult, extra })), job);
   const success = (cfg, reached, deaths) => reached === cfg.trainers.length && (!dlGoal(cfg) || deaths === 0);
 
   async function run() {
@@ -4375,17 +4377,26 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
     const job = { cancel: false }; warJob = job;
     res.war = { total: seeds.length, per: cfg.team.map(() => ({ n: 0, diffSum: 0, diffSq: 0 })) };
     $('fr-war').hidden = true; $('fr-war-stop').hidden = false; renderTeam(res);
-    for (let i = 0; i < cfg.team.length && !job.cancel; i++) {
-      const c2 = Object.assign({}, cfg, { team: cfg.team.filter((_, k) => k !== i) }), P = res.war.per[i];
-      await runSeeds(c2, seeds, job, m => {
-        const d = base[m.seed] - (success(cfg, m.reached, m.deaths) ? 1 : 0);
-        P.n++; P.diffSum += d; P.diffSq += d * d; if (last === res) renderTeam(res);
-      });
-    }
-    warJob = null; $('fr-war').hidden = false; $('fr-war-stop').hidden = true; if (last === res) renderTeam(res);
+    // every run is replayed once without each Pokémon, interleaved (run 1 without each, then run 2...), so all rows fill in together
+    const teams = cfg.team.map((_, i) => Object.assign({}, cfg, { team: cfg.team.filter((_, k) => k !== i) }));
+    const jobs = [], total = seeds.length * teams.length, t0 = performance.now(); let done = 0;
+    const prog = $('fr-war-progress'); prog.hidden = false;
+    const showProgress = () => {
+      if (job.cancel) return; // keep the "Stopping…" note
+      const s = (performance.now() - t0) / 1000, left = done ? Math.round(s / done * (total - done)) : null;
+      prog.textContent = `Measuring: ${done} of ${total} reruns${left != null && done < total ? `, about ${left < 90 ? left + ' s' : Math.round(left / 60) + ' min'} left` : ''}`;
+    };
+    showProgress();
+    for (const seed of seeds) teams.forEach((c2, i) => jobs.push({ cfg: c2, seed, onResult: m => {
+      const P = res.war.per[i], d = base[m.seed] - (success(cfg, m.reached, m.deaths) ? 1 : 0);
+      P.n++; P.diffSum += d; P.diffSq += d * d; done++; showProgress(); if (last === res) renderTeam(res);
+    } }));
+    await runJobs(jobs, job);
+    prog.hidden = true;
+    warJob = null; $('fr-war').hidden = false; $('fr-war-stop').hidden = true; $('fr-war-stop').disabled = false; if (last === res) renderTeam(res);
   }
   $('fr-war').onclick = measureWar;
-  $('fr-war-stop').onclick = () => { if (warJob) warJob.cancel = true; };
+  $('fr-war-stop').onclick = () => { if (!warJob) return; warJob.cancel = true; $('fr-war-stop').disabled = true; $('fr-war-progress').textContent = 'Stopping after the reruns already in progress…'; };
 
   function finish() { $('fr-go').disabled = false; $('fr-stop').hidden = true; $('fr-go').textContent = 'Run simulations'; running = null; if (last) { renderTeam(last); renderPlan(last); } }
 
