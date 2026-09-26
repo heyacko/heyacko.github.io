@@ -4327,7 +4327,7 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
   $('fr-log-pick').addEventListener('change', () => { logPick = $('fr-log-pick').value; showSample(); });
   // step through every run of the batch (from the picked run, if a pick is showing); Watch follows along when open
   function stepRun(d) {
-    const n = last && last.runs.length; if (!n || last.cfg.gauge) return;
+    const n = last && last.runs.length; if (!n || last.cfg.gauge || running) return;
     if (logPick !== 'browse') { const r = pickRun(last, logPick); browseIdx = r ? last.runs.indexOf(r) : 0; logPick = 'browse'; $('fr-log-pick').value = 'browse'; }
     browseIdx = (browseIdx + d + n) % n; showSample();
   }
@@ -4435,14 +4435,19 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
   const nWorkers = Math.max(1, Math.min(6, (navigator.hardwareConcurrency || 4) - 1));
   const C = { mondata: D.mondata, items: D.items, natures: {}, types: {} };
   let pool = null;
-  function makePool() {
-    return Promise.all([...Array(nWorkers)].map(() => new Promise((res, rej) => {
+  function makeWorker() {
+    return new Promise((res, rej) => {
       const w = new Worker(workerUrl);
       w.onmessage = e => { if (e.data.type === 'ready') res(w); else if (e.data.type === 'error') rej(new Error(e.data.message)); };
       w.onerror = e => rej(new Error(e.message || 'Worker failed to start'));
       w.postMessage({ type: 'init', wasm: wasmBytes.slice(0), charmap: CHARMAP, C, snapStart: LAYOUT.snapStart });
-    })));
+    });
   }
+  function makePool() { return Promise.all([...Array(nWorkers)].map(makeWorker)); }
+  // Sample-run replays get their own worker, so they never take messages from a batch, Wins added or a plan search
+  // (borrowing a pool worker could swallow its "done" message and stall both).
+  let replayWorker = null;
+  const getReplayWorker = () => replayWorker || (replayWorker = makeWorker().catch(e => { replayWorker = null; throw e; }));
 
   // ---------- goal ----------
   const GO = window.FRGoals;
@@ -4537,7 +4542,7 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
     const res = { luck: { n: 0, bothFail: 0, hindsight: 0, refOk: 0 }, n: 0, funnel: Array(cfg.trainers.length + 1).fill(0), turns: 0, wins: 0, clean: 0, deaths: 0, bagLeft: 0, itemsUsed: 0, sweeps: 0, fightsWon: 0,
       runs: [], usedSum: 0, lastOne: 0, mons: cfg.team.map(() => ({ kos: 0, faints: 0, sweeps: 0, used: 0 })), war: null, cfg, t0: performance.now(), records: [], plan: null };
     const bag0 = cfg.bag ? Object.values(cfg.bag).reduce((a, b) => a + b, 0) : 0;
-    last = res; render(res, false);
+    last = res; for (const k in samples) delete samples[k]; render(res, false); renderLog();
     renderTeam(res); renderPlan(res); $('fr-plan-prog').hidden = true; // hide the panels about the previous batch until this one finishes
     await runSeeds(cfg, seeds, job, m => {
       res.n++; res.funnel[m.reached]++; res.turns += m.perBattle.reduce((a, b) => a + b.turns, 0);
@@ -4765,9 +4770,9 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
     return r.won ? `Won: ${r.faints} faint${r.faints === 1 ? '' : 's'}, ${r.turns} turns.` : n > 1 ? `Lost: reached ${r.reached} of ${n} fights.` : 'Lost the fight.';
   }
   function updateRunNav() {
-    const n = last && !last.cfg.gauge ? last.runs.length : 0, r = n && runFor(logKey());
-    $('fr-run-prev').disabled = $('fr-run-next').disabled = n < 2;
-    $('fr-run-pos').textContent = r ? `Run ${last.runs.indexOf(r) + 1} of ${n} · ${r.won ? 'won' : 'lost'}` : '';
+    const n = last && !last.cfg.gauge ? last.runs.length : 0, r = n && !running && runFor(logKey());
+    $('fr-run-prev').disabled = $('fr-run-next').disabled = n < 2 || !!running;
+    $('fr-run-pos').textContent = running ? 'when the batch finishes' : r ? `Run ${last.runs.indexOf(r) + 1} of ${n} · ${r.won ? 'won' : 'lost'}` : '';
   }
   function pickRun(res, key) {
     const P = PICKS[key]; let best = null;
@@ -4810,20 +4815,19 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
   }
   async function loadSample() {
     renderLog();
-    if (!last || !pool) return;
+    if (!last || running) return; // a running batch's runs are still coming in; run() shows its sample when it finishes
     const key = logKey(), run = runFor(key), seed = run ? run.seed : null;
     const tag = key + ':' + seed + ':' + last.t0;
     if (seed == null) { samples[key] = 'none'; renderLog(); return; }
     if (samples[key] && samples[key].tag === tag) { renderLog(); return; }
     samples[key] = 'loading'; renderLog();
-    const cfg = last.cfg, w = pool[0];
-    const prev = w.onmessage;
+    const cfg = last.cfg;
+    let w; try { w = await getReplayWorker(); } catch (e) { samples[key] = undefined; $('fr-log').textContent = 'Couldn\'t start the replay: ' + e.message; return; }
     const r = await new Promise(resolve => {
-      w.onmessage = e => { if (e.data.type === 'sample') resolve(e.data); else if (e.data.type === 'error') resolve({ error: e.data.message }); };
+      w.onmessage = e => { if (e.data.type === 'sample' && e.data.key === key) resolve(e.data); else if (e.data.type === 'error') resolve({ error: e.data.message }); };
       w.postMessage({ type: 'sample', key, seed, team: cfg.team, trainers: cfg.trainers, policy: cfg.policy, budget: cfg.budget, prune: cfg.prune, enemy: cfg.enemy, bag: cfg.bag, planSamples: cfg.planSamples, goal: cfg.goal, shift: cfg.shift, freeLead: cfg.freeLead });
     });
-    w.onmessage = prev;
-    if (r.error) { $('fr-log').textContent = 'Engine error: ' + r.error; return; }
+    if (r.error) { samples[key] = undefined; $('fr-log').textContent = 'Engine error: ' + r.error; return; }
     samples[key] = { tag, log: r.log, protocol: r.protocol, why: key.startsWith('run:') ? runWhy(run) : PICKS[key].why(run) + ` Out of ${last.runs.length} runs.` };
     sdFight = -1;
     if (logKey() === key) { renderLog(); if (!$('fr-watch-box').hidden) watchCurrent(); } // the viewer follows the run being shown
