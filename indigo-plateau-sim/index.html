@@ -465,7 +465,7 @@ table.contrib .bar{display:inline-block;height:8px;border-radius:4px;background:
           <li>Between fights the search compares five healing plans by simulating the next fight with the game's AI playing your side. The healing choice aims to win the next fight; it doesn't follow the goal setting.</li>
           <li>Only your actual decisions follow the goal. Inside each look-ahead playout, a quick stand-in player just tries to win. So a goal like Win fast picks the fastest option at each turn, but it won't discover a long setup plan by itself.</li>
           <li>With Search, each run is replayed with the same rolls by a reference player that can see them coming, which is how the luck breakdown is measured. That replay is cheap next to the search itself.</li>
-          <li>Quick (128 playouts) uses a small trained model to skip the options it judges clearly worse, so all its playouts go to the 3 most promising moves or switches. On the 12-boss benchmark (hardcore rules, Win without losses, 480 battles, same luck) Quick won 58% of fights with it vs 49% without (+9 points). With 256 or more playouts it made no measurable difference, so Standard and Deep don't use it. The model was trained on the search's own choices in 3,000 battles with random teams, none of them the benchmark's.</li>
+          <li>Quick (128 playouts) uses a small trained model to skip the options it judges clearly worse, so all its playouts go to the 3 most promising moves or switches. On the 12-boss benchmark (hardcore rules, Win without losses, 480 battles, same luck) Quick won 58% of fights with it vs 49% without (+9 points). With 256 or more playouts it made no measurable difference, so Standard and Deep don't use it. The model was trained on the search's own choices in 3,000 battles with random teams, none of them the benchmark's. The model in use is <b>standin-v1</b> (trained 2026-09-25).</li>
           <li>Quick used to be 64 playouts. A faster battle engine (same battles, about twice the speed) let it double to 128 at about the same wait, which raised it from 47% to 58% of fights won (+10 points, same test as above).</li>
           <li>Game plan: on the 12-boss benchmark, plans of 1 to 5 rules won 65.8% on average on 10,000 fresh runs per boss, against 61.3% for the search re-thinking every turn and 37.4% for the game's own AI. A fixed plan can't lean on a lucky roll, so the most reliable plans favor moves that stop the opponent from acting (sleep, paralysis, a sure KO) and the right switch at the right time.</li>
           <li>One fight covers every gym leader, rival battle and Giovanni fight, using the game's own trainer data. The level cap is that trainer's highest level.</li>
@@ -2649,7 +2649,8 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
   const N_STATE = 37, N_OPT = 12 + CATS.length + 8;
   const N_FEAT = N_STATE + N_OPT;
   // The options a stand-in considers (moves and switches; no bag items), and their feature rows.
-  function features(env) {
+  // set 'v1' (the 84 inputs above; the shipped model) or 'v2' (v1 + 5 worst-case / sure-thing inputs, lab: see below)
+  function features(env, set = 'v1') {
     const x = env.x, kind = x.hl_need_kind(), T = env._learnTools || (env._learnTools = tools(env));
     const me = T.battler(0), foe = T.battler(1);
     const opts = [];
@@ -2687,8 +2688,23 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
       }
       return S.concat(O);
     });
+    if (set === 'v2') { // how a careful human plans: min rolls for you, max rolls (and a crit) for the foe
+      const worst = (a, d) => { let m = 0; for (const mv of a.moves) { if (!mv) continue; const h = T.hit(a, d, mv); if (h.max > m) m = h.max; } return m; };
+      const threat = replace ? 0 : worst(foe, me) * 2 >= 1 ? 1 : 0; // the foe can KO the active Pokémon with a max roll and a crit
+      opts.forEach((o, i) => {
+        const e = [threat, 0, 0, 0, 0];
+        if (o.t === 'move') { // a sure KO: even the minimum roll KOs and it can't miss; e[2]: and it lands before the foe moves
+          const mv = me.moves[o.slot], h = T.hit(me, foe, mv), sure = h.max * 0.85 >= 1 && T.acc(mv) >= 1;
+          e[1] = sure ? 1 : 0; e[2] = sure && (me.spe > foe.spe || x.hl_move_priority(mv) > 0) ? 1 : 0;
+        } else { // a switch-in: could be KO'd by a max-roll crit (e[3]); takes under half its HP even from a max roll (e[4])
+          const w = worst(foe, T.party(o.slot)); e[3] = w * 2 >= 1 ? 1 : 0; e[4] = w < 0.5 ? 1 : 0;
+        }
+        X[i] = X[i].concat(e);
+      });
+    }
     return { opts, X };
   }
+  const FEATURE_SETS = { v1: N_FEAT, v2: N_FEAT + 5 };
 
   // ---------- state features, for the value model ("who's winning from here?") ----------
   // Both whole teams: how many are left and how much HP, the active pair (HP, status, stages, who hits harder, who is
@@ -2756,7 +2772,7 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
   }
   // temp 0: the top-scoring option; temp > 0: sample from softmax(score / temp) with rng() (varied playouts)
   function pick(model, env, temp = 0, rng = Math.random) {
-    const { opts, X } = features(env);
+    const { opts, X } = features(env, model.feat || 'v1');
     if (!opts.length) return null;
     const sc = X.map(x => score(model, x));
     if (!(temp > 0)) return opts[sc.reduce((b, v, i) => v > sc[b] ? i : b, 0)];
@@ -2764,8 +2780,8 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
     let r = rng() * Z; for (let i = 0; i < opts.length; i++) { r -= ex[i]; if (r <= 0) return opts[i]; }
     return opts[opts.length - 1];
   }
-  function init(H, rng = Math.random) {
-    const F = N_FEAT, r = () => (rng() * 2 - 1) * Math.sqrt(1 / F);
+  function init(H, rng = Math.random, F = N_FEAT) {
+    const r = () => (rng() * 2 - 1) * Math.sqrt(1 / F);
     return { H, F, W1: Array.from({ length: H * F }, r), b1: Array(H).fill(0), w2: Array.from({ length: H }, () => (rng() * 2 - 1) * Math.sqrt(1 / H)), b2: 0, cats: CATS };
   }
   // Train on decisions [{ X: [options x F], y: chosen index, w?: weight }]: softmax over each decision's options, Adam.
@@ -2816,12 +2832,16 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
     return n ? ok / n : 0;
   }
   let defaultModel = null;
-  function loadDefault() { // the committed model: lab/models/standin.json under Node, FR_STANDIN in the page's workers
-    if (!defaultModel) defaultModel = isNode ? JSON.parse(require('fs').readFileSync(require('path').join(__dirname, 'lab/models/standin.json'), 'utf8')) : root.FR_STANDIN;
+  function loadDefault() { // the shipped option model: the one lab/models/registry.json names under Node, FR_STANDIN in the page's workers
+    if (!defaultModel && isNode) {
+      const fs = require('fs'), path = require('path'), dir = path.join(__dirname, 'lab/models'), reg = JSON.parse(fs.readFileSync(path.join(dir, 'registry.json'), 'utf8'));
+      defaultModel = JSON.parse(fs.readFileSync(path.join(dir, reg.models[reg.shipped.option].file), 'utf8'));
+    }
+    if (!defaultModel) defaultModel = root.FR_STANDIN;
     return defaultModel;
   }
 
-  const api = { CATS, N_FEAT, N_VALUE, features, score, pick, init, train, accuracy, loadDefault, stateFeatures, value, trainValue, initValue, mse, loadValue };
+  const api = { CATS, N_FEAT, N_VALUE, FEATURE_SETS, features, score, pick, init, train, accuracy, loadDefault, stateFeatures, value, trainValue, initValue, mse, loadValue };
   if (isNode) module.exports = api; else root.FRLearn = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -3204,7 +3224,7 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
   // Keep only the learned model's top k moves/switches (frlearn.js), so the search spends its whole playout budget on
   // fewer options. Bag items, which the model doesn't score, are always kept.
   function pruneOptions(env, opts, k, pruneModel) {
-    const Learn = isNode ? require('./frlearn.js') : root.FRLearn, model = pruneModel || Learn.loadDefault(), f = Learn.features(env);
+    const Learn = isNode ? require('./frlearn.js') : root.FRLearn, model = pruneModel || Learn.loadDefault(), f = Learn.features(env, model.feat || 'v1');
     const scored = f.opts.map((o, i) => ({ o, s: Learn.score(model, f.X[i]) })).sort((a, b) => b.s - a.s).slice(0, k);
     const keep = opts.filter(o => (o.t !== 'move' && o.t !== 'switch') || scored.some(z => z.o.t === o.t && z.o.slot === o.slot));
     return keep.length ? keep : opts;
