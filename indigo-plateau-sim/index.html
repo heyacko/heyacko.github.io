@@ -2712,7 +2712,9 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
   // Both whole teams: how many are left and how much HP, the active pair (HP, status, stages, who hits harder, who is
   // faster), and how well each side's bench hits the other side's active Pokémon.
   const N_VALUE = 44;
-  function stateFeatures(env) {
+  // set 'v1' (the 44 inputs below) or 'v2' (v1 + 34: weather, each side's screens and hazards, each active Pokémon's
+  // volatile conditions; bits from the decomp's include/constants/battle.h)
+  function stateFeatures(env, set = 'v1') {
     const x = env.x, T = env._learnTools || (env._learnTools = tools(env)), out = [];
     const kind = x.hl_need_kind(), replace = kind === NEED.POKEMON;
     const act = [T.battler(0), T.battler(1)], down = [replace || act[0].hp <= 0, act[1].hp <= 0];
@@ -2732,10 +2734,22 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
     const mine = live ? T.best(act[0], act[1]) : { frac: 0, ko: 0 }, theirs = live ? T.best(act[1], act[0]) : { frac: 0, ko: 0 };
     out.push(mine.frac, theirs.frac, mine.ko, theirs.ko, live ? (act[0].spe > act[1].spe ? 1 : act[0].spe === act[1].spe ? 0.5 : 0) : 0.5,
       replace ? 1 : 0, Math.min(1, x.hl_turn() / 40), live ? Math.min(1.5, mine.frac) - Math.min(1.5, theirs.frac) : 0);
+    if (set === 'v2') {
+      const w = x.hl_weather(), bit = (v, m) => (v & m) ? 1 : 0;
+      out.push(bit(w, 0x07), bit(w, 0x60), bit(w, 0x18), bit(w, 0x80)); // rain, sun, sandstorm, hail
+      for (const side of [0, 1]) { const s = x.hl_side_status(side); out.push(bit(s, 1), bit(s, 2), bit(s, 0x10), bit(s, 0x20), bit(s, 0x100)); } // Reflect, Light Screen, Spikes, Safeguard, Mist
+      for (const b of [0, 1]) { // the active Pokémon (battler 0 is yours, 1 the foe's in a single battle)
+        if (down[b]) { out.push(...Array(10).fill(0)); continue; }
+        const s2 = x.hl_bmon_status2(b), s3 = x.hl_bmon_status3(b);
+        out.push(bit(s2, 1 << 24), bit(s3, 1 << 2), bit(s2, 0xE000), bit(s2, 1 << 26), bit(s2, 0xF0000), // Substitute, Leech Seed, wrapped, can't escape, infatuated
+          bit(s3, 1 << 5), bit(s3, 0x1800), bit(s2, 1 << 22), bit(s2, 1 << 28), bit(s3, 0x400C0)); // Perish Song, Yawn, recharging, Curse, semi-invulnerable (Fly, Dig, Dive)
+      }
+    }
     return out;
   }
+  const STATE_SETS = { v1: 44, v2: 78 };
   // value model: same network shape, one output = expected final score; trained by squared error
-  function value(model, env) { return Math.max(0, Math.min(1, score(model, stateFeatures(env)))); }
+  function value(model, env) { return Math.max(0, Math.min(1, score(model, stateFeatures(env, model.feat || 'v1')))); }
   function trainValue(model, data, { epochs = 8, lr = 0.002, batch = 128, rng = Math.random, log = () => {}, valid = null } = {}) {
     const { H, F } = model, params = [model.W1, model.b1, model.w2], m = params.map(p => new Float64Array(p.length)), v = params.map(p => new Float64Array(p.length));
     const g = params.map(p => new Float64Array(p.length)), hk = new Float64Array(H); let mb2 = 0, vb2 = 0, gb2 = 0, t = 0;
@@ -2759,7 +2773,7 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
     return model;
   }
   function mse(model, data) { let s = 0; for (const d of data) { const e = score(model, d.x) - d.y; s += e * e; } return s / data.length; }
-  function initValue(H, rng = Math.random) { const m = init(H, rng); const F = N_VALUE, r = () => (rng() * 2 - 1) * Math.sqrt(1 / F); m.F = F; m.W1 = Array.from({ length: H * F }, r); m.b2 = 0.4; return m; }
+  function initValue(H, rng = Math.random, F = N_VALUE) { const m = init(H, rng); const r = () => (rng() * 2 - 1) * Math.sqrt(1 / F); m.F = F; m.W1 = Array.from({ length: H * F }, r); m.b2 = 0.4; return m; }
   let defaultValue = null;
   function loadValue() {
     if (!defaultValue && isNode) defaultValue = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, 'lab/models/value.json'), 'utf8'));
@@ -2843,7 +2857,7 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
     return defaultModel;
   }
 
-  const api = { CATS, N_FEAT, N_VALUE, FEATURE_SETS, features, score, pick, init, train, accuracy, loadDefault, stateFeatures, value, trainValue, initValue, mse, loadValue };
+  const api = { CATS, N_FEAT, N_VALUE, FEATURE_SETS, STATE_SETS, features, score, pick, init, train, accuracy, loadDefault, stateFeatures, value, trainValue, initValue, mse, loadValue };
   if (isNode) module.exports = api; else root.FRLearn = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
