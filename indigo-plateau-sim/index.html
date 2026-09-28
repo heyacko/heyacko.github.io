@@ -1971,6 +1971,12 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
     const ident = s => `${P[s]}a: ${spName(cur(s).species)}`;
     const benchIdent = (s, slot) => `${P[s]}: ${spName(monAt(s, slot).species)}`;
     const hpStr = m => m.hp <= 0 ? '0 fnt' : `${m.hp}/${m.maxhp}${m.status ? ' ' + m.status : ''}`;
+    // Natural Cure: Cmd_switchoutabilities clears the status of a Pokémon leaving the field (a switch, Baton Pass, the
+    // shift prompt, Roar / Whirlwind) with SetMonData and no status icon event, so the writer has to apply it itself.
+    // The party entry at that slot gives the ability (abilities[MON_DATA_ABILITY_NUM]; the party order holds in a battle).
+    const ABILITY_NATURAL_CURE = 30; // include/constants/abilities.h
+    const naturalCure = (s, slot) => sim.pget(s, slot, 'MON_DATA_SPECIES') === monAt(s, slot).species &&
+      E.x.hl_species_ability(monAt(s, slot).species, sim.pget(s, slot, 'MON_DATA_ABILITY_NUM')) === ABILITY_NATURAL_CURE;
     const details = m => spName(m.species) + (m.level && m.level !== 100 ? ', L' + m.level : '');
     const sideOfText = t => /^Foe\b/.test(t) ? 1 : 0; // messages that start with a Pokémon's name ("Foe X ..." on the trainer's side)
     const sideLabel = s => `${P[s]}: ${sideName[s]}`;
@@ -2035,6 +2041,9 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
           const m = monAt(s, e.a); m.species = e.species; m.hp = e.hp; m.maxhp = e.maxhp;
           if (!m.level) m.level = sim.pget(s, e.a, 'MON_DATA_LEVEL');
           if (turn > 0 && cur(s) && cur(s).hp > 0) action(s); // a switch by choice (not a faint replacement or a lead)
+          if (active[s] != null && active[s] !== e.a && cur(s).hp > 0 && cur(s).status && naturalCure(s, active[s])) {
+            emit(`|-curestatus|${ident(s)}|${cur(s).status}|[from] ability: Natural Cure|[silent]`); cur(s).status = ''; // as Showdown writes it
+          }
           active[s] = e.a;
           emit(`|switch|${ident(s)}|${details(m)}|${hpStr(m)}`); break;
         }
@@ -2413,6 +2422,17 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
       return opts;
     };
 
+    // The target the cartridge's player controller sends with a move (HandleInputChooseMove): the user for a
+    // MOVE_TARGET_USER move - and for Curse, unless the user is a Ghost - otherwise the foe. (HandleAction_UseMove
+    // takes it as is in a single battle, and Soft-Boiled / Milk Drink heal BS_TARGET: sent the foe, they healed the foe.)
+    const MOVE_TARGET_USER = 1 << 4, movePtr = x.hl_move_data_ptr(); // struct BattleMove is 9 bytes; target is byte 6
+    this.moveTarget = function (slot) {
+      const mv = x.hl_bmon_move(0, slot);
+      let user = (new Uint8Array(E.mem.buffer, movePtr + mv * 9 + 6, 1)[0] & MOVE_TARGET_USER) !== 0;
+      if (mv === C.moves.MOVE_CURSE) user = x.hl_bmon_type(0, 0) !== C.types.TYPE_GHOST && x.hl_bmon_type(0, 1) !== C.types.TYPE_GHOST;
+      return user ? 0 : 1;
+    };
+
     // Apply a macro option: runs the engine through any follow-up sub-decision (FIGHT→move, SWITCH→pokemon).
     this.apply = function (o, rngU32) {
       const kind = x.hl_need_kind();
@@ -2425,11 +2445,11 @@ globalThis.FR_EFFECTS = {"0":"HIT","1":"SLEEP","2":"POISON_HIT","3":"ABSORB","4"
         return;
       }
       if (kind === NEED.ACTION) {
-        if (o.t === 'move') { x.hl_choose(ACT.MOVE, 0, 1); if (x.hl_run(200000) === RUN.DECISION && x.hl_need_kind() === NEED.MOVE) x.hl_choose(0, o.slot, 1); }
+        if (o.t === 'move') { x.hl_choose(ACT.MOVE, 0, 1); if (x.hl_run(200000) === RUN.DECISION && x.hl_need_kind() === NEED.MOVE) x.hl_choose(0, o.slot, self.moveTarget(o.slot)); }
         else if (o.t === 'switch') { x.hl_choose(ACT.SWITCH, 0, 0); if (x.hl_run(200000) === RUN.DECISION && x.hl_need_kind() === NEED.POKEMON) x.hl_choose(0, o.slot, 0); }
         else if (o.t === 'item') { self.useItemInBattle(o); }
       } else if (kind === NEED.POKEMON) x.hl_choose(0, o.slot, 0);
-      else if (kind === NEED.MOVE) x.hl_choose(0, o.slot, 1);
+      else if (kind === NEED.MOVE) x.hl_choose(0, o.slot, self.moveTarget(o.slot));
       else x.hl_choose(0, 0, 0);
     };
     // Run the engine to the next decision point (or the end of the battle).
